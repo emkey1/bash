@@ -5800,9 +5800,11 @@ execute_disk_command (words, redirects, command_line, pipe_in, pipe_out,
          hands over the terminal, which is make_child's job everywhere else.
          See aok_fork.c's aok_fork_pgid. */
       aok_fork_pgid = job_control ? pipeline_pgrp : -1;
+      aok_fork_sigdefault = !(job_control && pipeline_pgrp == shell_pgrp);
       pid = aok_spawn_disk_command (command, args, export_env, redirects,
                                     pipe_in, pipe_out);
       aok_fork_pgid = -1;
+      aok_fork_sigdefault = 1;
       /* free, not strvec_dispose: strvec_from_word_list with alloc=0 borrows
          the words' own strings rather than copying them, so disposing the
          vector would free memory the word list still owns. */

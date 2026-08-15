@@ -728,18 +728,47 @@ int aok_spawn_status = 0;
 #define AOK_PGID_INHERIT (-1)
 int aok_fork_pgid = AOK_PGID_INHERIT;
 
-/* posix_spawn attributes carrying aok_fork_pgid, or 0 for none. */
+/* Whether the child should get the job-control signals back at SIG_DFL.
+   See aok_spawn_attr. */
+int aok_fork_sigdefault = 1;
+
+/* posix_spawn attributes: the child's process group, and the dispositions a
+   forked child would have restored for itself.
+
+   The dispositions are not optional decoration. exec resets handlers but
+   PRESERVES SIG_IGN, and an interactive bash ignores SIGTSTP, SIGTTIN and
+   SIGTTOU for itself -- so without this every command it runs ignores them too,
+   and ^Z did nothing at all: the terminal sent SIGTSTP to a foreground job that
+   ignored it, and the shell went on waiting for a stop that never came.
+   make_child's child branch calls default_tty_job_signals for exactly this, on
+   exactly the condition mirrored in aok_fork_sigdefault. */
 static int
 aok_spawn_attr (attr)
      void **attr;
 {
+  short flags = 0;
+  sigset_t dfl;
+
   *attr = 0;
-  if (aok_fork_pgid == AOK_PGID_INHERIT)
+  if (aok_fork_pgid == AOK_PGID_INHERIT && aok_fork_sigdefault == 0)
     return 0;
   if (posix_spawnattr_init (attr) != 0)
     return -1;
-  posix_spawnattr_setflags (attr, NLIBC_SPAWN_SETPGROUP);
-  posix_spawnattr_setpgroup (attr, aok_fork_pgid);
+  if (aok_fork_pgid != AOK_PGID_INHERIT)
+    {
+      flags |= NLIBC_SPAWN_SETPGROUP;
+      posix_spawnattr_setpgroup (attr, aok_fork_pgid);
+    }
+  if (aok_fork_sigdefault)
+    {
+      flags |= NLIBC_SPAWN_SETSIGDEF;
+      sigemptyset (&dfl);
+      sigaddset (&dfl, SIGTSTP);
+      sigaddset (&dfl, SIGTTIN);
+      sigaddset (&dfl, SIGTTOU);
+      posix_spawnattr_setsigdefault (attr, &dfl);
+    }
+  posix_spawnattr_setflags (attr, flags);
   return 0;
 }
 

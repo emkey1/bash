@@ -2269,9 +2269,14 @@ make_child (command, flags)
        `pgid = 0` asks for; the parent branch below then records the pid as the
        group, exactly as it does after a fork. */
     aok_fork_pgid = job_control ? pipeline_pgrp : -1;
+    /* And the job-control signals, on make_child's own condition: a child of a
+       command substitution (pipeline_pgrp == shell_pgrp) keeps them ignored,
+       everything else gets them back at SIG_DFL. */
+    aok_fork_sigdefault = !(job_control && pipeline_pgrp == shell_pgrp);
     pid = aok_spawn_command (aok_fork_cmdtext, aok_fork_pipe_in, aok_fork_pipe_out);
     aok_fork_clear ();
     aok_fork_pgid = -1;
+    aok_fork_sigdefault = 1;
     if (pid < 0)
       errno = ENOSYS;
   }

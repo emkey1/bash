@@ -65,6 +65,10 @@ extern int aok_spawn_status;
    forked child sets this for itself; a spawned one has to be told. */
 extern int aok_fork_pgid;
 
+/* Whether the spawned child gets SIGTSTP/SIGTTIN/SIGTTOU back at SIG_DFL, as
+   make_child's child branch does with default_tty_job_signals. */
+extern int aok_fork_sigdefault;
+
 /* Re-entry. bash is a function here, called again for each `bash`, so every
    global holds what the last invocation left in it; these put the four files
    with state that outlives a shell back to where a fresh process would be.
