@@ -2160,6 +2160,27 @@ make_child (command, flags)
     sync_buffered_stream (default_buffered_input);
 #endif /* BUFFERED_INPUT */
 
+#if defined (AOK_NATIVE_FORK)
+  /* iSH-AOK: there is no fork here -- see aok_fork.c. The child is spawned as
+     a separate task running the same command text this function was handed for
+     the job table, so what follows is the PARENT branch only, and every piece
+     of bookkeeping below (add_process, pipeline_pgrp, last_asynchronous_pid)
+     happens exactly as it always did. The `pid == 0` branch is unreachable
+     rather than removed, so the diff against upstream stays readable.
+ 
+     A site that has not been converted leaves aok_fork_cmdtext null and gets
+     ENOSYS, which is the old behaviour and is loud. */
+  {
+    extern pid_t aok_spawn_command PARAMS((char *, int, int));
+    extern char *aok_fork_cmdtext;
+    extern int aok_fork_pipe_in, aok_fork_pipe_out;
+    pid = aok_spawn_command (aok_fork_cmdtext, aok_fork_pipe_in, aok_fork_pipe_out);
+    aok_fork_cmdtext = 0;
+    aok_fork_pipe_in = aok_fork_pipe_out = NO_PIPE;
+    if (pid < 0)
+      errno = ENOSYS;
+  }
+#else
   /* Create the child, handle severe errors.  Retry on EAGAIN. */
   while ((pid = fork ()) < 0 && errno == EAGAIN && forksleep < FORKSLEEP_MAX)
     {
@@ -2180,6 +2201,7 @@ make_child (command, flags)
 	break;
       sigprocmask (SIG_SETMASK, &set, (sigset_t *)NULL);
     }
+#endif /* AOK_NATIVE_FORK */
 
   if (pid != 0)
     if (interactive_shell)

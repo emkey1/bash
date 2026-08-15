@@ -441,3 +441,90 @@ aok_run_in_subshell (command, status_out)
     }
   return out;
 }
+
+/* ------------------------------------------- subshells and pipeline elements
+ 
+   Everything above serves command substitution, which captures output. The
+   other fork sites do not: a subshell or a pipeline element runs with the
+   caller's own descriptors and reports only a status, and bash's job machinery
+   wants a pid it can wait for.
+ 
+   So this returns a pid and nothing else, and jobs.c calls it INSTEAD of
+   fork() -- which means make_child's whole parent branch runs untouched,
+   add_process and pipeline_pgrp and last_asynchronous_pid included. The child
+   branch is simply never taken, because this never returns 0. Reusing bash's
+   bookkeeping rather than reimplementing it is the entire point: a second copy
+   of that logic would be one more thing obliged to stay in agreement.
+ 
+   The command text is what make_child is already handed for the job table.
+   That it is re-parseable is not an assumption -- make_command_string exists to
+   produce shell that `jobs` can display and a user can retype. */
+
+int aok_fork_pipe_in = -1;
+int aok_fork_pipe_out = -1;
+char *aok_fork_cmdtext = 0;
+
+pid_t
+aok_spawn_command (cmdtext, pipe_in, pipe_out)
+     char *cmdtext;
+     int pipe_in, pipe_out;
+{
+  char *state, *script, *argv[4];
+  void *fa;
+  pid_t pid;
+  size_t state_len, cmd_len;
+  int err;
+
+  if (cmdtext == 0)
+    { errno = ENOSYS; return (pid_t) -1; }
+
+  state = aok_serialize_state ();
+  if (state == 0)
+    return (pid_t) -1;
+
+  state_len = strlen (state);
+  cmd_len = strlen (cmdtext);
+  script = (char *) malloc (state_len + cmd_len + 2);
+  if (script == 0)
+    { free (state); return (pid_t) -1; }
+  memcpy (script, state, state_len);
+  script[state_len] = '\n';
+  memcpy (script + state_len + 1, cmdtext, cmd_len);
+  script[state_len + 1 + cmd_len] = '\0';
+  free (state);
+
+  if (posix_spawn_file_actions_init (&fa) != 0)
+    { free (script); return (pid_t) -1; }
+  /* do_piping's work, done from here because there is no child to do it in.
+     Both ends are closed after the dup2 for the same reason a forked child
+     closes them: a pipeline whose writer still holds the read end never ends. */
+  if (pipe_in != NO_PIPE)
+    {
+      posix_spawn_file_actions_adddup2 (&fa, pipe_in, 0);
+      if (pipe_in != 0)
+	posix_spawn_file_actions_addclose (&fa, pipe_in);
+    }
+  if (pipe_out != NO_PIPE && pipe_out != REDIRECT_BOTH)
+    {
+      posix_spawn_file_actions_adddup2 (&fa, pipe_out, 1);
+      if (pipe_out != 1)
+	posix_spawn_file_actions_addclose (&fa, pipe_out);
+    }
+  else if (pipe_out == REDIRECT_BOTH)
+    {
+      /* `|&`: stderr joins stdout. */
+      posix_spawn_file_actions_adddup2 (&fa, 1, 2);
+    }
+
+  argv[0] = "bash";
+  argv[1] = "-c";
+  argv[2] = script;
+  argv[3] = (char *) 0;
+  err = posix_spawn (&pid, AOK_SUBSHELL_BASH, &fa, (void **) 0,
+		     argv, (char **) 0);
+  posix_spawn_file_actions_destroy (&fa);
+  free (script);
+  if (err != 0)
+    { errno = err; return (pid_t) -1; }
+  return pid;
+}

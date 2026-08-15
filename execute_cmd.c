@@ -72,6 +72,10 @@ extern int errno;
 #include "hashlib.h"
 #include "jobs.h"
 #include "execute_cmd.h"
+#if defined (AOK_NATIVE_FORK)
+extern char *aok_fork_cmdtext;
+extern int aok_fork_pipe_in, aok_fork_pipe_out;
+#endif
 #include "findcmd.h"
 #include "redir.h"
 #include "trap.h"
@@ -651,6 +655,13 @@ execute_command_internal (command, asynchronous, pipe_in, pipe_out,
 	/* Otherwise we defer setting line_number */
       tcmd = make_command_string (command);
       fork_flags = asynchronous ? FORK_ASYNC : 0;
+#if defined (AOK_NATIVE_FORK)
+      /* What the child would have run, and the pipes it would have wired for
+         itself in do_piping. make_child spawns rather than forks. */
+      aok_fork_cmdtext = tcmd;
+      aok_fork_pipe_in = pipe_in;
+      aok_fork_pipe_out = pipe_out;
+#endif
       paren_pid = make_child (p = savestring (tcmd), fork_flags);
 
       if (user_subshell && signal_is_trapped (ERROR_TRAP) && 
@@ -4440,6 +4451,11 @@ execute_simple_command (simple_command, pipe_in, pipe_out, async, fds_to_close)
       /* Don't let a DEBUG trap overwrite the command string to be saved with
 	 the process/job associated with this child. */
       fork_flags = async ? FORK_ASYNC : 0;
+#if defined (AOK_NATIVE_FORK)
+      aok_fork_cmdtext = the_printed_command_except_trap;
+      aok_fork_pipe_in = pipe_in;
+      aok_fork_pipe_out = pipe_out;
+#endif
       if (make_child (p = savestring (the_printed_command_except_trap), fork_flags) == 0)
 	{
 	  already_forked = 1;
