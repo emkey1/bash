@@ -1,0 +1,10 @@
+# Build products. The vendor drop is sources plus the generated/ tree only;
+# nothing here is ever built in place -- AOK builds it through meson.
+*.o
+*.a
+/bash
+/bashbug
+/Makefile
+/config.status
+/config.log
+/config.cache
