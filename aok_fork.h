@@ -60,6 +60,11 @@ extern int aok_report_notfound PARAMS((char *, REDIRECT *, int, int));
 /* What a failed aok_spawn_disk_command would have exited with. */
 extern int aok_spawn_status;
 
+/* The process group to start the next spawned child in: -1 for the shell's
+   own, 0 for a group of its own led by the child, or an existing group. A
+   forked child sets this for itself; a spawned one has to be told. */
+extern int aok_fork_pgid;
+
 /* Re-entry. bash is a function here, called again for each `bash`, so every
    global holds what the last invocation left in it; these put the four files
    with state that outlives a shell back to where a fresh process would be.

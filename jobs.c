@@ -2180,7 +2180,14 @@ aok_register_spawned (command, pid, async_p)
     {
       if (pipeline_pgrp == 0)
 	pipeline_pgrp = pid;
+      /* The child was started in this group already (aok_fork_pgid, set by the
+	 caller); this is the same belt-and-braces call make_child's parent
+	 branch makes, and fails harmlessly once the child has exec'd. */
       setpgid (pid, pipeline_pgrp);
+      if (async_p == 0 && pipeline_pgrp != shell_pgrp &&
+	  (subshell_environment & (SUBSHELL_ASYNC|SUBSHELL_PIPE)) == 0 &&
+	  running_in_background == 0)
+	give_terminal_to (pipeline_pgrp, 0);
     }
   else if (pipeline_pgrp == 0)
     pipeline_pgrp = shell_pgrp;
@@ -2256,8 +2263,15 @@ make_child (command, flags)
      A site that has not been converted leaves aok_fork_cmdtext null and gets
      ENOSYS, which is the old behaviour and is loud. */
   {
+    /* The child's process group, decided HERE because the spawn has to be told
+       it -- see aok_fork.c. pipeline_pgrp == 0 means this is the first child of
+       a pipeline, and the child becomes its own group leader, which is what
+       `pgid = 0` asks for; the parent branch below then records the pid as the
+       group, exactly as it does after a fork. */
+    aok_fork_pgid = job_control ? pipeline_pgrp : -1;
     pid = aok_spawn_command (aok_fork_cmdtext, aok_fork_pipe_in, aok_fork_pipe_out);
     aok_fork_clear ();
+    aok_fork_pgid = -1;
     if (pid < 0)
       errno = ENOSYS;
   }
@@ -2414,6 +2428,21 @@ make_child (command, flags)
 	     shells.  It is done to avoid possible race conditions. (Ref.
 	     1003.1 Rationale, section B.4.3.3, page 236). */
 	  setpgid (pid, pipeline_pgrp);
+
+#if defined (AOK_NATIVE_FORK)
+	  /* And the terminal, on the same condition the child branch above
+	     applies it -- which is unreachable here, so a foreground job would
+	     otherwise never own the tty. bash is right that twiddling terminal
+	     process groups from the parent is a bug when there is a child to do
+	     it; there is not, and the alternative is a shell whose ^C goes to a
+	     process group that has already exited and which then never reads
+	     another keystroke. */
+	  if ((flags & FORK_NOTERM) == 0 && async_p == 0 &&
+	      pipeline_pgrp != shell_pgrp &&
+	      (subshell_environment & (SUBSHELL_ASYNC|SUBSHELL_PIPE)) == 0 &&
+	      running_in_background == 0)
+	    give_terminal_to (pipeline_pgrp, 0);
+#endif
 	}
       else
 	{

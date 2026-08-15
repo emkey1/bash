@@ -710,6 +710,39 @@ int aok_fork_nclose = 0;
    with somewhere to put an exit status. */
 int aok_spawn_status = 0;
 
+/* The process group the child is to start in: AOK_PGID_INHERIT for the
+   shell's own, 0 for a group of its own led by the child, or an existing
+   group's id.
+
+   A forked child sets this for itself, first thing, and bash is emphatic about
+   why (jobs.c, make_child: "Set the process group before trying to mess with
+   the terminal's process group. This is mandated by POSIX."). A spawned child
+   has no such moment, and the parent CANNOT do it afterwards -- sys_setpgid
+   refuses with EACCES once the child has exec'd. So it is described to the
+   spawn, which applies it while impersonating the child, before the exec.
+
+   Without it every child stayed in the shell's own process group, so no
+   foreground job ever owned the terminal: ^C during `sleep 30` left the tty
+   pointing somewhere that no longer read from it, and the shell never saw
+   another keystroke. */
+#define AOK_PGID_INHERIT (-1)
+int aok_fork_pgid = AOK_PGID_INHERIT;
+
+/* posix_spawn attributes carrying aok_fork_pgid, or 0 for none. */
+static int
+aok_spawn_attr (attr)
+     void **attr;
+{
+  *attr = 0;
+  if (aok_fork_pgid == AOK_PGID_INHERIT)
+    return 0;
+  if (posix_spawnattr_init (attr) != 0)
+    return -1;
+  posix_spawnattr_setflags (attr, NLIBC_SPAWN_SETPGROUP);
+  posix_spawnattr_setpgroup (attr, aok_fork_pgid);
+  return 0;
+}
+
 void
 aok_fork_clear ()
 {
@@ -724,7 +757,7 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
      int pipe_in, pipe_out;
 {
   char *script, *argv[5];
-  void *fa;
+  void *fa, *attr;
   pid_t pid;
   int err, i;
 
@@ -771,8 +804,11 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
      quoting exactly as the parent had them. */
   argv[3] = dollar_vars[0] ? dollar_vars[0] : "bash";
   argv[4] = (char *) 0;
-  err = posix_spawn (&pid, AOK_SUBSHELL_BASH, &fa, (void **) 0,
-		     argv, (char **) 0);
+  aok_spawn_attr (&attr);
+  err = posix_spawn (&pid, AOK_SUBSHELL_BASH, &fa,
+		     attr ? (void **) &attr : (void **) 0, argv, (char **) 0);
+  if (attr)
+    posix_spawnattr_destroy (&attr);
   posix_spawn_file_actions_destroy (&fa);
   free (script);
   if (err != 0)
@@ -883,12 +919,15 @@ aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
      int pipe_in, pipe_out;
 {
   int saved[3], i, err;
+  void *attr;
   pid_t pid;
 
   if (aok_redirect_push (redirects, pipe_in, pipe_out, saved) < 0)
     { errno = EIO; return (pid_t) -1; }
 
-  err = posix_spawn (&pid, command, (void *) 0, (void **) 0, args,
+  aok_spawn_attr (&attr);
+  err = posix_spawn (&pid, command, (void *) 0,
+		     attr ? (void **) &attr : (void **) 0, args,
 		     env ? env : (char **) 0);
 
   /* ENOEXEC is not a failure -- it is how the kernel says "this is a text file
@@ -913,8 +952,9 @@ aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
 	  for (i = 1; i < n; i++)
 	    sargs[i + 1] = args[i];
 	  sargs[n + 1] = (char *) 0;
-	  err = posix_spawn (&pid, AOK_SUBSHELL_BASH, (void *) 0, (void **) 0,
-			     sargs, env ? env : (char **) 0);
+	  err = posix_spawn (&pid, AOK_SUBSHELL_BASH, (void *) 0,
+			     attr ? (void **) &attr : (void **) 0, sargs,
+			     env ? env : (char **) 0);
 	  free (sargs);
 	}
     }
@@ -922,6 +962,9 @@ aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
   /* Reported here rather than by the caller, because here the command's own
      redirections are still in place and the message is the command's output.
      The status travels back in aok_spawn_status. */
+  if (attr)
+    posix_spawnattr_destroy (&attr);
+
   aok_spawn_status = 0;
   if (err != 0)
     aok_spawn_status = aok_report_exec_failure (command, err);
