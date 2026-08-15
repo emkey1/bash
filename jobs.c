@@ -2125,6 +2125,16 @@ aok_register_spawned (command, pid, async_p)
      pid_t pid;
      int async_p;
 {
+  /* FIRST, and the whole reason a spawned command was not being waited for.
+     execute_command_internal guards its wait_for on `already_making_children`
+     (execute_cmd.c, "if (already_making_children && pipe_out == NO_PIPE)"),
+     and the only thing that sets it is making_children(), which make_child
+     calls before forking. Spawning INSTEAD of calling make_child skipped it,
+     so bash printed the next prompt without waiting and the command's output
+     arrived afterwards. making_children() also calls start_pipeline(), which
+     is what add_process below needs in order to have a pipeline to add to. */
+  making_children ();
+
   if (job_control)
     {
       if (pipeline_pgrp == 0)
