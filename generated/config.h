@@ -677,7 +677,17 @@
 /* #undef HAVE_GETWD */
 
 /* Define if you have the iconv function.  */
-#define HAVE_ICONV 1
+/* iSH-AOK: iconv is OFF, for two reasons.
+ *
+ * Linking it would add a system library to the Xcode project, which links the
+ * meson archives by name and carries no extra libraries -- the same obstacle
+ * that keeps zlib, and therefore tar and gzip, out of the SmallCLUE build.
+ *
+ * And its only users here are lib/sh/fnxform.c, which normalizes filenames for
+ * macOS's HFS, and lib/sh/unicode.c, which has a UTF-8 fallback. The first is
+ * wrong for AOK outright: the filesystem bash sees is the GUEST's, not the
+ * Mac's, so decomposing filenames the way HFS wants would corrupt them. */
+/* #undef HAVE_ICONV */
 
 /* Define if you have the imaxdiv function.  */
 #define HAVE_IMAXDIV 1
@@ -1063,7 +1073,12 @@
 /* #undef HAVE_SYS_PTEM_H */
 
 /* Define if you have the <sys/random.h> header file.  */
-#define HAVE_SYS_RANDOM_H 1
+/* iSH-AOK: macOS has <sys/random.h>, the iOS SDK does not -- and one config.h
+ * has to serve both, because a native program is host code and the host is
+ * whichever of the two is building. Nothing is lost by leaving it out:
+ * getentropy is the only thing bash wants from it, and kernel/native_libc.h
+ * declares (and routes) that itself. */
+/* #undef HAVE_SYS_RANDOM_H */
 
 /* Define if you have the <sys/resource.h> header file.  */
 #define HAVE_SYS_RESOURCE_H 1
