@@ -6982,6 +6982,35 @@ command_substitute (string, quoted, flags)
   if (subst_assign_varlist == 0 || garglist == 0)
     maybe_make_export_env ();	/* XXX */
 
+#if defined (AOK_NATIVE_FORK)
+  /* iSH-AOK: no fork here -- run the command in a fresh bash task carrying this
+     shell's state, and take back its output. Everything below this point is the
+     fork path and is simply not reached. See aok_fork.c for why a subshell's
+     one-way contract makes that faithful rather than approximate. */
+  {
+    extern char *aok_run_in_subshell PARAMS((char *, int *));
+    int aok_status = 0;
+    char *aok_out = aok_run_in_subshell (string, &aok_status);
+    if (aok_out == 0)
+      {
+	sys_error ("%s", _("cannot start subshell for command substitution"));
+	goto error_exit;
+      }
+    last_command_exit_value = WIFEXITED (aok_status) ? WEXITSTATUS (aok_status)
+						     : 128 + WTERMSIG (aok_status);
+    last_command_subst_pid = dollar_dollar_pid;
+    /* Trailing newlines are not part of a command substitution's value. */
+    {
+      size_t aok_len = strlen (aok_out);
+      while (aok_len > 0 && aok_out[aok_len - 1] == '\n')
+	aok_out[--aok_len] = '\0';
+    }
+    ret = alloc_word_desc ();
+    ret->word = aok_out;
+    return ret;
+  }
+#endif
+
   /* Flags to pass to parse_and_execute() */
   pflags = (interactive && sourcelevel == 0) ? SEVAL_RESETLINE : 0;
 
