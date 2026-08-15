@@ -9166,3 +9166,51 @@ set_line_mbstate ()
     }
 }
 #endif /* HANDLE_MULTIBYTE */
+
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: the parser's state, which must not carry from one bash invocation
+   into the next. See the block in shell_reinitialize (shell.c), and
+   docs/bash_native_reentry.md in the iSH-AOK tree for the audit behind each of
+   these. It lives here because almost all of it is static to this file.
+
+   Everything is DROPPED rather than freed, and two of them for a specific
+   reason rather than the general one:
+
+   - the prompts are borrowed from the variable table, which shell_reinitialize
+     has just emptied. prompt_again refills all of them on the first prompt.
+   - pushed_string_list must NOT go through free_string_list: that is the
+     function which dereferences ->expander and frees ->saved_line, and the
+     chain belongs to a shell that has gone.
+
+   stream_list is dropped for the same shape of reason: pop_stream would
+   re-install a dead BASH_INPUT -- a dangling name and an fd belonging to an
+   exited task -- as the current input. */
+void
+aok_reinit_parser ()
+{
+  ps0_prompt = ps1_prompt = ps2_prompt = (char *)NULL;
+  current_prompt_string = (char *)NULL;
+  prompt_string_pointer = (char **)NULL;
+
+  shell_input_line = (char *)NULL;
+  shell_input_line_index = shell_input_line_size = shell_input_line_len = 0;
+  shell_input_line_terminator = 0;
+#if defined (HANDLE_MULTIBYTE)
+  shell_input_line_property = (char *)NULL;
+  shell_input_line_propsize = 0;
+#endif
+
+  current_readline_line = (char *)NULL;
+  current_readline_line_index = 0;
+  current_readline_prompt = (char *)NULL;
+
+  pushed_string_list = (STRING_SAVER *)NULL;
+  stream_list = (STREAM_SAVER *)NULL;
+
+  EOF_Reached = 0;
+  eol_ungetc_lookahead = 0;
+  parser_state = 0;
+  dstack.delimiter_depth = 0;
+  temp_dstack.delimiter_depth = 0;
+}
+#endif /* AOK_NATIVE_FORK */

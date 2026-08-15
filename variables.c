@@ -5117,6 +5117,31 @@ aok_reset_export_env ()
   export_env_index = 0;
   export_env_size = 0;
 }
+
+/* And the rest of this file's state that outlives a shell. See the block in
+   shell_reinitialize and docs/bash_native_reentry.md.
+
+   Three of these use bash's own helpers because ownership is unambiguous there:
+   clear_dollar_vars frees what remember_args always allocated, and
+   flush_temporary_env disposes a table a non-NULL temporary_env always owns.
+   The two hash tables are dropped instead -- create_variable_tables and
+   bind_invalid_envvar recreate them, and a freeing path would need a hash_flush
+   free-func that does not exist.
+
+   variable_context is the one that is neither: shell_reinitialize's
+   delete_all_contexts resets shell_variables but not the depth counter, so a
+   shell that exited from inside a function leaves it at 1 and the NEXT shell
+   accepts `local' at top level -- and then dereferences a variable context it
+   never pushed. */
+void
+aok_reinit_variables ()
+{
+  clear_dollar_vars ();          /* dollar_vars[1..9], rest_of_args, posparam_count */
+  flush_temporary_env ();
+  invalid_env = (HASH_TABLE *)NULL;
+  shell_function_defs = (HASH_TABLE *)NULL;
+  variable_context = 0;
+}
 #endif
 
 void

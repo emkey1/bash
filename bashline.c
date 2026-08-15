@@ -4837,3 +4837,21 @@ bash_event_hook ()
 }
 
 #endif /* READLINE */
+
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: forget FIGNORE's compiled patterns between bash invocations. See
+   docs/bash_native_reentry.md.
+
+   All three fields together and atomically: bashline.c dereferences .ignores
+   unguarded, having trusted .num_ignores, so clearing one and not the other
+   turns a stale-state bug into a null dereference. And clearing only
+   last_ignoreval would leave the previous shell's patterns armed, because
+   setup_ignore_patterns returns early when both ignorevals are NULL. */
+void
+aok_reinit_fignore ()
+{
+  fignore.ignores = (struct ign *)0;
+  fignore.num_ignores = 0;
+  fignore.last_ignoreval = (char *)0;
+}
+#endif

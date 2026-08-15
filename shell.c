@@ -70,6 +70,10 @@ extern int get_tty_state PARAMS((void));
 #include "execute_cmd.h"
 #include "findcmd.h"
 #include "unwind_prot.h"
+#include "hashcmd.h"
+#if defined (PROGRAMMABLE_COMPLETION)
+#  include "pcomplete.h"
+#endif
 #include "aok_fork.h"
 
 #if defined (USING_BASH_MALLOC) && defined (DEBUG) && !defined (DISABLE_MALLOC_WRAPPERS)
@@ -2083,14 +2087,45 @@ shell_reinitialize ()
      shell calling this would be resetting the first shell's world rather than
      its own. kernel/bash_glue.c is where that case is dealt with. */
   aok_reset_export_env ();
+  aok_reinit_variables ();
   aok_reinit_jobs ();
   aok_reinit_subst ();
   aok_reinit_execute ();
   aok_reinit_signals ();
-  /* unwind_prot.c's list, through the flags == 0 path, which drops the head
-     without running or freeing anything -- the elements belong to stack frames
-     that no longer exist. */
+  aok_reinit_parser ();
+  aok_reinit_input ();
+  aok_reinit_aliases ();
+  aok_reinit_execignore ();
+  aok_reinit_groups ();
+  aok_reinit_history ();
+#if defined (READLINE)
+  aok_reinit_fignore ();
+#endif
+
+  /* Three of bash's own flush helpers, where ownership is unambiguous and the
+     tidy call is therefore the right one: the command hash (what `hash -r`
+     does), the programmable-completion table (what `complete -r` does), and
+     the unwind-protect list through its flags == 0 path, which drops the head
+     without running or freeing anything -- those elements belong to stack
+     frames that no longer exist.
+
+     The completion table is the one that is not merely hygiene:
+     shell_reinitialize has just deleted every shell function, so each
+     surviving `complete -F _foo bar' names a function that is gone, and
+     bash-completion's dynamic loader sees the specs already registered and
+     never re-sources them. Completion would be silently dead for the whole of
+     the next session. */
+  phash_flush ();
+#if defined (PROGRAMMABLE_COMPLETION)
+  progcomp_flush ();
+#endif
   clear_unwind_protect_list (0);
+
+  /* And this file's own: the -O/+O options collected for THIS invocation.
+     shell_reinitialize runs before parse_shell_options fills it again. */
+  FREE (shopt_alist);
+  shopt_alist = 0;
+  shopt_ind = shopt_len = 0;
 #endif
 
 #if defined (READLINE)

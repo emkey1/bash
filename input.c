@@ -65,6 +65,7 @@ extern void termsig_handler PARAMS((int));
 static char localbuf[1024];
 static int local_index = 0, local_bufused = 0;
 
+
 /* Posix and USG systems do not guarantee to restart read () if it is
    interrupted by a signal.  We do the read ourselves, and restart it
    if it returns EINTR. */
@@ -675,3 +676,23 @@ char	**argv;
 }
 #endif /* TEST */
 #endif /* BUFFERED_INPUT */
+
+#if defined (AOK_NATIVE_FORK) && defined (BUFFERED_INPUT)
+/* iSH-AOK: the buffered-input state that must not carry into the next bash.
+   See shell_reinitialize (shell.c) and docs/bash_native_reentry.md.
+
+   The slots are dropped but the ARRAY is kept: free_buffered_stream writes
+   buffers[n] unconditionally and would fault on a null table. Freeing the
+   entries instead is what looks tidier and is wrong -- a B_SHAREDBUF entry
+   aliases another stream's b_buffer, which is where the double free would come
+   from. */
+void
+aok_reinit_input ()
+{
+  int i;
+
+  for (i = 0; i < nbuffers; i++)
+    buffers[i] = (BUFFERED_STREAM *)NULL;
+  local_index = local_bufused = 0;
+}
+#endif

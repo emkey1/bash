@@ -1233,6 +1233,13 @@ bash_tilde_expand (s, assign_p)
 
 static int ngroups, maxgroups;
 
+/* get_group_list and get_group_array cached these in function statics. They are
+   at file scope so that iSH-AOK's aok_reinit_groups (at the end of this file)
+   can drop them along with group_array; nothing else changes, since a function
+   static and a file static have the same lifetime and both are private here. */
+static char **group_vector = (char **)NULL;
+static int *group_iarray = (int *)NULL;
+
 /* The set of groups that this user is a member of. */
 static GETGROUPS_T *group_array = (GETGROUPS_T *)NULL;
 
@@ -1330,7 +1337,6 @@ char **
 get_group_list (ngp)
      int *ngp;
 {
-  static char **group_vector = (char **)NULL;
   register int i;
 
   if (group_vector)
@@ -1364,7 +1370,6 @@ get_group_array (ngp)
      int *ngp;
 {
   int i;
-  static int *group_iarray = (int *)NULL;
 
   if (group_iarray)
     {
@@ -1449,3 +1454,25 @@ default_columns ()
 }
 
   
+
+
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: forget the cached group list between bash invocations.
+
+   This one is specific to being a native program rather than a process: a
+   native bash is a function call, so the SECOND invocation can be running as a
+   different user than the first (su in the guest), and group_member feeds the
+   permission logic in test.c and sh_eaccess. See docs/bash_native_reentry.md.
+
+   Dropped, never freed: get_groupset hands the same pointer back forever and
+   its own static still refers to it. One small array per invocation, against
+   giving a shell the wrong $GROUPS. */
+void
+aok_reinit_groups ()
+{
+  ngroups = 0;
+  group_array = (GETGROUPS_T *)NULL;
+  group_vector = (char **)NULL;
+  group_iarray = (int *)NULL;
+}
+#endif

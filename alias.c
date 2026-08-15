@@ -592,3 +592,19 @@ alias_expand (string)
 }
 #endif /* READLINE */
 #endif /* ALIAS */
+
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: drop the alias table between bash invocations. See
+   docs/bash_native_reentry.md.
+
+   DROPPED, not deleted: delete_all_aliases would be the tidy call, and
+   free_alias_data calls clear_string_list_expander for any entry still flagged
+   AL_BEINGEXPANDED -- which walks the parser's pushed_string_list, a stale
+   global from the shell that has gone. A dropped table leaks a few hundred
+   bytes; the freeing path walks a dangling chain. */
+void
+aok_reinit_aliases ()
+{
+  aliases = (HASH_TABLE *)NULL;
+}
+#endif

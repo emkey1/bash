@@ -78,6 +78,14 @@ extern void aok_reinit_jobs PARAMS((void));
 extern void aok_reinit_subst PARAMS((void));
 extern void aok_reinit_execute PARAMS((void));
 extern void aok_reinit_signals PARAMS((void));
+extern void aok_reinit_variables PARAMS((void));
+extern void aok_reinit_parser PARAMS((void));
+extern void aok_reinit_input PARAMS((void));
+extern void aok_reinit_aliases PARAMS((void));
+extern void aok_reinit_execignore PARAMS((void));
+extern void aok_reinit_groups PARAMS((void));
+extern void aok_reinit_history PARAMS((void));
+extern void aok_reinit_fignore PARAMS((void));
 
 #endif /* AOK_NATIVE_FORK */
 

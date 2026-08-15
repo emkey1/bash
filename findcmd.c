@@ -694,3 +694,19 @@ find_in_path (name, path_list, flags)
 {
   return (find_user_command_in_path (name, path_list, flags, (int *)0));
 }
+
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: forget EXECIGNORE's compiled patterns between bash invocations.
+   See docs/bash_native_reentry.md.
+
+   All three fields together, and that is not tidiness: setup_ignore_patterns
+   returns early when this_ignoreval and last_ignoreval are both NULL, so
+   clearing only last_ignoreval leaves the previous shell's patterns armed. */
+void
+aok_reinit_execignore ()
+{
+  execignore.ignores = (struct ign *)0;
+  execignore.num_ignores = 0;
+  execignore.last_ignoreval = (char *)0;
+}
+#endif

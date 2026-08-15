@@ -1077,3 +1077,23 @@ history_should_ignore (line)
   return match;
 }
 #endif /* HISTORY */
+
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: the history state that must not carry into the next bash. See
+   docs/bash_native_reentry.md.
+
+   bash_clear_history clears readline's list and this file's session counter
+   together, which is the point: neither is cleared on re-entry, so a stale
+   count over a stale list makes the second shell append the first shell's
+   lines to ~/.bash_history a second time. HISTIGNORE's compiled patterns need
+   all three fields at once, for the same early-return reason as EXECIGNORE. */
+void
+aok_reinit_history ()
+{
+  bash_clear_history ();
+  history_lines_in_file = 0;
+  histignore.ignores = (struct ign *)0;
+  histignore.num_ignores = 0;
+  histignore.last_ignoreval = (char *)0;
+}
+#endif
