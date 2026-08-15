@@ -489,6 +489,32 @@ restore_sigmask ()
 
 static int handling_termsig = 0;
 
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: the signal latches, which are the cheapest of these to get wrong
+   and among the most reachable. See the block in shell_reinitialize.
+
+   handling_termsig is the one that bites without any exotic input: it is set
+   on the way into termsig_handler and stays set, so a first shell that took a
+   SIGPIPE from something as ordinary as `yes | head -1` leaves every later
+   shell in this process permanently believing it is already dying, and
+   termsig_sighandler then returns without acting. wait_signal_received and
+   wait_intr_flag go together -- one without the other leaves `wait` reporting
+   an interruption that has no signal behind it. */
+void
+aok_reinit_signals ()
+{
+  extern int wait_signal_received;
+  extern int wait_intr_flag;
+
+  interrupt_state = 0;
+  sigterm_received = 0;
+  terminating_signal = 0;
+  handling_termsig = 0;
+  wait_signal_received = 0;
+  wait_intr_flag = 0;
+}
+#endif
+
 sighandler
 termsig_sighandler (sig)
      int sig;

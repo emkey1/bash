@@ -2115,6 +2115,46 @@ list_all_jobs (format)
 }
 
 #if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: everything in this file that a fresh bash must not inherit from the
+   last one. Called from shell_reinitialize; see the block there, and
+   docs/bash_native_reentry.md in the iSH-AOK tree for the audit this came from.
+   It lives here rather than in shell.c because half of it is static.
+
+   Where ownership is ambiguous the pointer is DROPPED rather than freed. A leak
+   of one object per bash invocation is far cheaper than freeing something the
+   previous shell already released, which is a crash that takes the whole app
+   with it -- the precedent set by export_env. bash's own helpers do the work
+   wherever it has one, because a second implementation obliged to agree with
+   the first is exactly what eventually stops agreeing. */
+void
+aok_reinit_jobs ()
+{
+  stop_making_children ();	/* already_making_children */
+  bgp_clear ();			/* bgpids, and pidstat_table via bgp_resize */
+  init_job_stats ();		/* js = zerojs */
+
+  /* jobs and js MUST move together: js.j_jobslots is the only guard on every
+     jobs[] access, so a null array with a stale slot count is a read through
+     nothing, and a live array with a zeroed count is merely a leak. */
+  jobs = (JOB **)NULL;
+
+  the_pipeline = (PROCESS *)NULL;
+  pipeline_pgrp = (pid_t)0;
+  last_made_pid = NO_PID;
+  last_asynchronous_pid = NO_PID;
+
+  /* Dropped, not procsub_clear()'d: the PROCESS chain belongs to a shell that
+     has already gone. */
+  procsubs.head = procsubs.end = (PROCESS *)NULL;
+  procsubs.nproc = 0;
+
+  /* A stale count makes the next shell's first blocking wait return before its
+     child has run. bash zeroes exactly these on its own longjmp cleanup path,
+     wait_sigint_cleanup, which is the precedent. */
+  sigchld = 0;
+  queue_sigchld = 0;
+}
+
 /* The parent-side bookkeeping make_child does, for a child that was SPAWNED
    rather than forked (aok_fork.c's aok_spawn_disk_command). Kept here beside
    make_child so the two cannot drift, and doing exactly what its parent branch

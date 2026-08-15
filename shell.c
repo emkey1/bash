@@ -69,6 +69,8 @@ extern int get_tty_state PARAMS((void));
 #include "input.h"
 #include "execute_cmd.h"
 #include "findcmd.h"
+#include "unwind_prot.h"
+#include "aok_fork.h"
 
 #if defined (USING_BASH_MALLOC) && defined (DEBUG) && !defined (DISABLE_MALLOC_WRAPPERS)
 #  include <malloc/shmalloc.h>
@@ -2067,8 +2069,28 @@ shell_reinitialize ()
  
      Dropped rather than freed, deliberately: after delete_all_variables above
      there is no way to tell which of those elements are still live, and a leak
-     of one array per bash invocation is the cheaper mistake by a wide margin. */
+     of one array per bash invocation is the cheaper mistake by a wide margin.
+
+     The rest is the same problem in four other files, from the audit in
+     docs/bash_native_reentry.md: the job table and the signal latches are the
+     two that reach an ordinary session. Each lives beside the statics it
+     resets, because most of them are static, and each prefers bash's own
+     helper -- stop_making_children, bgp_clear, init_job_stats, clear_fifo_list,
+     setifs, coproc_init -- over a second implementation of the same reset.
+
+     This is NOT the answer to two bash instances running at once. Nothing here
+     is: they would share these same globals while both were live, and a second
+     shell calling this would be resetting the first shell's world rather than
+     its own. kernel/bash_glue.c is where that case is dealt with. */
   aok_reset_export_env ();
+  aok_reinit_jobs ();
+  aok_reinit_subst ();
+  aok_reinit_execute ();
+  aok_reinit_signals ();
+  /* unwind_prot.c's list, through the flags == 0 path, which drops the head
+     without running or freeing anything -- the elements belong to stack frames
+     that no longer exist. */
+  clear_unwind_protect_list (0);
 #endif
 
 #if defined (READLINE)

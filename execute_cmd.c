@@ -2040,6 +2040,35 @@ coproc_init (cp)
   cp->c_flags = cp->c_status = cp->c_lock = 0;
 }
 
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: what this file must not carry from one bash invocation into the
+   next. See the block in shell_reinitialize, and jobs.c's aok_reinit_jobs for
+   the reasoning and for why these live beside the statics they reset.
+
+   Every pointer here is DROPPED rather than freed, and each for its own reason:
+   the fd_bitmap belongs to the stack frame that lent it; the command tree
+   belongs to reader_loop; and the two redirection lists must specifically NOT
+   be replayed through undo_partial_redirects, because that would apply a dead
+   shell's descriptor moves to this one. coproc_init is bash's own helper and
+   already drops rather than frees or closes. */
+void
+aok_reinit_execute ()
+{
+  current_fds_to_close = (struct fd_bitmap *)NULL;
+  currently_executing_command = (COMMAND *)NULL;
+  redirection_undo_list = (REDIRECT *)NULL;
+  exec_redirection_undo_list = (REDIRECT *)NULL;
+  the_printed_command_except_trap = (char *)NULL;
+
+  /* Exactly what bash's own initialize_subshell does with these. The jmp_buf
+     they guard needs nothing: it is never read while the flag is 0. */
+  return_catch_flag = 0;
+  return_catch_value = 0;
+
+  coproc_init (&sh_coproc);
+}
+#endif
+
 struct coproc *
 coproc_alloc (name, pid)
      char *name;

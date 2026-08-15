@@ -10947,6 +10947,27 @@ invalidate_cached_quoted_dollar_at ()
   cached_quoted_dollar_at = 0;
 }
 
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: what this file must not carry from one bash invocation into the
+   next. See the block in shell_reinitialize, and jobs.c's aok_reinit_jobs for
+   why these live beside the statics they reset rather than in shell.c.
+
+   All three are bash's own helpers. Freeing is right for the cached $@ -- the
+   list is a private deep copy nothing else points into -- and wrong for the
+   other two: clear_fifo_list zeroes the marks WITHOUT closing the descriptors,
+   which is what upstream does when a subshell inherits the list, and setifs
+   re-derives ifs_value, ifs_cmap and the rest from a variable table that
+   shell_reinitialize has just emptied. Neither ifs_var nor ifs_value is owned
+   here. */
+void
+aok_reinit_subst ()
+{
+  invalidate_cached_quoted_dollar_at ();
+  clear_fifo_list ();
+  setifs ((SHELL_VAR *)NULL);
+}
+#endif
+
 /* Make a word list which is the result of parameter and variable
    expansion, command substitution, arithmetic substitution, and
    quote removal of WORD.  Return a pointer to a WORD_LIST which is

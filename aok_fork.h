@@ -60,6 +60,16 @@ extern int aok_report_notfound PARAMS((char *, REDIRECT *, int, int));
 /* What a failed aok_spawn_disk_command would have exited with. */
 extern int aok_spawn_status;
 
+/* Re-entry. bash is a function here, called again for each `bash`, so every
+   global holds what the last invocation left in it; these put the four files
+   with state that outlives a shell back to where a fresh process would be.
+   Called from shell_reinitialize -- see the block there, and
+   docs/bash_native_reentry.md for the audit. */
+extern void aok_reinit_jobs PARAMS((void));
+extern void aok_reinit_subst PARAMS((void));
+extern void aok_reinit_execute PARAMS((void));
+extern void aok_reinit_signals PARAMS((void));
+
 #endif /* AOK_NATIVE_FORK */
 
 #endif /* _AOK_FORK_H_ */
