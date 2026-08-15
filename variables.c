@@ -5105,6 +5105,20 @@ chkexport (name)
   return 0;
 }
 
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: forget the exported-environment array without touching it.
+   See the comment at the call site in shell.c's shell_reinitialize. The index
+   and size are static here, which is why this lives in this file rather than
+   there. */
+void
+aok_reset_export_env ()
+{
+  export_env = (char **)NULL;
+  export_env_index = 0;
+  export_env_size = 0;
+}
+#endif
+
 void
 maybe_make_export_env ()
 {

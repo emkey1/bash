@@ -243,6 +243,9 @@ extern HASH_TABLE *temporary_env;
 extern int variable_context;
 extern char *dollar_vars[];
 extern char **export_env;
+#if defined (AOK_NATIVE_FORK)
+extern void aok_reset_export_env PARAMS((void));
+#endif
 
 extern int tempenv_assign_error;
 extern int array_needs_making;

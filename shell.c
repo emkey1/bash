@@ -2049,6 +2049,28 @@ shell_reinitialize ()
 
   reinit_special_variables ();
 
+#if defined (AOK_NATIVE_FORK)
+  /* iSH-AOK: bash runs more than once in one process here -- it is a native
+     program, a function in the emulator's process, so every global survives
+     into the next invocation. shell_reinitialize is bash's own "reset the
+     world back to a pristine state, as if we had been exec'ed", and it is the
+     right place for what that costs us.
+ 
+     export_env is the one that aborts the whole app. maybe_make_export_env
+     opens with `if (export_env) strvec_flush (export_env)`, and its elements
+     are BORROWED from the variable table rather than owned
+     (add_or_supercede_exported_var with do_alloc == 0). A second bash inherits
+     the first's array, flushes it, and frees pointers into memory the first
+     bash already released -- "pointer being freed was not allocated", SIGABRT,
+     and the app goes down with it. That is what booted an ssh session before a
+     prompt ever appeared.
+ 
+     Dropped rather than freed, deliberately: after delete_all_variables above
+     there is no way to tell which of those elements are still live, and a leak
+     of one array per bash invocation is the cheaper mistake by a wide margin. */
+  aok_reset_export_env ();
+#endif
+
 #if defined (READLINE)
   bashline_reinitialize ();
 #endif
