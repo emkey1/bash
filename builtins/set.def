@@ -276,6 +276,32 @@ minus_o_option_value (name)
     return (GET_BINARY_O_OPTION_VALUE (i, name));
 }
 
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: the Ith `set -o` option and whether it is on, or -1 past the end.
+   The counterpart of aok_shopt_state in shopt.def, and there for the same
+   reason: a re-launched subshell (aok_fork.c) starts with the default options
+   and has to be told the parent's. Walking the table by index rather than
+   exporting it keeps the option list in the one file that defines it. */
+int
+aok_minus_o_state (i, namep)
+     int i;
+     char **namep;
+{
+  int *on_or_off, value;
+
+  if (i < 0 || i >= (int) N_O_OPTIONS || o_options[i].name == 0)
+    return -1;
+  *namep = o_options[i].name;
+  if (o_options[i].letter)
+    {
+      on_or_off = find_flag (o_options[i].letter);
+      return (on_or_off == FLAG_UNKNOWN) ? 0 : (*on_or_off ? 1 : 0);
+    }
+  value = GET_BINARY_O_OPTION_VALUE (i, o_options[i].name);
+  return value ? 1 : 0;
+}
+#endif
+
 #define MINUS_O_FORMAT "%-15s\t%s\n"
 
 static void

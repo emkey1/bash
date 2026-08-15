@@ -42,6 +42,7 @@
 #include <sys/wait.h>
 
 #include "bashansi.h"
+#include "bashintl.h"
 #include "shell.h"
 #include "variables.h"
 #include "array.h"
@@ -53,6 +54,9 @@
 #include "redir.h"
 extern REDIRECT *redirection_undo_list;
 #include "flags.h"
+#include "trap.h"
+#include "typemax.h"
+#include "aok_fork.h"
 
 /* sh_single_quote, ansic_quote, ansic_shouldquote and named_function_string
    all come from externs.h, which shell.h includes. Re-declaring them here was
@@ -280,6 +284,169 @@ aok_emit_function (buf, var)
   return 0;
 }
 
+/* One quoted word, in bash's own quoting so the child reads back this exact
+   string. Used for positional parameters and trap bodies. */
+static int
+aok_emit_quoted (buf, value)
+     aok_buf *buf;
+     char *value;
+{
+  char *quoted;
+  int rc;
+
+  if (value == 0)
+    value = "";
+  if (ansic_shouldquote (value))
+    quoted = ansic_quote (value, 0, (int *) 0);
+  else
+    quoted = sh_single_quote (value);
+  rc = aok_buf_str (buf, quoted ? quoted : "''");
+  FREE (quoted);
+  return rc;
+}
+
+/* `set -- ...`, so $1, $@ and $# survive.
+
+   This is not a nicety. Command substitution hands the child the UNEXPANDED
+   text between the parentheses, so a `$(f $1)` -- or the recursive
+   `$(fact $(( $1 - 1 )))` that found this -- expands its parameters in the
+   CHILD. Without them the child expands nothing, and the answer is wrong
+   rather than absent. */
+static int
+aok_emit_positional (buf)
+     aok_buf *buf;
+{
+  WORD_LIST *l;
+  int i;
+
+  if (aok_buf_str (buf, "set --") < 0)
+    return -1;
+  /* $1..$9 live in dollar_vars; anything beyond is in rest_of_args. */
+  for (i = 1; i < 10 && dollar_vars[i]; i++)
+    if (aok_buf_str (buf, " ") < 0 || aok_emit_quoted (buf, dollar_vars[i]) < 0)
+      return -1;
+  for (l = rest_of_args; l; l = l->next)
+    if (aok_buf_str (buf, " ") < 0 || aok_emit_quoted (buf, l->word->word) < 0)
+      return -1;
+  return aok_buf_str (buf, "\n");
+}
+
+/* `command_not_found_handle 'word' ...`, for the spawn path in
+   execute_disk_command to hand to a re-launched shell. Malloc'd, caller frees.
+
+   The words are already expanded, so they are quoted rather than re-printed:
+   what the handler must see is the arguments the shell computed, not the text
+   they came from. */
+char *
+aok_notfound_command (words)
+     WORD_LIST *words;
+{
+  aok_buf buf;
+  WORD_LIST *l;
+
+  buf.s = 0; buf.len = 0; buf.cap = 0;
+  if (aok_buf_str (&buf, "command_not_found_handle") < 0)
+    goto fail;
+  for (l = words; l; l = l->next)
+    if (aok_buf_str (&buf, " ") < 0 || aok_emit_quoted (&buf, l->word->word) < 0)
+      goto fail;
+  return buf.s;
+
+fail:
+  FREE (buf.s);
+  return (char *) 0;
+}
+
+/* `set -o` and `shopt`. A subshell inherits every one of these, and a shell
+   started afresh has the defaults instead, so they have to be said out loud.
+
+   Four are deliberately never emitted, and the reason is that this child is a
+   whole shell rather than a copy of one in mid-flight:
+
+     errexit    handled at the end of the state instead -- a `declare` of
+		something the child dislikes must not abort the state itself.
+     noexec     `set -n` means "parse but do not run", which for a child whose
+		entire purpose is to run one command means it silently does
+		nothing. bash reaches this state only while syntax-checking a
+		script, where no subshell should be running anyway.
+     onecmd     `set -t` means "exit after one command", and the state script
+		is many commands, so the child would exit before reaching the
+		one it was started for.
+     restricted `set -r` cannot be turned off once on, and would refuse the
+		child's own `cd`, redirections and PATH-qualified commands.
+
+   monitor is emitted like any other: the child is a real task with a real
+   process group, so job control means the same thing there. */
+static int
+aok_emit_options (buf)
+     aok_buf *buf;
+{
+  extern int aok_minus_o_state PARAMS((int, char **));
+  extern int aok_shopt_state PARAMS((int, char **));
+  char *name;
+  int i, on;
+
+  for (i = 0; (on = aok_minus_o_state (i, &name)) >= 0; i++)
+    {
+      if (STREQ (name, "errexit") || STREQ (name, "noexec") ||
+	  STREQ (name, "onecmd") || STREQ (name, "restricted"))
+	continue;
+      if (aok_buf_str (buf, on ? "set -o " : "set +o ") < 0 ||
+	  aok_buf_str (buf, name) < 0 ||
+	  aok_buf_str (buf, " 2>/dev/null\n") < 0)
+	return -1;
+    }
+
+  for (i = 0; (on = aok_shopt_state (i, &name)) >= 0; i++)
+    if (aok_buf_str (buf, on ? "shopt -s " : "shopt -u ") < 0 ||
+	aok_buf_str (buf, name) < 0 ||
+	aok_buf_str (buf, " 2>/dev/null\n") < 0)
+      return -1;
+
+  return 0;
+}
+
+/* The traps. A subshell inherits them -- including the EXIT trap, which it
+   runs on its own way out -- and so does a command substitution.
+
+   Signals the parent is IGNORING cross as `trap '' SIG`, which is not the same
+   as having no trap: an ignored signal stays ignored across exec, and a child
+   that reset it to default would die where the parent would not. */
+static int
+aok_emit_traps (buf)
+     aok_buf *buf;
+{
+  int sig;
+
+  /* The same three cases builtins/trap.def's showtrap distinguishes, so that
+     what crosses is what `trap -p` would have printed. DEFAULT_SIG and
+     IMPOSSIBLE_TRAP_HANDLER are sentinel POINTERS stored in trap_list, not
+     strings, and must never reach the quoter. */
+  for (sig = 0; sig < BASH_NSIG; sig++)
+    {
+      char *name, *body;
+
+      body = trap_list[sig];
+      if (body == (char *) IMPOSSIBLE_TRAP_HANDLER)
+	continue;
+      if (body == (char *) DEFAULT_SIG && signal_is_hard_ignored (sig) == 0)
+	continue;
+      if (body == (char *) IGNORE_SIG || signal_is_hard_ignored (sig))
+	body = "";
+
+      name = signal_name (sig);
+      if (name == 0 || STREQN (name, "SIGJUNK", 7) || STREQN (name, "unknown", 7))
+	continue;
+      if (aok_buf_str (buf, "trap ") < 0 ||
+	  aok_emit_quoted (buf, body) < 0 ||
+	  aok_buf_str (buf, " ") < 0 ||
+	  aok_buf_str (buf, name) < 0 ||
+	  aok_buf_str (buf, " 2>/dev/null\n") < 0)
+	return -1;
+    }
+  return 0;
+}
+
 /* The shell state a subshell would have inherited, as a script that recreates
    it. Returns a malloc'd string, or 0. */
 char *
@@ -291,11 +458,9 @@ aok_serialize_state ()
 
   buf.s = 0; buf.len = 0; buf.cap = 0;
 
-  /* set -e, -u and the rest. A subshell inherits them, and losing them would
-     change whether the command stops on an error. Emitted FIRST so that
-     everything after it is subject to the same options the parent had --
-     except errexit, which is deliberately deferred to the end: a `declare` of
-     something odd must not abort the state itself. */
+  /* errexit off while the state is being restored: a `declare` the child
+     dislikes must not abort the state before the command it was started for
+     has run. Restored at the end, along with the parent's own setting. */
   if (aok_buf_str (&buf, "set +e\n") < 0)
     goto fail;
 
@@ -320,11 +485,29 @@ aok_serialize_state ()
       free (vars);
     }
 
-  /* Now the options, including errexit if the parent had it. */
+  if (aok_emit_positional (&buf) < 0)
+    goto fail;
+  if (aok_emit_traps (&buf) < 0)
+    goto fail;
+
+  /* The options last, so that everything above ran under the permissive ones
+     -- nounset in particular would turn a variable the child has not yet been
+     given into a fatal error partway through being given it. */
+  if (aok_emit_options (&buf) < 0)
+    goto fail;
   if (aok_buf_str (&buf, exit_immediately_on_error ? "set -e\n" : "") < 0)
     goto fail;
-  if (aok_buf_str (&buf, unbound_vars_is_error ? "set -u\n" : "") < 0)
-    goto fail;
+
+  /* $? last of all, since every line above sets it. `(exit N)` is how a shell
+     script says this, and it is emitted only when there is something to say --
+     the child's $? is already 0 from the state itself. */
+  if (last_command_exit_value != 0)
+    {
+      char status[INT_STRLEN_BOUND (int) + 8];
+      sprintf (status, "(exit %d)\n", last_command_exit_value);
+      if (aok_buf_str (&buf, status) < 0)
+	goto fail;
+    }
 
   return buf.s;
 
@@ -334,6 +517,54 @@ fail:
 }
 
 /* ------------------------------------------------------------- the re-launch */
+
+/* This shell's state followed by COMMAND, as one script for `bash -c`.
+   Malloc'd, caller frees; 0 on failure.
+
+   COMMAND IS COPIED FIRST, and that ordering is load-bearing rather than
+   tidiness. Most callers pass a pointer into the_printed_command -- bash's ONE
+   static command-printing buffer, which make_command_string returns without
+   copying -- and aok_serialize_state prints every shell function through
+   named_function_string, which writes to that same buffer.
+
+   Serialising first therefore replaced the command with the text of the last
+   function defined, so a shell that had defined any function at all ran that
+   definition in place of its subshell: no output, exit status 0, and no error
+   anywhere. Command substitution was unaffected, because the string it passes
+   comes from the parser rather than the printer -- which is what made this look
+   like a subshell-only fault for as long as it did. One helper for both paths,
+   so there is one place for this to be right. */
+static char *
+aok_build_script (command)
+     char *command;
+{
+  char *state, *cmd, *script;
+  size_t state_len, cmd_len;
+
+  cmd_len = command ? strlen (command) : 0;
+  cmd = (char *) malloc (cmd_len + 1);
+  if (cmd == 0)
+    return (char *) 0;
+  memcpy (cmd, command ? command : "", cmd_len);
+  cmd[cmd_len] = '\0';
+
+  state = aok_serialize_state ();
+  if (state == 0)
+    { free (cmd); return (char *) 0; }
+
+  state_len = strlen (state);
+  script = (char *) malloc (state_len + cmd_len + 2);
+  if (script)
+    {
+      memcpy (script, state, state_len);
+      script[state_len] = '\n';
+      memcpy (script + state_len + 1, cmd, cmd_len);
+      script[state_len + 1 + cmd_len] = '\0';
+    }
+  free (state);
+  free (cmd);
+  return script;
+}
 
 /* Run COMMAND in a subshell carrying this shell's state, collecting its
    standard output. Returns the output (malloc'd, caller frees) and stores the
@@ -352,31 +583,20 @@ aok_run_in_subshell (command, status_out)
      char *command;
      int *status_out;
 {
-  char *state, *script, *argv[4], *out;
+  char *script, *argv[5], *out;
   int out_pipe[2];
   void *fa;
   pid_t pid;
-  size_t out_len, out_cap, state_len, cmd_len;
+  size_t out_len, out_cap;
   ssize_t n;
   int err, status;
 
   if (status_out)
     *status_out = 0;
 
-  state = aok_serialize_state ();
-  if (state == 0)
-    return (char *) 0;
-
-  state_len = strlen (state);
-  cmd_len = command ? strlen (command) : 0;
-  script = (char *) malloc (state_len + cmd_len + 2);
+  script = aok_build_script (command);
   if (script == 0)
-    { free (state); return (char *) 0; }
-  memcpy (script, state, state_len);
-  script[state_len] = '\n';
-  memcpy (script + state_len + 1, command ? command : "", cmd_len);
-  script[state_len + 1 + cmd_len] = '\0';
-  free (state);
+    return (char *) 0;
 
   if (pipe (out_pipe) < 0)
     { free (script); return (char *) 0; }
@@ -393,7 +613,13 @@ aok_run_in_subshell (command, status_out)
   argv[0] = "bash";
   argv[1] = "-c";
   argv[2] = script;
-  argv[3] = (char *) 0;
+  /* $0. `bash -c script name` names the child, and a subshell keeps the
+     parent's $0 -- without this every re-launch would report itself as "bash"
+     in an error message or a usage string. The positional parameters do NOT
+     come from here; the state script sets them, so that $1 and $@ survive
+     quoting exactly as the parent had them. */
+  argv[3] = dollar_vars[0] ? dollar_vars[0] : "bash";
+  argv[4] = (char *) 0;
   err = posix_spawn (&pid, AOK_SUBSHELL_BASH, &fa, (void **) 0,
 		     argv, (char **) 0);
   posix_spawn_file_actions_destroy (&fa);
@@ -467,34 +693,47 @@ int aok_fork_pipe_in = -1;
 int aok_fork_pipe_out = -1;
 char *aok_fork_cmdtext = 0;
 
+/* Descriptors the forked child would have closed for itself before running.
+   A fork gives the child its own copy of every descriptor and the child throws
+   away the ones that belong to the other end of its pipes; a spawn has no such
+   moment, so the closes have to be described to it in advance. Set beside
+   aok_fork_cmdtext at the call site, and cleared by the same code that clears
+   that -- an fd number left behind here would be applied to an unrelated
+   descriptor on the next spawn, which is the kind of bug that surfaces
+   somewhere else entirely. */
+int aok_fork_close_fds[AOK_FORK_MAX_CLOSE];
+int aok_fork_nclose = 0;
+
+/* What a failed aok_spawn_disk_command would have exited with -- 126 or 127.
+   Set there because the diagnosis has to happen while the command's own
+   redirections are still applied, and read by the caller, which is the one
+   with somewhere to put an exit status. */
+int aok_spawn_status = 0;
+
+void
+aok_fork_clear ()
+{
+  aok_fork_cmdtext = 0;
+  aok_fork_pipe_in = aok_fork_pipe_out = NO_PIPE;
+  aok_fork_nclose = 0;
+}
+
 pid_t
 aok_spawn_command (cmdtext, pipe_in, pipe_out)
      char *cmdtext;
      int pipe_in, pipe_out;
 {
-  char *state, *script, *argv[4];
+  char *script, *argv[5];
   void *fa;
   pid_t pid;
-  size_t state_len, cmd_len;
-  int err;
+  int err, i;
 
   if (cmdtext == 0)
     { errno = ENOSYS; return (pid_t) -1; }
 
-  state = aok_serialize_state ();
-  if (state == 0)
-    return (pid_t) -1;
-
-  state_len = strlen (state);
-  cmd_len = strlen (cmdtext);
-  script = (char *) malloc (state_len + cmd_len + 2);
+  script = aok_build_script (cmdtext);
   if (script == 0)
-    { free (state); return (pid_t) -1; }
-  memcpy (script, state, state_len);
-  script[state_len] = '\n';
-  memcpy (script + state_len + 1, cmdtext, cmd_len);
-  script[state_len + 1 + cmd_len] = '\0';
-  free (state);
+    return (pid_t) -1;
 
   if (posix_spawn_file_actions_init (&fa) != 0)
     { free (script); return (pid_t) -1; }
@@ -518,11 +757,20 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
       /* `|&`: stderr joins stdout. */
       posix_spawn_file_actions_adddup2 (&fa, 1, 2);
     }
+  for (i = 0; i < aok_fork_nclose; i++)
+    if (aok_fork_close_fds[i] >= 0)
+      posix_spawn_file_actions_addclose (&fa, aok_fork_close_fds[i]);
 
   argv[0] = "bash";
   argv[1] = "-c";
   argv[2] = script;
-  argv[3] = (char *) 0;
+  /* $0. `bash -c script name` names the child, and a subshell keeps the
+     parent's $0 -- without this every re-launch would report itself as "bash"
+     in an error message or a usage string. The positional parameters do NOT
+     come from here; the state script sets them, so that $1 and $@ survive
+     quoting exactly as the parent had them. */
+  argv[3] = dollar_vars[0] ? dollar_vars[0] : "bash";
+  argv[4] = (char *) 0;
   err = posix_spawn (&pid, AOK_SUBSHELL_BASH, &fa, (void **) 0,
 		     argv, (char **) 0);
   posix_spawn_file_actions_destroy (&fa);
@@ -553,19 +801,23 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
    CMD_NO_FORK for the last command and execs in place, so this path is never
    taken -- which is exactly why `bash -c` worked throughout while typing `id`
    at a prompt reported "fork: Function not implemented". */
-pid_t
-aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
-     char *command;
-     char **args;
-     char **env;
+/* Build the descriptor view the forked child would have built for itself --
+   the pipes, then the redirections -- keeping the shell's own stdin, stdout
+   and stderr in SAVED. Returns 0, or -1 with the view already restored.
+
+   Split out because it has a second caller: a command that could not be
+   started reports why, and that message is the child's output, so it belongs
+   inside this window. `nosuchcommand 2>/dev/null` must be silent, and it was
+   not while the message was printed after the descriptors were put back. */
+static int
+aok_redirect_push (redirects, pipe_in, pipe_out, saved)
      REDIRECT *redirects;
      int pipe_in, pipe_out;
+     int *saved;
 {
-  int saved[3], i, err;
-  pid_t pid;
+  int i;
 
-  /* The standard three, kept out of the way while the child's view is built.
-     F_DUPFD_CLOEXEC so the copies do not reach the child. */
+  /* F_DUPFD_CLOEXEC so the copies do not reach the child. */
   for (i = 0; i < 3; i++)
     saved[i] = fcntl (i, F_DUPFD_CLOEXEC, 10);
 
@@ -580,16 +832,20 @@ aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
     {
       for (i = 0; i < 3; i++)
 	if (saved[i] >= 0) { dup2 (saved[i], i); close (saved[i]); }
-      errno = EIO;
-      return (pid_t) -1;
+      return -1;
     }
+  return 0;
+}
 
-  err = posix_spawn (&pid, command, (void *) 0, (void **) 0, args,
-		     env ? env : (char **) 0);
+/* bash's own undo: do_redirections with RX_UNDOABLE builds
+   redirection_undo_list, and replaying it restores what was there. This is the
+   same pair execute_cmd.c's cleanup_redirects uses for a builtin. */
+static void
+aok_redirect_pop (saved)
+     int *saved;
+{
+  int i;
 
-  /* bash's own undo: do_redirections with RX_UNDOABLE builds
-     redirection_undo_list, and replaying it restores what was there. This is
-     the same pair execute_cmd.c's cleanup_redirects uses for a builtin. */
   if (redirection_undo_list)
     {
       do_redirections (redirection_undo_list, RX_ACTIVE);
@@ -598,6 +854,79 @@ aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
     }
   for (i = 0; i < 3; i++)
     if (saved[i] >= 0) { dup2 (saved[i], i); close (saved[i]); }
+}
+
+/* "NAME: command not found", 127, with the descriptors the command itself
+   would have had -- so `nosuchcommand 2>/dev/null` is silent, as it is when a
+   forked child prints this after applying its own redirections. */
+int
+aok_report_notfound (name, redirects, pipe_in, pipe_out)
+     char *name;
+     REDIRECT *redirects;
+     int pipe_in, pipe_out;
+{
+  int saved[3];
+
+  if (aok_redirect_push (redirects, pipe_in, pipe_out, saved) < 0)
+    return EXECUTION_FAILURE;
+  internal_error (_("%s: command not found"), name);
+  aok_redirect_pop (saved);
+  return EX_NOTFOUND;
+}
+
+pid_t
+aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
+     char *command;
+     char **args;
+     char **env;
+     REDIRECT *redirects;
+     int pipe_in, pipe_out;
+{
+  int saved[3], i, err;
+  pid_t pid;
+
+  if (aok_redirect_push (redirects, pipe_in, pipe_out, saved) < 0)
+    { errno = EIO; return (pid_t) -1; }
+
+  err = posix_spawn (&pid, command, (void *) 0, (void **) 0, args,
+		     env ? env : (char **) 0);
+
+  /* ENOEXEC is not a failure -- it is how the kernel says "this is a text file
+     with no #!", which POSIX requires a shell to run as a script. Upstream
+     reaches this through shell_execve's execute_shell_script, which re-execs
+     the shell over itself with the script prepended to argv; there is no image
+     to replace here, so it is a second spawn with the same argv behind a
+     shell. Everything else -- the redirections and the saved descriptors --
+     is already in place from the first attempt. */
+  if (err == ENOEXEC)
+    {
+      char **sargs;
+      int n;
+
+      for (n = 0; args && args[n]; n++)
+	;
+      sargs = (char **) malloc ((n + 3) * sizeof (char *));
+      if (sargs)
+	{
+	  sargs[0] = "bash";
+	  sargs[1] = command;
+	  for (i = 1; i < n; i++)
+	    sargs[i + 1] = args[i];
+	  sargs[n + 1] = (char *) 0;
+	  err = posix_spawn (&pid, AOK_SUBSHELL_BASH, (void *) 0, (void **) 0,
+			     sargs, env ? env : (char **) 0);
+	  free (sargs);
+	}
+    }
+
+  /* Reported here rather than by the caller, because here the command's own
+     redirections are still in place and the message is the command's output.
+     The status travels back in aok_spawn_status. */
+  aok_spawn_status = 0;
+  if (err != 0)
+    aok_spawn_status = aok_report_exec_failure (command, err);
+
+  aok_redirect_pop (saved);
 
   if (err != 0)
     { errno = err; return (pid_t) -1; }

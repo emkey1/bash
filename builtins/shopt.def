@@ -846,6 +846,26 @@ shopt_listopt (name, reusable)
   return (sh_chkwrite (EXECUTION_SUCCESS));
 }
 
+#if defined (AOK_NATIVE_FORK)
+/* iSH-AOK: the Ith shopt option and whether it is on, or -1 past the end.
+   aok_fork.c writes the shell's state out as a script for a re-launched shell
+   (see aok_fork.c), and shopt settings have to be part of it -- a subshell
+   inherits them, and a re-launched one starts with the defaults. shopt_vars is
+   static here and should stay that way, so this is the accessor rather than an
+   exported table: an index walk cannot be got wrong the way a second copy of
+   the list would eventually be. */
+int
+aok_shopt_state (i, namep)
+     int i;
+     char **namep;
+{
+  if (i < 0 || i >= (int) N_SHOPT_OPTIONS || shopt_vars[i].name == 0)
+    return -1;
+  *namep = shopt_vars[i].name;
+  return GET_SHOPT_OPTION_VALUE (i) ? 1 : 0;
+}
+#endif
+
 void
 set_bashopts ()
 {

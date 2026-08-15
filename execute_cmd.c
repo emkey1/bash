@@ -72,12 +72,7 @@ extern int errno;
 #include "hashlib.h"
 #include "jobs.h"
 #include "execute_cmd.h"
-#if defined (AOK_NATIVE_FORK)
-extern char *aok_fork_cmdtext;
-extern int aok_fork_pipe_in, aok_fork_pipe_out;
-extern pid_t aok_spawn_disk_command PARAMS((char *, char **, char **, REDIRECT *, int, int));
-extern void aok_register_spawned PARAMS((char *, pid_t, int));
-#endif
+#include "aok_fork.h"
 #include "findcmd.h"
 #include "redir.h"
 #include "trap.h"
@@ -2398,6 +2393,9 @@ execute_coproc (command, pipe_in, pipe_out, fds_to_close)
   Coproc *cp;
   char *tcmd, *p, *name;
   sigset_t set, oset;
+#if defined (AOK_NATIVE_FORK)
+  char *aok_body;
+#endif
 
   /* XXX -- can be removed after changes to handle multiple coprocs */
 #if !MULTIPLE_COPROCS
@@ -2423,6 +2421,21 @@ execute_coproc (command, pipe_in, pipe_out, fds_to_close)
       command->value.Coproc->name = name;
     }
 
+#if defined (AOK_NATIVE_FORK)
+  /* iSH-AOK: what the spawned task must run is the coprocess's BODY. The text
+     make_command_string gives for COMMAND itself is `coproc NAME { ... }`, and
+     handing that to a fresh shell would declare a second coprocess there rather
+     than run anything -- an easy mistake to make, because every other converted
+     site does want the command's own printed form. execute_in_subshell picks
+     value.Coproc->command for the forked child (see user_coproc there); this is
+     the same choice, made a step earlier.
+
+     Copied out at once because make_command_string returns bash's single static
+     print buffer, and tcmd is printed into it next. */
+  command_string_index = 0;
+  aok_body = savestring (make_command_string (command->value.Coproc->command));
+#endif
+
   command_string_index = 0;
   tcmd = make_command_string (command);
 
@@ -2431,7 +2444,26 @@ execute_coproc (command, pipe_in, pipe_out, fds_to_close)
 
   BLOCK_SIGNAL (SIGCHLD, set, oset);
 
+#if defined (AOK_NATIVE_FORK)
+  /* The child's two ends of the two pipes, and the two ends that stay here.
+     A forked child closes rpipe[0] and wpipe[1] as its first act (just below);
+     a spawned one has no such moment, so the closes are described to the spawn.
+     Without them the coprocess holds the parent's ends open and neither side
+     ever reads EOF -- a `read` from a finished coprocess would hang instead of
+     returning failure. */
+  aok_fork_cmdtext = aok_body;
+  aok_fork_pipe_in = wpipe[0];
+  aok_fork_pipe_out = rpipe[1];
+  aok_fork_nclose = 0;
+  aok_fork_close_fds[aok_fork_nclose++] = rpipe[0];
+  aok_fork_close_fds[aok_fork_nclose++] = wpipe[1];
+#endif
+
   coproc_pid = make_child (p = savestring (tcmd), FORK_ASYNC);
+
+#if defined (AOK_NATIVE_FORK)
+  free (aok_body);
+#endif
 
   if (coproc_pid == 0)
     {
@@ -4117,6 +4149,25 @@ execute_null_command (redirects, pipe_in, pipe_out, async)
       /* We have a null command, but we really want a subshell to take
 	 care of it.  Just fork, do piping and redirections, and exit. */
       fork_flags = async ? FORK_ASYNC : 0;
+#if defined (AOK_NATIVE_FORK)
+      /* iSH-AOK: a null command's child exists only to apply the redirections
+	 somewhere the parent shell will not see them -- `{fd}>file` with no
+	 command being the case that gets here, since bash reaches this fork
+	 only when a redirection would otherwise touch the shell's own state.
+	 The re-launch runs the printed command, and a fresh shell applying the
+	 same redirections and exiting is precisely what the fork was for; the
+	 descriptor variable is bound in that shell and discarded with it, as it
+	 would have been.
+
+	 the_printed_command_except_trap is the same text every other converted
+	 site uses. It can be null when nothing was printed, and `:` is the null
+	 command's own name for itself, so the spawn still has something to
+	 run and the redirections still happen. */
+      aok_fork_cmdtext = the_printed_command_except_trap
+			   ? the_printed_command_except_trap : ":";
+      aok_fork_pipe_in = pipe_in;
+      aok_fork_pipe_out = pipe_out;
+#endif
       if (make_child ((char *)NULL, fork_flags) == 0)
 	{
 	  /* Cancel traps, in trap.c. */
@@ -5677,6 +5728,44 @@ execute_disk_command (words, redirects, command_line, pipe_in, pipe_out,
          before that ran handed posix_spawn an uninitialised local -- and the
          failure was the quiet kind: the command exited 0 and produced nothing,
          so `id` looked like it ran and printed an empty line. */
+      /* A command that was not found never reaches a spawn: upstream leaves
+         that to the child, which reports it and exits 127, and there is no
+         child here. Reported from the parent instead, with the same message
+         and the same status.
+
+         command_not_found_handle goes through the re-launch rather than being
+         called here, and that is not fastidiousness: the handler is ordinary
+         shell code that may set variables or call `exit`, and upstream runs it
+         in the child where neither reaches the shell. Running it in a spawned
+         shell keeps that true. */
+      if (command == 0)
+        {
+          hookf = find_function (NOTFOUND_HOOK);
+          if (hookf == 0)
+            {
+              /* Through aok_report_start_failure so the message is subject to
+                 the command's own redirections, as the child's would have
+                 been: `nosuchcommand 2>/dev/null` says nothing. ENOENT is what
+                 the exec would have failed with, and gives 127. */
+              result = last_command_exit_value =
+                aok_report_notfound (printable_filename (pathname, 0),
+                                     redirects, pipe_in, pipe_out);
+              goto parent_return;
+            }
+          aok_fork_cmdtext = aok_notfound_command (words);
+          aok_fork_pipe_in = pipe_in;
+          aok_fork_pipe_out = pipe_out;
+          pid = make_child (p = savestring (command_line), fork_flags);
+          free (aok_fork_cmdtext);
+          aok_fork_clear ();
+          if (pid < 0)
+            {
+              result = last_command_exit_value = EX_NOTFOUND;
+              goto parent_return;
+            }
+          goto parent_return;
+        }
+
       args = strvec_from_word_list (words, 0, 0, (int *)NULL);
       pid = aok_spawn_disk_command (command, args, export_env, redirects,
                                     pipe_in, pipe_out);
@@ -5688,7 +5777,16 @@ execute_disk_command (words, redirects, command_line, pipe_in, pipe_out,
       if (pid > 0)
         aok_register_spawned (p = savestring (command_line), pid, async);
       else
-        p = (char *)NULL;
+        {
+          /* The spawn itself failed, so the exit status has to come from the
+             diagnosis rather than from a child's wait: 127 if the file is not
+             there, 126 if it is and cannot be run. Without this the shell
+             reported success for a command it never started. The message was
+             already printed there, with the command's redirections applied. */
+          result = last_command_exit_value = aok_spawn_status;
+          p = (char *)NULL;
+          goto parent_return;
+        }
 #else
       pid = make_child (p = savestring (command_line), fork_flags);
 #endif
@@ -5984,6 +6082,92 @@ initialize_subshell ()
     } \
   while (0)
       
+/* Why an exec of COMMAND failed with errno I, said the way bash says it, and
+   the exit status that goes with it -- 127 when the file is not there, 126
+   when it is there and cannot be run.
+
+   Split out of shell_execve, whose body this was, so that iSH-AOK's spawn path
+   can report a failure it discovered without an execve of its own: there is no
+   child there to exec in, and calling shell_execve from the parent would exec
+   over the shell itself. ENOEXEC is not handled here, because it does not mean
+   failure -- it means the file is a shell script, and the caller runs it. */
+static int
+report_execve_failure (command, i)
+     char *command;
+     int i;
+{
+  char sample[HASH_BANG_BUFSIZ];
+  int sample_len, fd;	/* fd is READ_SAMPLE_BUF's, not used directly here */
+
+  /* make sure this is set correctly for file_error/report_error */
+  last_command_exit_value = (i == ENOENT) ?  EX_NOTFOUND : EX_NOEXEC; /* XXX Posix.2 says that exit status is 126 */
+  if (file_isdir (command))
+#if defined (EISDIR)
+    internal_error (_("%s: %s"), command, strerror (EISDIR));
+#else
+    internal_error (_("%s: is a directory"), command);
+#endif
+  else if (executable_file (command) == 0)
+    {
+      errno = i;
+      file_error (command);
+    }
+  /* errors not involving the path argument to execve. */
+  else if (i == E2BIG || i == ENOMEM)
+    {
+      errno = i;
+      file_error (command);
+    }
+  else if (i == ENOENT)
+    {
+      errno = i;
+      internal_error (_("%s: cannot execute: required file not found"), command);
+    }
+  else
+    {
+      /* The file has the execute bits set, but the kernel refuses to
+         run it for some reason.  See why. */
+#if defined (HAVE_HASH_BANG_EXEC)
+      READ_SAMPLE_BUF (command, sample, sample_len);
+      if (sample_len > 0)
+        sample[sample_len - 1] = '\0';
+      if (sample_len > 2 && sample[0] == '#' && sample[1] == '!')
+        {
+          char *interp;
+          int ilen;
+
+          interp = getinterp (sample, sample_len, (int *)NULL);
+          ilen = strlen (interp);
+          errno = i;
+          if (interp[ilen - 1] == '\r')
+            {
+              interp = xrealloc (interp, ilen + 2);
+              interp[ilen - 1] = '^';
+              interp[ilen] = 'M';
+              interp[ilen + 1] = '\0';
+            }
+          sys_error (_("%s: %s: bad interpreter"), command, interp ? interp : "");
+          FREE (interp);
+          return (EX_NOEXEC);
+        }
+#endif
+      errno = i;
+      file_error (command);
+    }
+  return (last_command_exit_value);
+}
+
+#if defined (AOK_NATIVE_FORK)
+/* The same, for aok_fork.c's spawn path. See report_execve_failure. */
+int
+aok_report_exec_failure (command, err)
+     char *command;
+     int err;
+{
+  return report_execve_failure (command, err);
+}
+#endif
+
 /* Call execve (), handling interpreting shell scripts, and handling
    exec failures. */
 int
@@ -6004,64 +6188,7 @@ shell_execve (command, args, env)
   /* If we get to this point, then start checking out the file.
      Maybe it is something we can hack ourselves. */
   if (i != ENOEXEC)
-    {
-      /* make sure this is set correctly for file_error/report_error */
-      last_command_exit_value = (i == ENOENT) ?  EX_NOTFOUND : EX_NOEXEC; /* XXX Posix.2 says that exit status is 126 */
-      if (file_isdir (command))
-#if defined (EISDIR)
-	internal_error (_("%s: %s"), command, strerror (EISDIR));
-#else
-	internal_error (_("%s: is a directory"), command);
-#endif
-      else if (executable_file (command) == 0)
-	{
-	  errno = i;
-	  file_error (command);
-	}
-      /* errors not involving the path argument to execve. */
-      else if (i == E2BIG || i == ENOMEM)
-	{
-	  errno = i;
-	  file_error (command);
-	}
-      else if (i == ENOENT)
-	{
-	  errno = i;
-	  internal_error (_("%s: cannot execute: required file not found"), command);
-	}
-      else
-	{
-	  /* The file has the execute bits set, but the kernel refuses to
-	     run it for some reason.  See why. */
-#if defined (HAVE_HASH_BANG_EXEC)
-	  READ_SAMPLE_BUF (command, sample, sample_len);
-	  if (sample_len > 0)
-	    sample[sample_len - 1] = '\0';
-	  if (sample_len > 2 && sample[0] == '#' && sample[1] == '!')
-	    {
-	      char *interp;
-	      int ilen;
-
-	      interp = getinterp (sample, sample_len, (int *)NULL);
-	      ilen = strlen (interp);
-	      errno = i;
-	      if (interp[ilen - 1] == '\r')
-		{
-		  interp = xrealloc (interp, ilen + 2);
-		  interp[ilen - 1] = '^';
-		  interp[ilen] = 'M';
-		  interp[ilen + 1] = '\0';
-		}
-	      sys_error (_("%s: %s: bad interpreter"), command, interp ? interp : "");
-	      FREE (interp);
-	      return (EX_NOEXEC);
-	    }
-#endif
-	  errno = i;
-	  file_error (command);
-	}
-      return (last_command_exit_value);
-    }
+    return (report_execve_failure (command, i));
 
   /* This file is executable.
      If it begins with #!, then help out people with losing operating

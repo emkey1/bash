@@ -53,6 +53,7 @@
 #include "trap.h"
 #include "pathexp.h"
 #include "mailcheck.h"
+#include "aok_fork.h"
 
 #include "shmbutil.h"
 #if defined (HAVE_MBSTR_H) && defined (HAVE_MBSCHR)
@@ -6533,6 +6534,26 @@ process_substitute (string, open_for_read_in_child)
   save_pipeline (1);
 #endif /* JOB_CONTROL */
 
+#if defined (AOK_NATIVE_FORK)
+  /* iSH-AOK: no fork, so the child cannot dup its own end of the pipe onto its
+     stdin or stdout -- the spawn is told to do it instead. child_pipe_fd is the
+     end this process is handing over; parent_pipe_fd is the end this process
+     keeps and hands to whoever opens the /dev/fd name, so the child must not
+     hold it open or the reader never sees EOF.
+
+     Note which end goes where: open_for_read_in_child is 1 for `>(cmd)`, where
+     the command reads what we write, and 0 for `<(cmd)`, where it writes what
+     we read. Everything below the make_child is the fork path and is not
+     reached; make_child returns a pid or -1 and never 0. */
+  aok_fork_cmdtext = string;
+  aok_fork_pipe_in = open_for_read_in_child ? child_pipe_fd : NO_PIPE;
+  aok_fork_pipe_out = open_for_read_in_child ? NO_PIPE : child_pipe_fd;
+  aok_fork_nclose = 0;
+#if defined (HAVE_DEV_FD)
+  aok_fork_close_fds[aok_fork_nclose++] = parent_pipe_fd;
+#endif
+#endif
+
   pid = make_child ((char *)NULL, FORK_ASYNC);
   if (pid == 0)
     {
@@ -6988,7 +7009,6 @@ command_substitute (string, quoted, flags)
      fork path and is simply not reached. See aok_fork.c for why a subshell's
      one-way contract makes that faithful rather than approximate. */
   {
-    extern char *aok_run_in_subshell PARAMS((char *, int *));
     int aok_status = 0;
     char *aok_out = aok_run_in_subshell (string, &aok_status);
     if (aok_out == 0)

@@ -72,6 +72,7 @@
 #include "jobs.h"
 #include "execute_cmd.h"
 #include "flags.h"
+#include "aok_fork.h"
 
 #include "typemax.h"
 
@@ -2215,12 +2216,8 @@ make_child (command, flags)
      A site that has not been converted leaves aok_fork_cmdtext null and gets
      ENOSYS, which is the old behaviour and is loud. */
   {
-    extern pid_t aok_spawn_command PARAMS((char *, int, int));
-    extern char *aok_fork_cmdtext;
-    extern int aok_fork_pipe_in, aok_fork_pipe_out;
     pid = aok_spawn_command (aok_fork_cmdtext, aok_fork_pipe_in, aok_fork_pipe_out);
-    aok_fork_cmdtext = 0;
-    aok_fork_pipe_in = aok_fork_pipe_out = NO_PIPE;
+    aok_fork_clear ();
     if (pid < 0)
       errno = ENOSYS;
   }
