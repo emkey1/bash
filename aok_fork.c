@@ -50,6 +50,9 @@
 #include "flags.h"
 #include "subst.h"
 #include "jobs.h"
+#include "redir.h"
+extern REDIRECT *redirection_undo_list;
+#include "flags.h"
 
 /* sh_single_quote, ansic_quote, ansic_shouldquote and named_function_string
    all come from externs.h, which shell.h includes. Re-declaring them here was
@@ -524,6 +527,78 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
 		     argv, (char **) 0);
   posix_spawn_file_actions_destroy (&fa);
   free (script);
+  if (err != 0)
+    { errno = err; return (pid_t) -1; }
+  return pid;
+}
+
+/* ------------------------------------------------- an external command
+
+   execute_disk_command's fork is the one site that must NOT be handled by
+   re-running the command text. By the time bash gets here the words are
+   already EXPANDED -- re-parsing the printed form would run any $(...) inside
+   it a second time, which is a visible side effect, not just waste. So this
+   spawns the executable with the argv bash computed.
+
+   That leaves the redirections, which the forked child would have applied to
+   itself. They are applied HERE instead, undoably, using bash's own
+   do_redirections/undo_redirections -- the same pair it uses to run a builtin
+   with redirections -- and the spawned child inherits the result. The pipe
+   descriptors are handled the same way rather than as spawn file actions,
+   because order matters: bash does do_piping FIRST and then redirections, so a
+   `>file` on a command in a pipeline wins over the pipe, and file actions
+   would apply after everything and silently invert that.
+
+   Interactive shells are why this matters. Non-interactively bash sets
+   CMD_NO_FORK for the last command and execs in place, so this path is never
+   taken -- which is exactly why `bash -c` worked throughout while typing `id`
+   at a prompt reported "fork: Function not implemented". */
+pid_t
+aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
+     char *command;
+     char **args;
+     char **env;
+     REDIRECT *redirects;
+     int pipe_in, pipe_out;
+{
+  int saved[3], i, err;
+  pid_t pid;
+
+  /* The standard three, kept out of the way while the child's view is built.
+     F_DUPFD_CLOEXEC so the copies do not reach the child. */
+  for (i = 0; i < 3; i++)
+    saved[i] = fcntl (i, F_DUPFD_CLOEXEC, 10);
+
+  if (pipe_in != NO_PIPE)
+    dup2 (pipe_in, 0);
+  if (pipe_out != NO_PIPE && pipe_out != REDIRECT_BOTH)
+    dup2 (pipe_out, 1);
+  else if (pipe_out == REDIRECT_BOTH)
+    dup2 (1, 2);
+
+  if (redirects && do_redirections (redirects, RX_ACTIVE|RX_UNDOABLE) != 0)
+    {
+      for (i = 0; i < 3; i++)
+	if (saved[i] >= 0) { dup2 (saved[i], i); close (saved[i]); }
+      errno = EIO;
+      return (pid_t) -1;
+    }
+
+  err = posix_spawn (&pid, command, (void *) 0, (void **) 0, args,
+		     env ? env : (char **) 0);
+
+  /* bash's own undo: do_redirections with RX_UNDOABLE builds
+     redirection_undo_list, and replaying it restores what was there. This is
+     the same pair execute_cmd.c's cleanup_redirects uses for a builtin. */
+  if (redirection_undo_list)
+    {
+      do_redirections (redirection_undo_list, RX_ACTIVE);
+      dispose_redirects (redirection_undo_list);
+      redirection_undo_list = (REDIRECT *) NULL;
+    }
+  for (i = 0; i < 3; i++)
+    if (saved[i] >= 0) { dup2 (saved[i], i); close (saved[i]); }
+
   if (err != 0)
     { errno = err; return (pid_t) -1; }
   return pid;

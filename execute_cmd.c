@@ -75,6 +75,8 @@ extern int errno;
 #if defined (AOK_NATIVE_FORK)
 extern char *aok_fork_cmdtext;
 extern int aok_fork_pipe_in, aok_fork_pipe_out;
+extern pid_t aok_spawn_disk_command PARAMS((char *, char **, char **, REDIRECT *, int, int));
+extern void aok_register_spawned PARAMS((char *, pid_t, int));
 #endif
 #include "findcmd.h"
 #include "redir.h"
@@ -5665,7 +5667,31 @@ execute_disk_command (words, redirects, command_line, pipe_in, pipe_out,
   else
     {
       fork_flags = async ? FORK_ASYNC : 0;
+#if defined (AOK_NATIVE_FORK)
+      /* Spawned with the EXPANDED argv, not by re-running the command text --
+         see aok_fork.c.
+
+         args is built HERE rather than read from the variable of that name,
+         which upstream fills in only inside the child block below (the
+         strvec_from_word_list a few dozen lines down). Passing it from here
+         before that ran handed posix_spawn an uninitialised local -- and the
+         failure was the quiet kind: the command exited 0 and produced nothing,
+         so `id` looked like it ran and printed an empty line. */
+      args = strvec_from_word_list (words, 0, 0, (int *)NULL);
+      pid = aok_spawn_disk_command (command, args, export_env, redirects,
+                                    pipe_in, pipe_out);
+      /* free, not strvec_dispose: strvec_from_word_list with alloc=0 borrows
+         the words' own strings rather than copying them, so disposing the
+         vector would free memory the word list still owns. */
+      free (args);
+      args = (char **)NULL;
+      if (pid > 0)
+        aok_register_spawned (p = savestring (command_line), pid, async);
+      else
+        p = (char *)NULL;
+#else
       pid = make_child (p = savestring (command_line), fork_flags);
+#endif
     }
 
   if (pid == 0)

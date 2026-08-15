@@ -2113,6 +2113,40 @@ list_all_jobs (format)
   map_over_jobs (print_job, format, -1);
 }
 
+#if defined (AOK_NATIVE_FORK)
+/* The parent-side bookkeeping make_child does, for a child that was SPAWNED
+   rather than forked (aok_fork.c's aok_spawn_disk_command). Kept here beside
+   make_child so the two cannot drift, and doing exactly what its parent branch
+   does and no more: the job table, the pipeline group, the async pid, and the
+   stats that `jobs` and `wait` read. */
+void
+aok_register_spawned (command, pid, async_p)
+     char *command;
+     pid_t pid;
+     int async_p;
+{
+  if (job_control)
+    {
+      if (pipeline_pgrp == 0)
+	pipeline_pgrp = pid;
+      setpgid (pid, pipeline_pgrp);
+    }
+  else if (pipeline_pgrp == 0)
+    pipeline_pgrp = shell_pgrp;
+
+  add_process (command, pid);
+
+  if (async_p)
+    last_asynchronous_pid = pid;
+
+  delete_old_job (pid);
+  bgp_delete (pid);
+  last_made_pid = pid;
+  js.c_totforked++;
+  js.c_living++;
+}
+#endif /* AOK_NATIVE_FORK */
+
 /* Fork, handling errors.  Returns the pid of the newly made child, or 0.
    COMMAND is just for remembering the name of the command; we don't do
    anything else with it.  ASYNC_P says what to do with the tty.  If

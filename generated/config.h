@@ -46,7 +46,7 @@
 /* Define READLINE to get the nifty/glitzy editing features.
    This is on by default.  You can turn it off interactively
    with the -nolineediting flag. */
-/* #undef READLINE */
+#define READLINE 1
 
 /* Define BANG_HISTORY if you want to have Csh style "!" history expansion.
    This is unrelated to READLINE. */
@@ -60,7 +60,7 @@
 
    If only HISTORY is defined, the `fc' and `history' builtins are
    available. */
-/* #undef HISTORY */
+#define HISTORY 1
 
 /* Define this if you want completion that puts all alternatives into
    a brace expansion shell expression. */
@@ -677,16 +677,13 @@
 /* #undef HAVE_GETWD */
 
 /* Define if you have the iconv function.  */
-/* iSH-AOK: iconv is OFF, for two reasons.
- *
- * Linking it would add a system library to the Xcode project, which links the
- * meson archives by name and carries no extra libraries -- the same obstacle
- * that keeps zlib, and therefore tar and gzip, out of the SmallCLUE build.
- *
- * And its only users here are lib/sh/fnxform.c, which normalizes filenames for
- * macOS's HFS, and lib/sh/unicode.c, which has a UTF-8 fallback. The first is
- * wrong for AOK outright: the filesystem bash sees is the GUEST's, not the
- * Mac's, so decomposing filenames the way HFS wants would corrupt them. */
+/* iSH-AOK: iconv is OFF. Linking it would add a system library to the Xcode
+ * project, which links the meson archives by name and carries no extra
+ * libraries -- the same obstacle that keeps zlib, and so tar and gzip, out of
+ * the SmallCLUE build. Its only users here are lib/sh/unicode.c, which has a
+ * UTF-8 fallback, and lib/sh/fnxform.c, which normalizes filenames the way
+ * macOS's HFS wants -- and that is wrong for AOK outright, since the
+ * filesystem bash sees is the GUEST's fakefs. */
 /* #undef HAVE_ICONV */
 
 /* Define if you have the imaxdiv function.  */
@@ -1075,9 +1072,8 @@
 /* Define if you have the <sys/random.h> header file.  */
 /* iSH-AOK: macOS has <sys/random.h>, the iOS SDK does not -- and one config.h
  * has to serve both, because a native program is host code and the host is
- * whichever of the two is building. Nothing is lost by leaving it out:
- * getentropy is the only thing bash wants from it, and kernel/native_libc.h
- * declares (and routes) that itself. */
+ * whichever of the two is building. Nothing is lost: getentropy is all bash
+ * wants from it, and kernel/native_libc.h declares and routes that itself. */
 /* #undef HAVE_SYS_RANDOM_H */
 
 /* Define if you have the <sys/resource.h> header file.  */
