@@ -2107,8 +2107,28 @@ shell_reinitialize ()
      rather than once per shell. */
   no_rc = no_profile = 0;
   sourced_env = 0;
+
+  /* init_noninteractive() and init_interactive() each leave a mark that
+     shell_reinitialize does not clear, and both are decisions about THIS
+     invocation rather than state to carry into the next one:
+
+       no_line_editing is set to 1 by init_noninteractive, so a single
+       `bash -c` anywhere in the app left every later INTERACTIVE shell with no
+       readline -- no line editing, no history keys, and a `bind: warning: line
+       editing not enabled` from every one of the thirteen binds
+       bash-completion does. Back to the compile-time default; the TERM checks
+       in main() set it again where they should.
+
+       enable_history_list is a tri-state: -1 means "not decided yet", and the
+       two init functions turn it into 1 or 0. Restoring the sentinel rather
+       than 1 lets a non-interactive shell go on deciding 0 for itself. */
+#if defined (READLINE)
+  no_line_editing = 0;
+#else
+  no_line_editing = 1;
+#endif
 #if defined (HISTORY)
-  enable_history_list = 1;
+  enable_history_list = -1;
 #endif
 
   aok_reset_export_env ();
