@@ -55,6 +55,7 @@
 extern REDIRECT *redirection_undo_list;
 #include "flags.h"
 #include "trap.h"
+#include "alias.h"
 #include "typemax.h"
 #include "aok_fork.h"
 
@@ -386,10 +387,37 @@ aok_emit_options (buf)
   char *name;
   int i, on;
 
+  /* shopt FIRST, then set -o, and the order is load-bearing. Some shopt
+     options reach across and change a `set -o` one: `shopt -u extdebug` runs
+     shopt_set_debug_mode, which does `error_trace_mode = function_trace_mode =
+     debugging_mode` -- it turns OFF both -E and -T. Emitting shopt last
+     therefore undid the parent's `set -E` on every subshell, and an ERR trap
+     that fired in the parent silently did not fire in its subshells.
+
+     bash's own startup does the reverse (SHELLOPTS then BASHOPTS) and does not
+     hit this, because BASHOPTS lists only the options that are ON: it never
+     issues a `shopt -u` at all. This state describes every option either way,
+     which is what exposes the interaction. */
+  for (i = 0; (on = aok_shopt_state (i, &name)) >= 0; i++)
+    if (aok_buf_str (buf, on ? "shopt -s " : "shopt -u ") < 0 ||
+	aok_buf_str (buf, name) < 0 ||
+	aok_buf_str (buf, " 2>/dev/null\n") < 0)
+      return -1;
+
   for (i = 0; (on = aok_minus_o_state (i, &name)) >= 0; i++)
     {
-      if (STREQ (name, "errexit") || STREQ (name, "noexec") ||
-	  STREQ (name, "onecmd") || STREQ (name, "restricted"))
+      if (STREQ (name, "errexit") || STREQ (name, "nounset") ||
+	  STREQ (name, "noexec") || STREQ (name, "onecmd") ||
+	  STREQ (name, "restricted"))
+	continue;	/* errexit and nounset are put back at the very end */
+      /* Interactive-shell options, which this child never is. Sending them
+	 costs rather than gains: `set -o history` in a non-interactive shell
+	 makes it record the state script itself, and those lines then turn up
+	 in the user's ~/.bash_history. monitor is job control, which bash turns
+	 off in a subshell anyway. */
+      if (STREQ (name, "emacs") || STREQ (name, "vi") ||
+	  STREQ (name, "history") || STREQ (name, "notify") ||
+	  STREQ (name, "monitor") || STREQ (name, "ignoreeof"))
 	continue;
       if (aok_buf_str (buf, on ? "set -o " : "set +o ") < 0 ||
 	  aok_buf_str (buf, name) < 0 ||
@@ -397,42 +425,95 @@ aok_emit_options (buf)
 	return -1;
     }
 
-  for (i = 0; (on = aok_shopt_state (i, &name)) >= 0; i++)
-    if (aok_buf_str (buf, on ? "shopt -s " : "shopt -u ") < 0 ||
-	aok_buf_str (buf, name) < 0 ||
-	aok_buf_str (buf, " 2>/dev/null\n") < 0)
-      return -1;
-
   return 0;
 }
 
-/* The traps. A subshell inherits them -- including the EXIT trap, which it
-   runs on its own way out -- and so does a command substitution.
+/* The aliases. A forked child has them; a fresh shell does not, and a command
+   substitution's body is re-parsed IN the child, so `x=$(ll)` came back empty
+   with `ll: command not found` after a login that defines `ll` as an alias.
 
-   Signals the parent is IGNORING cross as `trap '' SIG`, which is not the same
-   as having no trap: an ignored signal stays ignored across exec, and a child
-   that reset it to default would die where the parent would not. */
+   Subshells and pipeline elements did not need this and still do not: alias
+   expansion happens at parse time in the PARENT, so what those receive is
+   already-expanded command text. Command substitution is the one that hands
+   over source. */
+static int
+aok_emit_aliases (buf)
+     aok_buf *buf;
+{
+#if defined (ALIAS)
+  alias_t **list;
+  int i;
+
+  list = all_aliases ();
+  if (list == 0)
+    return 0;
+  for (i = 0; list[i]; i++)
+    {
+      if (aok_buf_str (buf, "alias ") < 0 ||
+	  aok_buf_str (buf, list[i]->name) < 0 ||
+	  aok_buf_str (buf, "=") < 0 ||
+	  aok_emit_quoted (buf, list[i]->value) < 0 ||
+	  aok_buf_str (buf, " 2>/dev/null\n") < 0)
+	{ free (list); return -1; }
+    }
+  free (list);
+#endif
+  return 0;
+}
+
+/* The traps, and WHICH of them a child is supposed to still be running is the
+   whole content of this function.
+
+   A forked child calls reset_signal_handlers() first thing (execute_cmd.c's
+   execute_in_subshell, subst.c's command_substitute), and trap.c's
+   reset_or_restore_signal_handlers says exactly what that means:
+
+     - the EXIT trap loses SIG_TRAPPED but KEEPS its string. So `trap -p` in a
+       subshell still lists it and it does NOT run when the subshell exits.
+     - every trapped signal is reset to its original disposition, again keeping
+       the string. So a SIGUSR1 the parent handles KILLS a command
+       substitution, rather than running the parent's handler there.
+     - ignored signals stay ignored, because SIG_IGN survives exec and a child
+       that reset one to default would die where the parent would not.
+     - DEBUG, ERR and RETURN are not in that loop at all: they are inherited and
+       ARMED, which is what `set -E` and `set -T` are for.
+
+   So what crosses is the ignored ones and the three special traps, and nothing
+   else. Emitting the lot -- which is what this did first -- meant the EXIT trap
+   fired once per subshell and once per command substitution: a script whose
+   `trap ... EXIT` cleaned up after itself did it ten times, interleaved into
+   the middle of its own output.
+
+   The one thing not reproduced is `trap -p` inside a child listing the strings
+   of traps that are not armed there. Making that visible would mean setting a
+   trap in the child and then disarming it, and a child that exits early -- the
+   normal case for `( exit 1 )` -- would never reach the disarming. A listing
+   that under-reports is the cheaper mistake by a wide margin. */
 static int
 aok_emit_traps (buf)
      aok_buf *buf;
 {
   int sig;
 
-  /* The same three cases builtins/trap.def's showtrap distinguishes, so that
-     what crosses is what `trap -p` would have printed. DEFAULT_SIG and
-     IMPOSSIBLE_TRAP_HANDLER are sentinel POINTERS stored in trap_list, not
-     strings, and must never reach the quoter. */
   for (sig = 0; sig < BASH_NSIG; sig++)
     {
       char *name, *body;
+      int special;
 
+      /* DEFAULT_SIG and IMPOSSIBLE_TRAP_HANDLER are sentinel POINTERS stored in
+	 trap_list, not strings, and must never reach the quoter. */
       body = trap_list[sig];
       if (body == (char *) IMPOSSIBLE_TRAP_HANDLER)
 	continue;
-      if (body == (char *) DEFAULT_SIG && signal_is_hard_ignored (sig) == 0)
-	continue;
-      if (body == (char *) IGNORE_SIG || signal_is_hard_ignored (sig))
-	body = "";
+
+      special = (sig == DEBUG_TRAP || sig == ERROR_TRAP || sig == RETURN_TRAP);
+
+      if (special == 0 && (body == (char *) IGNORE_SIG || signal_is_hard_ignored (sig)))
+	body = "";		/* stays ignored across the spawn */
+      else if (special == 0)
+	continue;		/* reset in the child, string and all */
+      else if (body == (char *) DEFAULT_SIG || body == (char *) IGNORE_SIG)
+	continue;		/* no special trap set */
 
       name = signal_name (sig);
       if (name == 0 || STREQN (name, "SIGJUNK", 7) || STREQN (name, "unknown", 7))
@@ -458,10 +539,37 @@ aok_serialize_state ()
 
   buf.s = 0; buf.len = 0; buf.cap = 0;
 
-  /* errexit off while the state is being restored: a `declare` the child
-     dislikes must not abort the state before the command it was started for
-     has run. Restored at the end, along with the parent's own setting. */
+  /* errexit and nounset OFF while the state is being restored, and put back at
+     the end. A `declare` the child dislikes must not abort the state before the
+     command it was started for has run, and nounset would turn a variable the
+     child has not been given yet into a fatal error partway through being given
+     it. */
   if (aok_buf_str (&buf, "set +e\n") < 0)
+    goto fail;
+  if (aok_buf_str (&buf, "set +u\n") < 0)
+    goto fail;
+
+  /* extglob ON for the definitions that follow, whatever the parent's own
+     setting is, and back to the parent's setting with the other options at the
+     end. This is not a preference, it is what makes the state PARSE.
+
+     A function whose body contains `?(...)` or `+(...)` -- bash-completion is
+     built out of them, and so is the AOK profile -- can only be read back by a
+     shell that has extglob on. bash stores such a function as a parse tree and
+     prints it back in that syntax, and the shell that DEFINED it very often
+     turns extglob off again afterwards, which is exactly what bash-completion
+     does. So the parent can be sitting there with extglob off and a table full
+     of functions that cannot be re-read without it.
+
+     The symptom was every child dying on `syntax error near unexpected token
+     (' partway through the state, which left command substitutions empty and a
+     login shell in the AOK rootfs unusable. The final options block below puts
+     extglob back to whatever the parent actually had, and the COMMAND is parsed
+     after that -- bash reads a -c string command by command, which is what
+     makes both halves of this work. */
+  if (aok_buf_str (&buf, "shopt -s extglob 2>/dev/null\n") < 0)
+    goto fail;
+  if (aok_emit_aliases (&buf) < 0)
     goto fail;
 
   vars = all_shell_variables ();
@@ -490,12 +598,13 @@ aok_serialize_state ()
   if (aok_emit_traps (&buf) < 0)
     goto fail;
 
-  /* The options last, so that everything above ran under the permissive ones
-     -- nounset in particular would turn a variable the child has not yet been
-     given into a fatal error partway through being given it. */
+  /* And now the real options, including whatever extglob actually was. */
   if (aok_emit_options (&buf) < 0)
     goto fail;
+
   if (aok_buf_str (&buf, exit_immediately_on_error ? "set -e\n" : "") < 0)
+    goto fail;
+  if (aok_buf_str (&buf, unbound_vars_is_error ? "set -u\n" : "") < 0)
     goto fail;
 
   /* $? last of all, since every line above sets it. `(exit N)` is how a shell
@@ -563,6 +672,13 @@ aok_build_script (command)
     }
   free (state);
   free (cmd);
+  /* The single most useful thing when a re-launched child misbehaves: what it
+     was actually handed. Every bug in this file so far has been visible in one
+     look at this -- a command replaced by a function definition, a syntax error
+     from an extglob pattern emitted before extglob was on, an option that
+     turned another option off. */
+  if (script && getenv ("AOK_BASH_DUMP_STATE"))
+    fprintf (stderr, "----- AOK STATE -----\n%s\n----- END -----\n", script);
   return script;
 }
 

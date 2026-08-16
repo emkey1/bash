@@ -461,7 +461,13 @@ main (argc, argv, env)
   if (shell_initialized || shell_name)
     {
       /* Make sure that we do not infinitely recurse as a login shell. */
-      if (*shell_name == '-')
+      /* iSH-AOK: guarded, because shell_name can be null here. bash is a
+	 function in this process rather than a program, and the glue nulls
+	 shell_name before re-entering rather than leave a pointer into the
+	 previous shell's freed memory for this very line to dereference (see
+	 kernel/bash_glue.c). shell_initialized is what makes the block run on
+	 re-entry; shell_name being null must not stop it. */
+      if (shell_name && *shell_name == '-')
 	shell_name++;
 
       shell_reinitialize ();
