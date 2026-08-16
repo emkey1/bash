@@ -64,27 +64,125 @@ __thread extern REDIRECT *redirection_undo_list;
    the first attempt and was wrong in the way second declarations always are:
    ansic_quote takes char *, not const char *, and the compiler said so. */
 
-/* The subshell is the GUEST's bash, not the native one, and that is the whole
-   crux of this file.
- 
-   The obvious choice is /AOK/native/bash: it is the fast one, and re-launching
-   the emulated shell looks like throwing away the reason for compiling bash
-   natively. It does not work, and the reason is the same wall fork itself hits.
+/* The subshell is the NATIVE bash. It did not used to be, and the reason it
+   could not be is worth keeping, because it is the reason this file is shaped
+   the way it is.
+
+   WHAT THE OLD ANSWER WAS. Until the thread-local conversion, this said
+   /bin/bash -- the guest's own emulated shell -- and the argument was sound.
    A native program is a function in the app's process, so two LIVE native bash
-   instances share every one of bash's globals -- and the parent is still live,
-   blocked in wait, while the child runs. The child's first
-   maybe_make_export_env flushes the PARENT's export_env and aborts on a pointer
-   it never allocated. Proved with a backtrace before this comment was written.
- 
-   What a subshell actually requires is a separate ADDRESS SPACE, and AOK has
-   exactly one mechanism for that: a guest process. So the child is emulated.
- 
-   The cost is honest and bounded: an emulated bash starts in ~15ms against the
-   ~2.5ms an emulated bash's own fork costs, and that price is paid once per
-   subshell. Everything else -- the parsing, expansion and arithmetic that made
-   native bash 38-46x faster -- still happens in the native parent, which is
-   where the time in a real script goes. */
-#define AOK_SUBSHELL_BASH "/bin/bash"
+   instances shared every one of bash's globals, and a re-launch leaves the
+   parent live, blocked in wait, while the child runs. The child's first
+   maybe_make_export_env flushed the PARENT's export_env and aborted on a
+   pointer it never allocated. That was proved with a backtrace, not guessed.
+   The conclusion drawn from it was that a subshell needs a separate ADDRESS
+   SPACE and AOK has exactly one mechanism for that, a guest process.
+
+   WHAT CHANGED. Every mutable global in bash and readline is now `__thread`
+   (docs/bash_native_plan.md, and tools/check-bash-tls.py enforces it), so each
+   guest task running native bash has its own copy of export_env and of
+   everything else. The collision the old comment describes cannot happen any
+   more: the child's export_env is not the parent's. Measured before this
+   change: six concurrent native shells with independent options, variables and
+   functions, and an interactive native bash launching a native bash while it
+   is itself live and blocked in wait.
+
+   So the requirement was never an address space as such -- it was that the two
+   shells not see each other's state. A separate TASK plus thread-local state
+   supplies that, and a task is exactly what posix_spawn gives us here. The
+   serialise-state-into-argv design is unchanged and still does all the work;
+   only the executable on the other end of the spawn is different.
+
+   WHAT IT BUYS, MEASURED -- and it is not what it first looks like. Starting
+   the re-launch target 30 times in the guest: the emulated bash 335ms, this
+   native one 84ms. So the per-subshell start goes from ~11.2ms to ~2.8ms and
+   the re-launch path is about 4x cheaper than it was. The child also does its
+   own parsing, expansion and arithmetic natively, so the 38-46x reaches into
+   $( ) and ( ) instead of stopping at the parent.
+
+   WHAT IT DOES NOT BUY, AND THIS IS THE TRAP. It does not make subshells fast.
+   30 subshells end to end: this shell 275ms, the guest's own emulated bash
+   82ms -- the emulated shell is still 3.4x QUICKER at ( ), because its fork is
+   AOK's sys_clone, which is native C and was never emulated, while a re-launch
+   must serialise the state and start a whole shell (~9.2ms all in). The honest
+   summary is that the win is in interpretation and the loss is in forking:
+   measured on the same build, an arithmetic loop is 16.5x faster here (87ms
+   against 1438ms) while a subshell-heavy script is slower. Do not read the
+   38-46x as applying to subshell-heavy work; that mistake was made when this
+   change was proposed, and the numbers above are what corrected it.
+
+   Three smaller things come with it: the child is
+   the same bash as the parent, so BASH_VERSION and BASH_VERSINFO stop
+   disagreeing inside a subshell; a subshell no longer depends on the guest
+   rootfs having a /bin/bash at all; and, because the child is our own bash,
+   there is finally somewhere to hand it a value that cannot ride in the state
+   script -- which is how $$ is fixed below.
+
+   WHAT IT COSTS. A subshell is now a host thread in this process rather than a
+   guest process, so a crash in one takes the app down instead of one guest
+   process, and a deep chain of live subshells (recursive functions using
+   $( )) is a chain of host threads on the default pthread stack. Both are real
+   and neither is new to this line -- they are the standing terms of running
+   bash natively at all -- but they now apply to subshells as well as to the
+   top-level shell.
+
+   If the spawn cannot find it, this falls back to the guest's own bash rather
+   than failing the subshell; see aok_spawn_relaunch. */
+#define AOK_SUBSHELL_BASH "/AOK/native/bash"
+
+/* The guest's own shell. Only two things use it: the fallback above, and the
+   interpreter for a text file with no `#!'. */
+#define AOK_GUEST_BASH "/bin/bash"
+
+/* POSIX's "a file with no #! is a shell script" case, in
+   aok_spawn_disk_command. Deliberately its OWN name rather than a third use of
+   AOK_SUBSHELL_BASH: "which bash does a subshell run" and "which shell
+   interprets a shebang-less guest script" are different questions that happened
+   to share an answer, and flipping the first must not silently reroute every
+   shebang-less script in the guest into a bash of a different version. */
+#define AOK_SCRIPT_BASH AOK_GUEST_BASH
+
+/* ------------------------------------------------------------ $$ across a re-launch
+
+   `$$' is the pid of the shell that was INVOKED -- the same value in every
+   subshell, command substitution and background job it ever spawns. bash keeps
+   it in dollar_dollar_pid, set once at startup, and a forked subshell inherits
+   it for free because a fork copies memory. `$BASHPID' is the one that changes.
+
+   A re-launch is not a fork: the child is a fresh bash that runs
+   initialize_shell_variables and computes its own. So `$$' changed at every
+   subshell boundary, which quietly breaks the universal temp-name idiom --
+   bash's own tests/source6.sub creates $TMPDIR/fifo-$$ in the parent and then
+   opens a DIFFERENT name in a background job, and hangs.
+
+   The value cannot ride in the state script: `$$' is not assignable, there is
+   no builtin that writes dollar_dollar_pid. So it goes in the child's
+   environment, which is available now that the child is our own bash and can
+   be taught to look. The rules that make that safe:
+
+     - The parent builds an envp for the spawn. It does NOT setenv. Mutating
+       the environment would realloc the very array bash's export_env global
+       also points at (variables.c keeps environ == export_env), leaving that
+       global dangling, and unsetenv would free strings the variable table
+       owns. That is a use-after-free in a single shell, before concurrency is
+       even considered.
+
+     - The child reads it in initialize_shell_variables and immediately unbinds
+       it from its own variable table, so the next maybe_make_export_env
+       rebuilds an environment without it. An external command run from inside
+       a subshell therefore never sees it.
+
+     - It reappears only because the child, when IT re-launches, writes it out
+       again from its own (now inherited) dollar_dollar_pid. That is what makes
+       it propagate down a nest of subshells without being a general
+       environment variable, and it is why the value is emitted here rather
+       than passed through untouched.
+
+     - It is validated, not trusted: two decimal fields, and the second must be
+       the pid of the task that actually spawned us. A value left in the
+       environment by something else, or by an emulated fallback child that
+       never unbound it, does not name our parent and is ignored. */
+#define AOK_DOLLAR_VAR "AOK_BASH_DOLLAR"
 
 /* ------------------------------------------------------------ a growing buffer */
 
@@ -682,24 +780,181 @@ aok_build_script (command)
   return script;
 }
 
+/* ------------------------------------------------------- the re-launch environment
+
+   The environment a re-launched child is started with: this shell's own, plus
+   AOK_DOLLAR_VAR carrying `$$'. See the block above AOK_DOLLAR_VAR for why this
+   is built rather than set with setenv.
+
+   The strings are BORROWED from environ -- which is bash's export_env, whose
+   elements belong to the variable table -- so the array is freed with plain
+   free() and only the one entry this appended is freed with it. Nothing has to
+   outlive the posix_spawn call either way: the shim packs argv and envp into
+   flat buffers before the child starts. */
+static char **
+aok_relaunch_env ()
+{
+  char **src, **vec;
+  char *entry;
+  size_t n, i, j;
+  char buf[sizeof (AOK_DOLLAR_VAR) + 2 * INT_STRLEN_BOUND (long) + 4];
+
+  src = environ;
+  for (n = 0; src && src[n]; n++)
+    ;
+
+  vec = (char **) malloc ((n + 2) * sizeof (char *));
+  if (vec == 0)
+    return (char **) 0;
+
+  /* $$ and the pid of the task doing the spawning, which the child checks
+     against its own getppid(). */
+  sprintf (buf, "%s=%ld/%ld", AOK_DOLLAR_VAR, (long) dollar_dollar_pid,
+	   (long) getpid ());
+  entry = (char *) malloc (strlen (buf) + 1);
+  if (entry == 0)
+    { free (vec); return (char **) 0; }
+  strcpy (entry, buf);
+
+  /* Drop any AOK_DOLLAR_VAR already there. A native child unbinds it at
+     startup so this normally finds nothing, but an emulated fallback child
+     does not, and one stale copy plus one fresh one in the same vector is a
+     coin toss over which getenv returns. */
+  for (i = 0, j = 0; i < n; i++)
+    {
+      if (src[i] && strncmp (src[i], AOK_DOLLAR_VAR "=",
+			     sizeof (AOK_DOLLAR_VAR)) == 0)
+	continue;
+      vec[j++] = src[i];
+    }
+  vec[j++] = entry;
+  vec[j] = (char *) 0;
+  return vec;
+}
+
+static void
+aok_relaunch_env_free (envp)
+     char **envp;
+{
+  size_t n;
+
+  if (envp == 0)
+    return;
+  for (n = 0; envp[n]; n++)
+    ;
+  if (n > 0)
+    free (envp[n - 1]);		/* the appended entry, and only that one */
+  free (envp);
+}
+
+/* The original shell's `$$', if this bash was started as a re-launch by a
+   parent bash that told us -- otherwise 0, meaning "use your own pid".
+
+   Called once, from initialize_shell_variables, AFTER the environment has been
+   imported into the variable table. It always unbinds the variable, whether or
+   not the value is accepted, so it cannot reach anything this shell runs and
+   cannot be emitted into this shell's own state script.
+
+   The validation is deliberately strict. A pid we adopt becomes `$$' for the
+   whole shell, so a garbage or stale value is a silent wrong answer rather
+   than a visible failure; every reason to reject falls back to getpid(), which
+   is exactly today's behaviour. */
+pid_t
+aok_inherited_dollar_pid ()
+{
+  char *raw, *value, *end;
+  long dollar, spawner;
+  pid_t result;
+
+  raw = getenv (AOK_DOLLAR_VAR);
+  if (raw == 0)
+    return (pid_t) 0;
+
+  /* Copied before the unbind: raw points into the environment vector, and
+     rebuilding export_env can free the array out from under it. */
+  value = (char *) malloc (strlen (raw) + 1);
+  if (value)
+    strcpy (value, raw);
+
+  unbind_variable (AOK_DOLLAR_VAR);
+  array_needs_making = 1;
+
+  if (value == 0)
+    return (pid_t) 0;
+
+  result = (pid_t) 0;
+
+  errno = 0;
+  dollar = strtol (value, &end, 10);
+  if (end == value || *end != '/' || errno != 0)
+    goto done;
+  raw = end + 1;
+  errno = 0;
+  spawner = strtol (raw, &end, 10);
+  if (end == raw || *end != '\0' || errno != 0)
+    goto done;
+
+  /* A pid, not merely a number. */
+  if (dollar <= 0 || dollar > INT_MAX || spawner <= 0 || spawner > INT_MAX)
+    goto done;
+
+  /* And it has to be OUR parent that said it. This is what stops a value that
+     leaked into some unrelated program's environment from being adopted by a
+     fresh top-level shell that program happens to run. */
+  if ((pid_t) spawner != getppid ())
+    goto done;
+
+  result = (pid_t) dollar;
+
+done:
+  free (value);
+  return result;
+}
+
+/* posix_spawn of a re-launch, with the fallback the comment above
+   AOK_SUBSHELL_BASH promises. /AOK/native/bash is synthesized by the kernel
+   and exists in every build that compiles this file, so the fallback should be
+   unreachable -- but "should be" and a guest that cannot run a subshell at all
+   are a bad pair, and the guest's own bash is a working shell that merely gets
+   $$ wrong. Returns a posix_spawn error number. */
+static int
+aok_spawn_relaunch (pid, fa, attr, argv, envp)
+     pid_t *pid;
+     void **fa;
+     void **attr;
+     char **argv;
+     char **envp;
+{
+  int err;
+
+  err = posix_spawn (pid, AOK_SUBSHELL_BASH, fa, attr, argv, envp);
+  if (err == ENOENT || err == ENOSYS)
+    err = posix_spawn (pid, AOK_GUEST_BASH, fa, attr, argv, envp);
+  return err;
+}
+
 /* Run COMMAND in a subshell carrying this shell's state, collecting its
    standard output. Returns the output (malloc'd, caller frees) and stores the
    wait status; returns 0 on failure to start, with errno set.
 
-   The state and the command go in ARGV, as one -c script. That is the whole
-   reason this works against a stock /bin/bash: nothing has to be taught to
-   look for state on a descriptor, so the subshell can be any bash the guest
-   already has. An earlier version passed it on a pipe and needed a hook in
-   bash's own startup -- which was fine while the child was the native bash and
-   useless the moment it could not be. Linux allows about 2MB of argv and a
-   shell's state is a few KB; a state large enough to exceed that would fail
-   the spawn with E2BIG rather than silently truncating. */
+   The state and the command go in ARGV, as one -c script. An earlier version
+   passed it on a pipe and needed a hook in bash's own startup; putting it in
+   argv means nothing has to be taught to look for state on a descriptor, so
+   the subshell can be any bash -- which is what let the child be a stock
+   /bin/bash for as long as it had to be, and is still worth keeping now that
+   it does not: the fallback in aok_spawn_relaunch works only because of it.
+   Linux allows about 2MB of argv and a shell's state is a few KB; a state
+   large enough to exceed that would fail the spawn with E2BIG rather than
+   silently truncating.
+
+   The environment is the one thing argv cannot carry, because $$ is not
+   assignable in a script. That goes through envp; see AOK_DOLLAR_VAR. */
 char *
 aok_run_in_subshell (command, status_out)
      char *command;
      int *status_out;
 {
-  char *script, *argv[5], *out;
+  char *script, *argv[5], *out, **envp;
   int out_pipe[2];
   void *fa;
   pid_t pid;
@@ -736,8 +991,11 @@ aok_run_in_subshell (command, status_out)
      quoting exactly as the parent had them. */
   argv[3] = dollar_vars[0] ? dollar_vars[0] : "bash";
   argv[4] = (char *) 0;
-  err = posix_spawn (&pid, AOK_SUBSHELL_BASH, &fa, (void **) 0,
-		     argv, (char **) 0);
+  /* No spawn attributes here: a command substitution's child stays in the
+     shell's own process group. */
+  envp = aok_relaunch_env ();
+  err = aok_spawn_relaunch (&pid, &fa, (void **) 0, argv, envp);
+  aok_relaunch_env_free (envp);
   posix_spawn_file_actions_destroy (&fa);
   if (err != 0)
     {
@@ -922,7 +1180,7 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
      char *cmdtext;
      int pipe_in, pipe_out;
 {
-  char *script, *argv[5];
+  char *script, *argv[5], **envp;
   void *fa, *attr;
   pid_t pid;
   int err, i;
@@ -971,8 +1229,10 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
   argv[3] = dollar_vars[0] ? dollar_vars[0] : "bash";
   argv[4] = (char *) 0;
   aok_spawn_attr (&attr);
-  err = posix_spawn (&pid, AOK_SUBSHELL_BASH, &fa,
-		     attr ? (void **) &attr : (void **) 0, argv, (char **) 0);
+  envp = aok_relaunch_env ();
+  err = aok_spawn_relaunch (&pid, &fa, attr ? (void **) &attr : (void **) 0,
+			    argv, envp);
+  aok_relaunch_env_free (envp);
   if (attr)
     posix_spawnattr_destroy (&attr);
   posix_spawn_file_actions_destroy (&fa);
@@ -1129,7 +1389,11 @@ aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
 	  for (i = 1; i < n; i++)
 	    sargs[i + 1] = args[i];
 	  sargs[n + 1] = (char *) 0;
-	  err = posix_spawn (&pid, AOK_SUBSHELL_BASH, (void *) 0,
+	  /* AOK_SCRIPT_BASH, not AOK_SUBSHELL_BASH, and none of the re-launch
+	     envp: this is a program the user asked to run, so it gets the
+	     environment bash computed for it and a $$ of its own -- which is
+	     what a real bash gives a script it interprets. */
+	  err = posix_spawn (&pid, AOK_SCRIPT_BASH, (void *) 0,
 			     attr ? (void **) &attr : (void **) 0, sargs,
 			     env ? env : (char **) 0);
 	  free (sargs);

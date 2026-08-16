@@ -81,6 +81,8 @@
 #  include "pcomplete.h"
 #endif
 
+#include "aok_fork.h"
+
 #define VARIABLES_HASH_BUCKETS	1024	/* must be power of two */
 #define FUNCTIONS_HASH_BUCKETS	512
 #define TEMPENV_HASH_BUCKETS	4	/* must be power of two */
@@ -546,6 +548,21 @@ initialize_shell_variables (env, privmode)
 
   /* Remember this pid. */
   dollar_dollar_pid = getpid ();
+
+#if defined (AOK_NATIVE_FORK)
+  /* Unless a re-launching parent told us otherwise. `$$' is the pid of the
+     shell that was INVOKED and stays the same in every subshell -- a forked
+     subshell inherits it because a fork copies memory, and a re-launch has to
+     be handed it instead. This must come after the environment import above,
+     because the unbind inside is what keeps the value from reaching anything
+     this shell runs. $BASHPID is untouched: it is a dynamic variable backed by
+     get_bashpid/getpid. See the AOK_DOLLAR_VAR block in aok_fork.c. */
+  {
+    pid_t inherited = aok_inherited_dollar_pid ();
+    if (inherited > 0)
+      dollar_dollar_pid = inherited;
+  }
+#endif
 
   /* Now make our own defaults in case the vars that we think are
      important are missing. */

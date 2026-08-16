@@ -50,6 +50,11 @@ extern pid_t aok_spawn_disk_command PARAMS((char *, char **, char **, REDIRECT *
 /* The shell state a subshell would have inherited, as a script. */
 extern char *aok_serialize_state PARAMS((void));
 
+/* The `$$' a re-launching parent handed down, or 0 for "use your own pid".
+   Called once from initialize_shell_variables; always removes the variable
+   from this shell's environment, accepted or not. See aok_fork.c. */
+extern pid_t aok_inherited_dollar_pid PARAMS((void));
+
 /* jobs.c: record a spawned child in the job table as make_child would have. */
 extern void aok_register_spawned PARAMS((char *, pid_t, int));
 

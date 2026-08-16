@@ -643,6 +643,11 @@ execute_command_internal (command, asynchronous, pipe_in, pipe_out,
       pid_t paren_pid;
       int s;
       char *p;
+#if defined (AOK_NATIVE_FORK)
+      char *aok_body;
+      COMMAND aok_grp;
+      GROUP_COM aok_gc;
+#endif
 
       /* Fork a subshell, turn off the subshell bit, turn off job
 	 control and call execute_command () on the command again. */
@@ -650,18 +655,64 @@ execute_command_internal (command, asynchronous, pipe_in, pipe_out,
       if (command->type == cm_subshell)
 	SET_LINE_NUMBER (command->value.Subshell->line);	/* XXX - save value? */
 	/* Otherwise we defer setting line_number */
+#if defined (AOK_NATIVE_FORK)
+      /* iSH-AOK: what the SPAWNED child is given to run, when that differs from
+	 what the job table should call it.
+
+	 It differs for exactly one command type, and it has to. A re-launch
+	 hands the child a command as TEXT, and the child re-parses it as a
+	 fresh top-level shell. For everything else that lands in this branch --
+	 a group, a control structure in a pipeline, an async command -- the
+	 child's own asynchronous is 0 and its own pipes are NO_PIPE (the spawn
+	 wired them), so nothing in the re-parsed command sends it back down
+	 this path. `( ... )' is different: cm_subshell reaches here on the type
+	 alone, so a child handed the parentheses would re-launch a grandchild
+	 handed the same parentheses, for ever. That is not hypothetical --
+	 `bash -c "( echo hi )"' ran to "shell level (1000) too high" the first
+	 time the subshell became native, because the emulated child that used
+	 to be here could just fork and stop.
+
+	 So the child is handed the BODY. That is not a weakening: the child IS
+	 the subshell, which is precisely why it does not need to make another
+	 one. The body is printed as a GROUP rather than bare, through a
+	 throwaway COMMAND that borrows this one's flags and redirection list,
+	 so `( a; b ) > f' becomes `{ a; b; } > f' and not `a; b' with the
+	 redirection quietly dropped -- and `time' and `!' survive too, since
+	 make_command_string_internal prints those from the outer COMMAND. A
+	 group does not fork, so the recursion stops at one level, and a nested
+	 `( ( x ) )' still costs exactly the two tasks real bash spends on it.
+
+	 Copied out at once, before tcmd is printed: make_command_string returns
+	 bash's single static buffer. Same reason execute_coproc does it. */
+      aok_body = (char *)NULL;
+      if (command->type == cm_subshell && command->value.Subshell->command)
+	{
+	  aok_gc.command = command->value.Subshell->command;
+	  aok_grp = *command;
+	  aok_grp.type = cm_group;
+	  aok_grp.value.Group = &aok_gc;
+	  aok_body = savestring (make_command_string (&aok_grp));
+	}
+#endif
       tcmd = make_command_string (command);
       fork_flags = asynchronous ? FORK_ASYNC : 0;
 #if defined (AOK_NATIVE_FORK)
       /* What the child would have run, and the pipes it would have wired for
          itself in do_piping. make_child spawns rather than forks. */
-      aok_fork_cmdtext = tcmd;
+      aok_fork_cmdtext = aok_body ? aok_body : tcmd;
       aok_fork_pipe_in = pipe_in;
       aok_fork_pipe_out = pipe_out;
       aok_fork_nclose = 0;
       aok_fork_close_bitmap (fds_to_close);
 #endif
       paren_pid = make_child (p = savestring (tcmd), fork_flags);
+#if defined (AOK_NATIVE_FORK)
+      /* The spawn has happened and make_child's aok_fork_clear has already
+	 dropped the pointer, so this is the last reference. What the job table
+	 keeps is `p' -- the parentheses, what the user actually wrote -- not
+	 what the child was handed. */
+      FREE (aok_body);
+#endif
 
       if (user_subshell && signal_is_trapped (ERROR_TRAP) && 
 	  signal_in_progress (DEBUG_TRAP) == 0 && running_trap == 0)
