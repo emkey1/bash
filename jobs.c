@@ -2147,6 +2147,8 @@ aok_reinit_jobs ()
      has already gone. */
   procsubs.head = procsubs.end = (PROCESS *)NULL;
   procsubs.nproc = 0;
+  /* procsub_add aliases this into the chain above, so it has to go with it. */
+  last_procsub_child = (PROCESS *)NULL;
 
   /* A stale count makes the next shell's first blocking wait return before its
      child has run. bash zeroes exactly these on its own longjmp cleanup path,

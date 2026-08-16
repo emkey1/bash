@@ -658,6 +658,8 @@ execute_command_internal (command, asynchronous, pipe_in, pipe_out,
       aok_fork_cmdtext = tcmd;
       aok_fork_pipe_in = pipe_in;
       aok_fork_pipe_out = pipe_out;
+      aok_fork_nclose = 0;
+      aok_fork_close_bitmap (fds_to_close);
 #endif
       paren_pid = make_child (p = savestring (tcmd), fork_flags);
 
@@ -2064,6 +2066,12 @@ aok_reinit_execute ()
      they guard needs nothing: it is never read while the flag is 0. */
   return_catch_flag = 0;
   return_catch_value = 0;
+
+  /* The nesting counters. A shell that exited from inside a function, an eval
+     or a sourced file leaves these above zero, and the next shell then hits
+     "maximum function nesting level exceeded" somewhere far short of the
+     limit -- or, with FUNCNEST set, on its first function call. */
+  funcnest = evalnest = sourcenest = 0;
 
   coproc_init (&sh_coproc);
 }
@@ -4537,6 +4545,8 @@ execute_simple_command (simple_command, pipe_in, pipe_out, async, fds_to_close)
       aok_fork_cmdtext = the_printed_command_except_trap;
       aok_fork_pipe_in = pipe_in;
       aok_fork_pipe_out = pipe_out;
+      aok_fork_nclose = 0;
+      aok_fork_close_bitmap (fds_to_close);
 #endif
       if (make_child (p = savestring (the_printed_command_except_trap), fork_flags) == 0)
 	{
@@ -5801,10 +5811,13 @@ execute_disk_command (words, redirects, command_line, pipe_in, pipe_out,
          See aok_fork.c's aok_fork_pgid. */
       aok_fork_pgid = job_control ? pipeline_pgrp : -1;
       aok_fork_sigdefault = !(job_control && pipeline_pgrp == shell_pgrp);
+      aok_fork_nclose = 0;
+      aok_fork_close_bitmap (fds_to_close);
       pid = aok_spawn_disk_command (command, args, export_env, redirects,
                                     pipe_in, pipe_out);
       aok_fork_pgid = -1;
       aok_fork_sigdefault = 1;
+      aok_fork_nclose = 0;
       /* free, not strvec_dispose: strvec_from_word_list with alloc=0 borrows
          the words' own strings rather than copying them, so disposing the
          vector would free memory the word list still owns. */

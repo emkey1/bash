@@ -7013,8 +7013,17 @@ command_substitute (string, quoted, flags)
     char *aok_out = aok_run_in_subshell (string, &aok_status);
     if (aok_out == 0)
       {
+	/* NOT `goto error_exit`, which was the first version of this and was a
+	   quiet disaster: that label closes fildes[0] and fildes[1], and on this
+	   path the pipe has never been created -- fildes is uninitialised stack.
+	   A re-launch that failed to start therefore closed two arbitrary
+	   descriptors of the shell, and if the garbage happened to be 0 or 1 it
+	   took the shell's own terminal with it. Nothing here allocated a
+	   descriptor, so there is nothing to close. */
 	sys_error ("%s", _("cannot start subshell for command substitution"));
-	goto error_exit;
+	last_made_pid = old_pid;
+	last_command_exit_value = EXECUTION_FAILURE;
+	return ((WORD_DESC *)NULL);
       }
     last_command_exit_value = WIFEXITED (aok_status) ? WEXITSTATUS (aok_status)
 						     : 128 + WTERMSIG (aok_status);

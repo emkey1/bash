@@ -888,6 +888,27 @@ aok_spawn_attr (attr)
   return 0;
 }
 
+/* The pipe descriptors a forked child closes before it runs -- close_fd_bitmap
+   (execute_cmd.c), which every fork site calls in the child.
+
+   Leaving them open is not a leak, it is a HANG. `yes | head -1` is the shape:
+   head exits after one line, and yes only stops because its write end has no
+   reader left. The spawned yes had inherited the pipe's READ end as well as
+   its write end, so a reader always existed, yes filled the pipe and blocked,
+   and the shell waited for it forever. */
+void
+aok_fork_close_bitmap (fdbp)
+     struct fd_bitmap *fdbp;
+{
+  int i;
+
+  if (fdbp == 0)
+    return;
+  for (i = 0; i < fdbp->size && aok_fork_nclose < AOK_FORK_MAX_CLOSE; i++)
+    if (fdbp->bitmap[i])
+      aok_fork_close_fds[aok_fork_nclose++] = i;
+}
+
 void
 aok_fork_clear ()
 {
@@ -1064,16 +1085,27 @@ aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
      int pipe_in, pipe_out;
 {
   int saved[3], i, err;
-  void *attr;
+  void *attr, *fa;
   pid_t pid;
 
   if (aok_redirect_push (redirects, pipe_in, pipe_out, saved) < 0)
     { errno = EIO; return (pid_t) -1; }
 
+  /* The same descriptors a forked child would have closed for itself. Passed as
+     file actions because this spawn has no re-launch script to hang them on;
+     the pipe ends themselves are already in place through the dup2s above. */
+  fa = 0;
+  if (aok_fork_nclose > 0 && posix_spawn_file_actions_init (&fa) == 0)
+    for (i = 0; i < aok_fork_nclose; i++)
+      if (aok_fork_close_fds[i] >= 0)
+	posix_spawn_file_actions_addclose (&fa, aok_fork_close_fds[i]);
+
   aok_spawn_attr (&attr);
-  err = posix_spawn (&pid, command, (void *) 0,
+  err = posix_spawn (&pid, command, fa ? (void **) &fa : (void **) 0,
 		     attr ? (void **) &attr : (void **) 0, args,
 		     env ? env : (char **) 0);
+  if (fa)
+    posix_spawn_file_actions_destroy (&fa);
 
   /* ENOEXEC is not a failure -- it is how the kernel says "this is a text file
      with no #!", which POSIX requires a shell to run as a script. Upstream

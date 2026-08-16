@@ -2092,6 +2092,25 @@ shell_reinitialize ()
      is: they would share these same globals while both were live, and a second
      shell calling this would be resetting the first shell's world rather than
      its own. kernel/bash_glue.c is where that case is dealt with. */
+  /* THE STARTUP FILES. shell_reinitialize has just set no_rc = no_profile = 1,
+     which is right for what upstream uses it for -- a shell re-execing itself
+     to run a script should not re-read ~/.bashrc -- and wrong for what it means
+     here, where this is not the same shell continuing but a brand new one. Left
+     alone, the second and every later native bash in an app session read NO
+     startup files at all: an ssh login would come up with no /etc/profile, no
+     PATH from it, and no prompt. The command-line flags are parsed after this
+     point, so --norc and --noprofile still win.
+
+     enable_history_list is the same shape: bash_history_reinit(0) above turns
+     history off, which is what a re-exec wants and not what a fresh interactive
+     shell does. And sourced_env has to go, or $BASH_ENV is sourced once per APP
+     rather than once per shell. */
+  no_rc = no_profile = 0;
+  sourced_env = 0;
+#if defined (HISTORY)
+  enable_history_list = 1;
+#endif
+
   aok_reset_export_env ();
   aok_reinit_variables ();
   aok_reinit_jobs ();

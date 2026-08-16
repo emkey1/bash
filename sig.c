@@ -506,6 +506,13 @@ aok_reinit_signals ()
   extern int wait_signal_received;
   extern int wait_intr_flag;
 
+  extern int running_trap;
+
+  /* A shell that exited from inside a trap handler leaves this set, and the
+     next shell then believes it is already running one: run_pending_traps
+     refuses to run anything (trap.c), and the DEBUG trap suppresses itself. */
+  running_trap = 0;
+
   interrupt_state = 0;
   sigterm_received = 0;
   terminating_signal = 0;

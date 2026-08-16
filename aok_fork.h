@@ -18,8 +18,9 @@
 #include "stdc.h"
 
 /* Enough for the descriptors any one site hands over: process substitution
-   passes one, a coprocess two. */
-#define AOK_FORK_MAX_CLOSE 4
+   passes one, a coprocess two, and a pipeline hands over its whole
+   fds_to_close bitmap, which is bounded by the shell's open descriptors. */
+#define AOK_FORK_MAX_CLOSE 64
 
 /* The command the spawned child is to run, in bash's own printed form, plus
    the descriptors it is to be started with. Set these immediately before
@@ -30,6 +31,10 @@ extern int aok_fork_close_fds[AOK_FORK_MAX_CLOSE];
 extern int aok_fork_nclose;
 
 extern void aok_fork_clear PARAMS((void));
+
+/* Add FDBP's descriptors to the list the spawned child will close. This is
+   close_fd_bitmap's job, done in advance because there is no child to do it. */
+extern void aok_fork_close_bitmap PARAMS((struct fd_bitmap *));
 
 /* Spawn a bash task carrying this shell's state, with the descriptors above.
    Returns a pid, never 0 -- there is no child branch to return into. */
