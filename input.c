@@ -62,8 +62,8 @@ extern void termsig_handler PARAMS((int));
 /* Functions to handle reading input on systems that don't restart read(2)
    if a signal is received. */
 
-static char localbuf[1024];
-static int local_index = 0, local_bufused = 0;
+__thread static char localbuf[1024];
+__thread static int local_index = 0, local_bufused = 0;
 
 
 /* Posix and USG systems do not guarantee to restart read () if it is
@@ -151,15 +151,15 @@ ungetc_with_restart (c, stream)
 #endif
 #define min(a, b)	((a) > (b) ? (b) : (a))
 
-int bash_input_fd_changed;
+__thread int bash_input_fd_changed;
 
 /* This provides a way to map from a file descriptor to the buffer
    associated with that file descriptor, rather than just the other
    way around.  This is needed so that buffers are managed properly
    in constructs like 3<&4.  buffers[x]->b_fd == x -- that is how the
    correspondence is maintained. */
-static BUFFERED_STREAM **buffers = (BUFFERED_STREAM **)NULL;
-static int nbuffers;
+__thread static BUFFERED_STREAM **buffers = (BUFFERED_STREAM **)NULL;
+__thread static int nbuffers;
 
 #define ALLOCATE_BUFFERS(n) \
 	do { if ((n) >= nbuffers) allocate_buffers (n); } while (0)

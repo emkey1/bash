@@ -63,7 +63,7 @@
 
 static char *array_to_string_internal PARAMS((ARRAY_ELEMENT *, ARRAY_ELEMENT *, char *, int));
 
-static char *spacesep = " ";
+__thread static char *spacesep = " ";
 
 #define IS_LASTREF(a)	(a->lastref)
 

@@ -8,8 +8,8 @@
 #include "syntax.h"
 
 
-int sh_syntabsiz = 256;
-int sh_syntaxtab[256] = {
+__thread int sh_syntabsiz = 256;
+__thread int sh_syntaxtab[256] = {
 	CWORD,		/* 0 */
 	CSPECL,		/* CTLESC */
 	CWORD,		/* 2 */

@@ -36,7 +36,7 @@ typedef struct alias {
 #define AL_BEINGEXPANDED	0x2
 
 /* The list of known aliases. */
-extern HASH_TABLE *aliases;
+__thread extern HASH_TABLE *aliases;
 
 extern void initialize_aliases PARAMS((void));
 

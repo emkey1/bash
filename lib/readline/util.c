@@ -66,7 +66,7 @@
 /* Return 0 if C is not a member of the class of characters that belong
    in words, or 1 if it is. */
 
-int _rl_allow_pathname_alphabetic_chars = 0;
+__thread int _rl_allow_pathname_alphabetic_chars = 0;
 static const char * const pathname_alphabetic_chars = "/-_=~.#$";
 
 int

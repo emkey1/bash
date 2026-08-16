@@ -182,7 +182,7 @@ typedef union YYSTYPE YYSTYPE;
 #endif
 
 
-extern YYSTYPE yylval;
+__thread extern YYSTYPE yylval;
 
 
 int yyparse (void);

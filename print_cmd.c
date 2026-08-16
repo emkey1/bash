@@ -53,8 +53,8 @@
 extern int printf PARAMS((const char *, ...));	/* Yuck.  Double yuck. */
 #endif
 
-static int indentation;
-static int indentation_amount = 4;
+__thread static int indentation;
+__thread static int indentation_amount = 4;
 
 #if defined (PREFER_STDARG)
 typedef void PFUNC PARAMS((const char *, ...));
@@ -106,12 +106,12 @@ static void print_function_def PARAMS((FUNCTION_DEF *));
 #define PRINTED_COMMAND_INITIAL_SIZE 64
 #define PRINTED_COMMAND_GROW_SIZE 128
 
-char *the_printed_command = (char *)NULL;
-int the_printed_command_size = 0;
-int command_string_index = 0;
+__thread char *the_printed_command = (char *)NULL;
+__thread int the_printed_command_size = 0;
+__thread int command_string_index = 0;
 
-int xtrace_fd = -1;
-FILE *xtrace_fp = 0;
+__thread int xtrace_fd = -1;
+__thread FILE *xtrace_fp = 0;
 
 #define CHECK_XTRACE_FP	xtrace_fp = (xtrace_fp ? xtrace_fp : stderr)
 
@@ -125,20 +125,20 @@ FILE *xtrace_fp = 0;
   } while (0)
 
 /* Non-zero means the stuff being printed is inside of a function def. */
-static int inside_function_def;
-static int skip_this_indent;
-static int was_heredoc;
-static int printing_connection;
-static int printing_comsub;
-static REDIRECT *deferred_heredocs;
+__thread static int inside_function_def;
+__thread static int skip_this_indent;
+__thread static int was_heredoc;
+__thread static int printing_connection;
+__thread static int printing_comsub;
+__thread static REDIRECT *deferred_heredocs;
 
 /* The depth of the group commands that we are currently printing.  This
    includes the group command that is a function body. */
-static int group_command_nesting;
+__thread static int group_command_nesting;
 
 /* A buffer to indicate the indirection level (PS4) when set -x is enabled. */
-static char *indirection_string = 0;
-static int indirection_stringsiz = 0;
+__thread static char *indirection_string = 0;
+__thread static int indirection_stringsiz = 0;
 
 /* Print COMMAND (a command tree) on standard output. */
 void
@@ -1491,8 +1491,8 @@ newline (string)
     cprintf ("%s", string);
 }
 
-static char *indentation_string;
-static int indentation_size;
+__thread static char *indentation_string;
+__thread static int indentation_size;
 
 static void
 indent (amount)

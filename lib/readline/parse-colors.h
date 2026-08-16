@@ -41,6 +41,6 @@ static const char *const indicator_name[]=
   };
 
 /* Buffer for color sequences */
-static char *color_buf;
+__thread static char *color_buf;
 
 #endif /* !_PARSE_COLORS_H_ */

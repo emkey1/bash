@@ -75,7 +75,7 @@ static void restore_default_color (void);
 
 #define RL_COLOR_PREFIX_EXTENSION	"readline-colored-completion-prefix"
 
-COLOR_EXT_TYPE *_rl_color_ext_list = 0;
+__thread COLOR_EXT_TYPE *_rl_color_ext_list = 0;
 
 /* Output a color indicator (which may contain nulls).  */
 void
@@ -203,7 +203,7 @@ _rl_print_color_indicator (const char *f)
     colored_filetype = C_ORPHAN;	/* dangling symlink */
   else if(stat_ok != 0)
     {
-      static enum indicator_no filetype_indicator[] = FILETYPE_INDICATORS;
+      __thread static enum indicator_no filetype_indicator[] = FILETYPE_INDICATORS;
       colored_filetype = filetype_indicator[normal]; //f->filetype];
     }
   else

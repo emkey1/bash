@@ -46,11 +46,11 @@
 
 #include "shmbutil.h"
 
-int here_doc_first_line = 0;
+__thread int here_doc_first_line = 0;
 
 /* Object caching */
-sh_obj_cache_t wdcache = {0, 0, 0};
-sh_obj_cache_t wlcache = {0, 0, 0};
+__thread sh_obj_cache_t wdcache = {0, 0, 0};
+__thread sh_obj_cache_t wlcache = {0, 0, 0};
 
 #define WDCACHESIZE	128
 #define WLCACHESIZE	128

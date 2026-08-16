@@ -71,7 +71,7 @@ static int _rl_char_search_callback (_rl_callback_generic_arg *);
    rl_insert_text.  Text blocks larger than this are divided. */
 #define TEXT_COUNT_MAX	1024
 
-int _rl_optimize_typeahead = 1;	/* rl_insert tries to read typeahead */
+__thread int _rl_optimize_typeahead = 1;	/* rl_insert tries to read typeahead */
 
 /* **************************************************************** */
 /*								    */
@@ -697,9 +697,9 @@ rl_arrow_keys (int count, int key)
 /* **************************************************************** */
 
 #ifdef HANDLE_MULTIBYTE
-static char pending_bytes[MB_LEN_MAX];
-static int pending_bytes_length = 0;
-static mbstate_t ps = {0};
+__thread static char pending_bytes[MB_LEN_MAX];
+__thread static int pending_bytes_length = 0;
+__thread static mbstate_t ps = {0};
 #endif
 
 /* Insert the character C at the current location, moving point forward.
@@ -715,7 +715,7 @@ _rl_insert_char (int count, int c)
   char incoming[MB_LEN_MAX + 1];
   int incoming_length = 0;
   mbstate_t ps_back;
-  static int stored_count = 0;
+  __thread static int stored_count = 0;
 #endif
 
   if (count <= 0)
@@ -1857,10 +1857,10 @@ rl_exchange_point_and_mark (int count, int key)
 /* Active mark support */
 
 /* Is the region active? */
-static int mark_active = 0;
+__thread static int mark_active = 0;
 
 /* Does the current command want the mark to remain active when it completes? */
-int _rl_keep_mark_active;
+__thread int _rl_keep_mark_active;
 
 void
 rl_keep_mark_active (void)

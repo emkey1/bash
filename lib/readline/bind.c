@@ -70,7 +70,7 @@ extern char *strchr (), *strrchr ();
 #endif /* !strchr && !__STDC__ */
 
 /* Variables exported by this file. */
-Keymap rl_binding_keymap;
+__thread Keymap rl_binding_keymap;
 
 static int _rl_skip_to_delim (char *, int, int);
 
@@ -98,10 +98,10 @@ static int substring_member_of_array (const char *, const char * const *);
 static int _rl_get_keymap_by_name (const char *);
 static int _rl_get_keymap_by_map (Keymap);
 
-static int currently_reading_init_file;
+__thread static int currently_reading_init_file;
 
 /* used only in this file */
-static int _rl_prefer_visible_bell = 1;
+__thread static int _rl_prefer_visible_bell = 1;
 
 #define OP_EQ	1
 #define OP_NE	2
@@ -684,7 +684,7 @@ _rl_escchar (int c)
 char *
 rl_untranslate_keyseq (int seq)
 {
-  static char kseq[16];
+  __thread static char kseq[16];
   int i, c;
 
   i = 0;
@@ -960,12 +960,12 @@ rl_trim_arg_from_keyseq	(const char *keyseq, size_t len, Keymap map)
 }
   
 /* The last key bindings file read. */
-static char *last_readline_init_file = (char *)NULL;
+__thread static char *last_readline_init_file = (char *)NULL;
 
 /* The file we're currently reading key bindings from. */
 static const char *current_readline_init_file;
-static int current_readline_init_include_level;
-static int current_readline_init_lineno;
+__thread static int current_readline_init_include_level;
+__thread static int current_readline_init_lineno;
 
 /* Read FILENAME into a locally-allocated buffer and return the buffer.
    The size of the buffer is returned in *SIZEP.  Returns NULL if any
@@ -1245,9 +1245,9 @@ static int parser_include (char *);
 const char *rl_readline_name = "other";
 
 /* Stack of previous values of parsing_conditionalized_out. */
-static unsigned char *if_stack = (unsigned char *)NULL;
-static int if_stack_depth;
-static int if_stack_size;
+__thread static unsigned char *if_stack = (unsigned char *)NULL;
+__thread static int if_stack_depth;
+__thread static int if_stack_size;
 
 /* Push _rl_parsing_conditionalized_out, and set parser state based
    on ARGS. */
@@ -2287,7 +2287,7 @@ sv_isrchterm (const char *value)
   return 0;
 }
 
-extern char *_rl_emacs_mode_str;
+__thread extern char *_rl_emacs_mode_str;
 
 static int
 sv_emacs_modestr (const char *value)
@@ -2414,7 +2414,7 @@ struct name_and_keymap {
   Keymap map;
 };
 
-static struct name_and_keymap builtin_keymap_names[] = {
+__thread static struct name_and_keymap builtin_keymap_names[] = {
   { "emacs", emacs_standard_keymap },
   { "emacs-standard", emacs_standard_keymap },
   { "emacs-meta", emacs_meta_keymap },
@@ -2431,7 +2431,7 @@ static struct name_and_keymap builtin_keymap_names[] = {
 /* -1 for NULL entry */
 #define NUM_BUILTIN_KEYMAPS (sizeof (builtin_keymap_names) / sizeof (builtin_keymap_names[0]) - 1)
 
-static struct name_and_keymap *keymap_names = builtin_keymap_names;
+__thread static struct name_and_keymap *keymap_names = builtin_keymap_names;
 
 static int
 _rl_get_keymap_by_name (const char *name)
@@ -2950,7 +2950,7 @@ rl_dump_macros (int count, int key)
 static char *
 _rl_get_string_variable_value (const char *name)
 {
-  static char numbuf[32];
+  __thread static char numbuf[32];
   char *ret;
 
   if (_rl_stricmp (name, "bell-style") == 0)

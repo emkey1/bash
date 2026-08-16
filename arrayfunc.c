@@ -47,10 +47,10 @@
 
 /* This variable means to not expand associative array subscripts more than
    once, when performing variable expansion. */
-int assoc_expand_once = 0;
+__thread int assoc_expand_once = 0;
 
 /* Ditto for indexed array subscripts -- currently unused */
-int array_expand_once = 0;
+__thread int array_expand_once = 0;
 
 static SHELL_VAR *bind_array_var_internal PARAMS((SHELL_VAR *, arrayind_t, char *, char *, int));
 static SHELL_VAR *assign_array_element_internal PARAMS((SHELL_VAR *, char *, char *, char *, int, char *, int, array_eltstate_t *));

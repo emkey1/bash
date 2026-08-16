@@ -72,7 +72,7 @@ extern int errno;
 /* An array of such flags, one for each signal, describing what the
    shell will do with a signal.  DEBUG_TRAP == NSIG; some code below
    assumes this. */
-static int sigmodes[BASH_NSIG];
+__thread static int sigmodes[BASH_NSIG];
 
 static void free_trap_command (int);
 static void change_signal (int, char *);
@@ -89,40 +89,40 @@ static void trap_if_untrapped (int, char *);
 
 /* Variables used here but defined in other files. */
 
-extern volatile int from_return_trap;
-extern int waiting_for_child;
+__thread extern volatile int from_return_trap;
+__thread extern int waiting_for_child;
 
-extern WORD_LIST *subst_assign_varlist;
+__thread extern WORD_LIST *subst_assign_varlist;
 
 /* The list of things to do originally, before we started trapping. */
-SigHandler *original_signals[NSIG];
+__thread SigHandler *original_signals[NSIG];
 
 /* For each signal, a slot for a string, which is a command to be
    executed when that signal is received.  The slot can also contain
    DEFAULT_SIG, which means do whatever you were going to do before
    you were so rudely interrupted, or IGNORE_SIG, which says ignore
    this signal. */
-char *trap_list[BASH_NSIG];
+__thread char *trap_list[BASH_NSIG];
 
 /* A bitmap of signals received for which we have trap handlers. */
-int pending_traps[NSIG];
+__thread int pending_traps[NSIG];
 
 /* Set to the number of the signal we're running the trap for + 1.
    Used in execute_cmd.c and builtins/common.c to clean up when
    parse_and_execute does not return normally after executing the
    trap command (e.g., when `return' is executed in the trap command). */
-int running_trap;
+__thread int running_trap;
 
 /* Set to last_command_exit_value before running a trap. */
-int trap_saved_exit_value;
+__thread int trap_saved_exit_value;
 
 /* The (trapped) signal received while executing in the `wait' builtin */
-int wait_signal_received;
+__thread int wait_signal_received;
 
-int trapped_signal_received;
+__thread int trapped_signal_received;
 
 /* Set to 1 to suppress the effect of `set v' in the DEBUG trap. */
-int suppress_debug_trap_verbose = 0;
+__thread int suppress_debug_trap_verbose = 0;
 
 #define GETORIGSIG(sig) \
   do { \
@@ -291,7 +291,7 @@ decode_signal (string, flags)
 }
 
 /* Non-zero when we catch a trapped signal. */
-static int catch_flag;
+__thread static int catch_flag;
 
 void
 run_pending_traps ()

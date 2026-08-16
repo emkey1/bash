@@ -27,14 +27,14 @@ extern int tgetnum (const char *name);
 extern int tgetflag (const char *name);
 extern char *tgetstr (const char *name, char **area);
 
-extern char PC;
-extern short ospeed;
+__thread extern char PC;
+__thread extern short ospeed;
 extern int tputs (const char *string, int nlines, int (*outfun) (int));
 
 extern char *tparam (const char *ctlstring, char *buffer, int size, ...);
 
-extern char *UP;
-extern char *BC;
+__thread extern char *UP;
+__thread extern char *BC;
 
 extern char *tgoto (const char *cstring, int hpos, int vpos);
 

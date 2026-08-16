@@ -59,13 +59,13 @@ static void _rl_history_set_point (void);
 
 /* If non-zero, rl_get_previous_history and rl_get_next_history attempt
    to preserve the value of rl_point from line to line. */
-int _rl_history_preserve_point = 0;
+__thread int _rl_history_preserve_point = 0;
 
-_rl_arg_cxt _rl_argcxt;
+__thread _rl_arg_cxt _rl_argcxt;
 
 /* Saved target point for when _rl_history_preserve_point is set.  Special
    value of -1 means that point is at the end of the line. */
-int _rl_history_saved_point = -1;
+__thread int _rl_history_saved_point = -1;
 
 /* **************************************************************** */
 /*								    */
@@ -299,7 +299,7 @@ rl_discard_argument (void)
 
 /* While we are editing the history, this is the saved
    version of the original line. */
-HIST_ENTRY *_rl_saved_line_for_history = (HIST_ENTRY *)NULL;
+__thread HIST_ENTRY *_rl_saved_line_for_history = (HIST_ENTRY *)NULL;
 
 /* Set the history pointer back to the last entry in the history. */
 void
@@ -687,8 +687,8 @@ rl_fetch_history (int count, int c)
    editing command. */
 
 /* This could stand to be global to the readline library */
-static rl_hook_func_t *_rl_saved_internal_startup_hook = 0;
-static int saved_history_logical_offset = -1;
+__thread static rl_hook_func_t *_rl_saved_internal_startup_hook = 0;
+__thread static int saved_history_logical_offset = -1;
 
 #define HISTORY_FULL() (history_is_stifled () && history_length >= history_max_entries)
 

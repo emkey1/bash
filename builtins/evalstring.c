@@ -61,7 +61,7 @@ extern int errno;
 
 #define IS_BUILTIN(s)	(builtin_address_internal(s, 0) != (struct builtin *)NULL)
 
-int parse_and_execute_level = 0;
+__thread int parse_and_execute_level = 0;
 
 static int cat_file PARAMS((REDIRECT *));
 

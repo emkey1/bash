@@ -164,22 +164,22 @@ typedef struct {
   struct lvalue lval;
 } EXPR_CONTEXT;
 
-static char	*expression;	/* The current expression */
-static char	*tp;		/* token lexical position */
-static char	*lasttp;	/* pointer to last token position */
-static int	curtok;		/* the current token */
-static int	lasttok;	/* the previous token */
-static int	assigntok;	/* the OP in OP= */
-static char	*tokstr;	/* current token string */
-static intmax_t	tokval;		/* current token value */
-static int	noeval;		/* set to 1 if no assignment to be done */
-static procenv_t evalbuf;
+__thread static char	*expression;	/* The current expression */
+__thread static char	*tp;		/* token lexical position */
+__thread static char	*lasttp;	/* pointer to last token position */
+__thread static int	curtok;		/* the current token */
+__thread static int	lasttok;	/* the previous token */
+__thread static int	assigntok;	/* the OP in OP= */
+__thread static char	*tokstr;	/* current token string */
+__thread static intmax_t	tokval;		/* current token value */
+__thread static int	noeval;		/* set to 1 if no assignment to be done */
+__thread static procenv_t evalbuf;
 
 /* set to 1 if the expression has already been run through word expansion */
-static int	already_expanded;
+__thread static int	already_expanded;
 
-static struct lvalue curlval = {0, 0, 0, -1};
-static struct lvalue lastlval = {0, 0, 0, -1};
+__thread static struct lvalue curlval = {0, 0, 0, -1};
+__thread static struct lvalue lastlval = {0, 0, 0, -1};
 
 static int	_is_arithop PARAMS((int));
 static void	readtok PARAMS((void));	/* lexical analyzer */
@@ -220,9 +220,9 @@ static intmax_t exp1 PARAMS((void));
 static intmax_t exp0 PARAMS((void));
 
 /* Global var which contains the stack of expression contexts. */
-static EXPR_CONTEXT **expr_stack;
-static int expr_depth;		   /* Location in the stack. */
-static int expr_stack_size;	   /* Number of slots already allocated. */
+__thread static EXPR_CONTEXT **expr_stack;
+__thread static int expr_depth;		   /* Location in the stack. */
+__thread static int expr_stack_size;	   /* Number of slots already allocated. */
 
 #if defined (ARRAY_VARS)
 extern const char * const bash_badsub_errmsg;

@@ -85,10 +85,10 @@ $END
 #include "common.h"
 #include "bashgetopt.h"
 
-extern int wait_signal_received;
+__thread extern int wait_signal_received;
 
-procenv_t wait_intr_buf;
-int wait_intr_flag;
+__thread procenv_t wait_intr_buf;
+__thread int wait_intr_flag;
 
 static int set_waitlist PARAMS((WORD_LIST *));
 static void unset_waitlist PARAMS((void));

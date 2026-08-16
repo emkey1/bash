@@ -97,7 +97,7 @@ static struct {
   0
 };
 
-static char *saved_posix_vars = 0;
+__thread static char *saved_posix_vars = 0;
 
 void
 posix_initialize (on)
@@ -895,7 +895,7 @@ full_pathname (file)
 
 /* A slightly related function.  Get the prettiest name of this
    directory possible. */
-static char tdir[PATH_MAX];
+__thread static char tdir[PATH_MAX];
 
 /* Return a pretty pathname.  If the first part of the pathname is
    the same as $HOME, then replace that with `~'.  */
@@ -1063,10 +1063,10 @@ extract_colon_unit (string, p_index)
 extern char *get_dirstack_from_string PARAMS((char *));
 #endif
 
-static char **bash_tilde_prefixes;
-static char **bash_tilde_prefixes2;
-static char **bash_tilde_suffixes;
-static char **bash_tilde_suffixes2;
+__thread static char **bash_tilde_prefixes;
+__thread static char **bash_tilde_prefixes2;
+__thread static char **bash_tilde_suffixes;
+__thread static char **bash_tilde_suffixes2;
 
 /* If tilde_expand hasn't been able to expand the text, perhaps it
    is a special shell expansion.  This function is installed as the
@@ -1099,7 +1099,7 @@ bash_special_tilde_expansions (text)
 void
 tilde_initialize ()
 {
-  static int times_called = 0;
+  __thread static int times_called = 0;
 
   /* Tell the tilde expander that we want a crack first. */
   tilde_expansion_preexpansion_hook = bash_special_tilde_expansions;
@@ -1231,17 +1231,17 @@ bash_tilde_expand (s, assign_p)
 /*								    */
 /* **************************************************************** */
 
-static int ngroups, maxgroups;
+__thread static int ngroups, maxgroups;
 
 /* get_group_list and get_group_array cached these in function statics. They are
    at file scope so that iSH-AOK's aok_reinit_groups (at the end of this file)
    can drop them along with group_array; nothing else changes, since a function
    static and a file static have the same lifetime and both are private here. */
-static char **group_vector = (char **)NULL;
-static int *group_iarray = (int *)NULL;
+__thread static char **group_vector = (char **)NULL;
+__thread static int *group_iarray = (int *)NULL;
 
 /* The set of groups that this user is a member of. */
-static GETGROUPS_T *group_array = (GETGROUPS_T *)NULL;
+__thread static GETGROUPS_T *group_array = (GETGROUPS_T *)NULL;
 
 #if !defined (NOGROUP)
 #  define NOGROUP (gid_t) -1

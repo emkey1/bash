@@ -82,8 +82,8 @@ typedef SHELL_VAR **SVFUNC ();
 extern char *strpbrk PARAMS((char *, char *));
 #endif
 
-extern STRING_INT_ALIST word_token_alist[];
-extern char *signal_names[];
+__thread extern STRING_INT_ALIST word_token_alist[];
+__thread extern char *signal_names[];
 
 #if defined (DEBUG)
 #if defined (PREFER_STDARG)
@@ -149,44 +149,44 @@ static WORD_LIST *command_line_to_word_list PARAMS((char *, int, int, int *, int
 static int progcomp_debug = 0;
 #endif
 
-int prog_completion_enabled = 1;
+__thread int prog_completion_enabled = 1;
 
 #ifdef ALIAS
-int progcomp_alias = 0;	/* unavailable to user code for now */
+__thread int progcomp_alias = 0;	/* unavailable to user code for now */
 #endif
 
 /* These are used to manage the arrays of strings for possible completions. */
-ITEMLIST it_aliases = { 0, it_init_aliases, (STRINGLIST *)0 };
-ITEMLIST it_arrayvars  = { LIST_DYNAMIC, it_init_arrayvars, (STRINGLIST *)0 };
-ITEMLIST it_bindings  = { 0, it_init_bindings, (STRINGLIST *)0 };
-ITEMLIST it_builtins  = { 0, it_init_builtins, (STRINGLIST *)0 };
-ITEMLIST it_commands = { LIST_DYNAMIC };	/* unused */
-ITEMLIST it_directories = { LIST_DYNAMIC };	/* unused */
-ITEMLIST it_disabled = { 0, it_init_disabled, (STRINGLIST *)0 };
-ITEMLIST it_enabled = { 0, it_init_enabled, (STRINGLIST *)0 };
-ITEMLIST it_exports  = { LIST_DYNAMIC, it_init_exported, (STRINGLIST *)0 };
-ITEMLIST it_files = { LIST_DYNAMIC };		/* unused */
-ITEMLIST it_functions  = { 0, it_init_functions, (STRINGLIST *)0 };
-ITEMLIST it_helptopics  = { 0, it_init_helptopics, (STRINGLIST *)0 };
-ITEMLIST it_hostnames  = { LIST_DYNAMIC, it_init_hostnames, (STRINGLIST *)0 };
-ITEMLIST it_groups = { LIST_DYNAMIC };		/* unused */
-ITEMLIST it_jobs = { LIST_DYNAMIC, it_init_jobs, (STRINGLIST *)0 };
-ITEMLIST it_keywords = { 0, it_init_keywords, (STRINGLIST *)0 };
-ITEMLIST it_running = { LIST_DYNAMIC, it_init_running, (STRINGLIST *)0 };
-ITEMLIST it_services = { LIST_DYNAMIC };	/* unused */
-ITEMLIST it_setopts = { 0, it_init_setopts, (STRINGLIST *)0 };
-ITEMLIST it_shopts = { 0, it_init_shopts, (STRINGLIST *)0 };
-ITEMLIST it_signals = { 0, it_init_signals, (STRINGLIST *)0 };
-ITEMLIST it_stopped = { LIST_DYNAMIC, it_init_stopped, (STRINGLIST *)0 };
-ITEMLIST it_users = { LIST_DYNAMIC };		/* unused */
-ITEMLIST it_variables = { LIST_DYNAMIC, it_init_variables, (STRINGLIST *)0 };
+__thread ITEMLIST it_aliases = { 0, it_init_aliases, (STRINGLIST *)0 };
+__thread ITEMLIST it_arrayvars  = { LIST_DYNAMIC, it_init_arrayvars, (STRINGLIST *)0 };
+__thread ITEMLIST it_bindings  = { 0, it_init_bindings, (STRINGLIST *)0 };
+__thread ITEMLIST it_builtins  = { 0, it_init_builtins, (STRINGLIST *)0 };
+__thread ITEMLIST it_commands = { LIST_DYNAMIC };	/* unused */
+__thread ITEMLIST it_directories = { LIST_DYNAMIC };	/* unused */
+__thread ITEMLIST it_disabled = { 0, it_init_disabled, (STRINGLIST *)0 };
+__thread ITEMLIST it_enabled = { 0, it_init_enabled, (STRINGLIST *)0 };
+__thread ITEMLIST it_exports  = { LIST_DYNAMIC, it_init_exported, (STRINGLIST *)0 };
+__thread ITEMLIST it_files = { LIST_DYNAMIC };		/* unused */
+__thread ITEMLIST it_functions  = { 0, it_init_functions, (STRINGLIST *)0 };
+__thread ITEMLIST it_helptopics  = { 0, it_init_helptopics, (STRINGLIST *)0 };
+__thread ITEMLIST it_hostnames  = { LIST_DYNAMIC, it_init_hostnames, (STRINGLIST *)0 };
+__thread ITEMLIST it_groups = { LIST_DYNAMIC };		/* unused */
+__thread ITEMLIST it_jobs = { LIST_DYNAMIC, it_init_jobs, (STRINGLIST *)0 };
+__thread ITEMLIST it_keywords = { 0, it_init_keywords, (STRINGLIST *)0 };
+__thread ITEMLIST it_running = { LIST_DYNAMIC, it_init_running, (STRINGLIST *)0 };
+__thread ITEMLIST it_services = { LIST_DYNAMIC };	/* unused */
+__thread ITEMLIST it_setopts = { 0, it_init_setopts, (STRINGLIST *)0 };
+__thread ITEMLIST it_shopts = { 0, it_init_shopts, (STRINGLIST *)0 };
+__thread ITEMLIST it_signals = { 0, it_init_signals, (STRINGLIST *)0 };
+__thread ITEMLIST it_stopped = { LIST_DYNAMIC, it_init_stopped, (STRINGLIST *)0 };
+__thread ITEMLIST it_users = { LIST_DYNAMIC };		/* unused */
+__thread ITEMLIST it_variables = { LIST_DYNAMIC, it_init_variables, (STRINGLIST *)0 };
 
-COMPSPEC *pcomp_curcs;
+__thread COMPSPEC *pcomp_curcs;
 const char *pcomp_curcmd;
 const char *pcomp_curtxt;
 
-char *pcomp_line;
-int pcomp_ind;
+__thread char *pcomp_line;
+__thread int pcomp_ind;
 
 #ifdef DEBUG
 /* Debugging code */
@@ -731,7 +731,7 @@ pcomp_filename_completion_function (text, state)
      const char *text;
      int state;
 {
-  static char *dfn;	/* dequoted filename */
+  __thread static char *dfn;	/* dequoted filename */
   int iscompgen, iscompleting;
 
   if (state == 0)

@@ -87,12 +87,12 @@ static void clear_unwind_protects_internal PARAMS((char *, char *));
 static inline void restore_variable PARAMS((SAVED_VAR *));
 static void unwind_protect_mem_internal PARAMS((char *, char *));
 
-static UNWIND_ELT *unwind_protect_list = (UNWIND_ELT *)NULL;
+__thread static UNWIND_ELT *unwind_protect_list = (UNWIND_ELT *)NULL;
 
 /* Allocating from a cache of unwind-protect elements */
 #define UWCACHESIZE	128
 
-sh_obj_cache_t uwcache = {0, 0, 0};
+__thread sh_obj_cache_t uwcache = {0, 0, 0};
 
 #if 0
 #define uwpalloc(elt)	(elt) = (UNWIND_ELT *)xmalloc (sizeof (UNWIND_ELT))

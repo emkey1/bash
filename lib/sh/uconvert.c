@@ -48,7 +48,7 @@ do { \
 /*
  * An incredibly simplistic floating point converter.
  */
-static int multiplier[7] = { 1, 100000, 10000, 1000, 100, 10, 1 };
+__thread static int multiplier[7] = { 1, 100000, 10000, 1000, 100, 10, 1 };
 
 /* Take a decimal number int-part[.[micro-part]] and convert it to the whole
    and fractional portions.  The fractional portion is returned in

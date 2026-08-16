@@ -37,8 +37,8 @@ extern size_t mbstrlen PARAMS((const char *));
 
 extern char *xstrchr PARAMS((const char *, int));
 
-extern int locale_mb_cur_max;	/* XXX */
-extern int locale_utf8locale;	/* XXX */
+__thread extern int locale_mb_cur_max;	/* XXX */
+__thread extern int locale_utf8locale;	/* XXX */
 
 #ifndef MB_INVALIDCH
 #define MB_INVALIDCH(x)		((x) == (size_t)-1 || (x) == (size_t)-2)

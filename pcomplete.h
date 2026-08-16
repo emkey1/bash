@@ -109,41 +109,41 @@ typedef struct _list_of_items {
 #define DEFAULTCMD	"_DefaultCmD_"
 #define INITIALWORD	"_InitialWorD_"
 
-extern HASH_TABLE *prog_completes;
+__thread extern HASH_TABLE *prog_completes;
 
-extern char *pcomp_line;
-extern int pcomp_ind;
+__thread extern char *pcomp_line;
+__thread extern int pcomp_ind;
 
-extern int prog_completion_enabled;
-extern int progcomp_alias;
+__thread extern int prog_completion_enabled;
+__thread extern int progcomp_alias;
 
 /* Not all of these are used yet. */
-extern ITEMLIST it_aliases;
-extern ITEMLIST it_arrayvars;
-extern ITEMLIST it_bindings;
-extern ITEMLIST it_builtins;
-extern ITEMLIST it_commands;
-extern ITEMLIST it_directories;
-extern ITEMLIST it_disabled;
-extern ITEMLIST it_enabled;
-extern ITEMLIST it_exports;
-extern ITEMLIST it_files;
-extern ITEMLIST it_functions;
-extern ITEMLIST it_groups;
-extern ITEMLIST it_helptopics;
-extern ITEMLIST it_hostnames;
-extern ITEMLIST it_jobs;
-extern ITEMLIST it_keywords;
-extern ITEMLIST it_running;
-extern ITEMLIST it_services;
-extern ITEMLIST it_setopts;
-extern ITEMLIST it_shopts;
-extern ITEMLIST it_signals;
-extern ITEMLIST it_stopped;
-extern ITEMLIST it_users;
-extern ITEMLIST it_variables;
+__thread extern ITEMLIST it_aliases;
+__thread extern ITEMLIST it_arrayvars;
+__thread extern ITEMLIST it_bindings;
+__thread extern ITEMLIST it_builtins;
+__thread extern ITEMLIST it_commands;
+__thread extern ITEMLIST it_directories;
+__thread extern ITEMLIST it_disabled;
+__thread extern ITEMLIST it_enabled;
+__thread extern ITEMLIST it_exports;
+__thread extern ITEMLIST it_files;
+__thread extern ITEMLIST it_functions;
+__thread extern ITEMLIST it_groups;
+__thread extern ITEMLIST it_helptopics;
+__thread extern ITEMLIST it_hostnames;
+__thread extern ITEMLIST it_jobs;
+__thread extern ITEMLIST it_keywords;
+__thread extern ITEMLIST it_running;
+__thread extern ITEMLIST it_services;
+__thread extern ITEMLIST it_setopts;
+__thread extern ITEMLIST it_shopts;
+__thread extern ITEMLIST it_signals;
+__thread extern ITEMLIST it_stopped;
+__thread extern ITEMLIST it_users;
+__thread extern ITEMLIST it_variables;
 
-extern COMPSPEC *pcomp_curcs;
+__thread extern COMPSPEC *pcomp_curcs;
 extern const char *pcomp_curcmd;
 
 /* Functions from pcomplib.c */

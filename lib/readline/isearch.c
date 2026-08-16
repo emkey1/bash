@@ -55,9 +55,9 @@
 #include "xmalloc.h"
 
 /* Variables exported to other files in the readline library. */
-char *_rl_isearch_terminators = (char *)NULL;
+__thread char *_rl_isearch_terminators = (char *)NULL;
 
-_rl_search_cxt *_rl_iscxt = 0;
+__thread _rl_search_cxt *_rl_iscxt = 0;
 
 static int rl_search_history (int, int);
 
@@ -69,10 +69,10 @@ static void _rl_isearch_fini (_rl_search_cxt *);
 /* static char *prev_line_found; */
 
 /* Last search string and its length. */
-static char *last_isearch_string;
-static int last_isearch_string_len;
+__thread static char *last_isearch_string;
+__thread static int last_isearch_string_len;
 
-static char * const default_isearch_terminators = "\033\012";
+__thread static char * const default_isearch_terminators = "\033\012";
 
 _rl_search_cxt *
 _rl_scxt_alloc (int type, int flags)

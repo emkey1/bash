@@ -107,11 +107,11 @@ extern int errno;
 #  include <mbstr.h>		/* mbschr */
 #endif
 
-extern int command_string_index;
-extern char *the_printed_command;
-extern time_t shell_start_time;
+__thread extern int command_string_index;
+__thread extern char *the_printed_command;
+__thread extern time_t shell_start_time;
 #if defined (HAVE_GETTIMEOFDAY)
-extern struct timeval shellstart;
+__thread extern struct timeval shellstart;
 #endif
 #if 0
 extern char *glob_argv_flags;
@@ -198,88 +198,88 @@ static int execute_intern_function PARAMS((WORD_DESC *, FUNCTION_DEF *));
 
 /* Set to 1 if fd 0 was the subject of redirection to a subshell.  Global
    so that reader_loop can set it to zero before executing a command. */
-int stdin_redir;
+__thread int stdin_redir;
 
 /* The name of the command that is currently being executed.
    `test' needs this, for example. */
-char *this_command_name;
+__thread char *this_command_name;
 
 /* The printed representation of the currently-executing command (same as
    the_printed_command), except when a trap is being executed.  Useful for
    a debugger to know where exactly the program is currently executing. */
-char *the_printed_command_except_trap;
+__thread char *the_printed_command_except_trap;
 
 /* For catching RETURN in a function. */
-int return_catch_flag;
-int return_catch_value;
-procenv_t return_catch;
+__thread int return_catch_flag;
+__thread int return_catch_value;
+__thread procenv_t return_catch;
 
 /* The value returned by the last synchronous command. */
-volatile int last_command_exit_value;
+__thread volatile int last_command_exit_value;
 
 /* Whether or not the last command (corresponding to last_command_exit_value)
    was terminated by a signal, and, if so, which one. */
-int last_command_exit_signal;
+__thread int last_command_exit_signal;
 
 /* Are we currently ignoring the -e option for the duration of a builtin's
    execution? */
-int builtin_ignoring_errexit = 0;
+__thread int builtin_ignoring_errexit = 0;
 
 /* The list of redirections to perform which will undo the redirections
    that I made in the shell. */
-REDIRECT *redirection_undo_list = (REDIRECT *)NULL;
+__thread REDIRECT *redirection_undo_list = (REDIRECT *)NULL;
 
 /* The list of redirections to perform which will undo the internal
    redirections performed by the `exec' builtin.  These are redirections
    that must be undone even when exec discards redirection_undo_list. */
-REDIRECT *exec_redirection_undo_list = (REDIRECT *)NULL;
+__thread REDIRECT *exec_redirection_undo_list = (REDIRECT *)NULL;
 
 /* When greater than zero, value is the `level' of builtins we are
    currently executing (e.g. `eval echo a' would have it set to 2). */
-int executing_builtin = 0;
+__thread int executing_builtin = 0;
 
 /* Non-zero if we are executing a command list (a;b;c, etc.) */
-int executing_list = 0;
+__thread int executing_list = 0;
 
 /* Non-zero if failing commands in a command substitution should not exit the
    shell even if -e is set.  Used to pass the CMD_IGNORE_RETURN flag down to
    commands run in command substitutions by parse_and_execute. */
-int comsub_ignore_return = 0;
+__thread int comsub_ignore_return = 0;
 
 /* Non-zero if we have just forked and are currently running in a subshell
    environment. */
-int subshell_environment;
+__thread int subshell_environment;
 
 /* Count of nested subshells, like SHLVL.  Available via $BASH_SUBSHELL */
-int subshell_level = 0;
+__thread int subshell_level = 0;
 
 /* Currently-executing shell function. */
-SHELL_VAR *this_shell_function;
+__thread SHELL_VAR *this_shell_function;
 
 /* If non-zero, matches in case and [[ ... ]] are case-insensitive */
-int match_ignore_case = 0;
+__thread int match_ignore_case = 0;
 
-int executing_command_builtin = 0;
+__thread int executing_command_builtin = 0;
 
-struct stat SB;		/* used for debugging */
+__thread struct stat SB;		/* used for debugging */
 
-static int special_builtin_failed;
+__thread static int special_builtin_failed;
 
-static COMMAND *currently_executing_command;
+__thread static COMMAND *currently_executing_command;
 
 /* The line number that the currently executing function starts on. */
-static int function_line_number;
+__thread static int function_line_number;
 
 /* XXX - set to 1 if we're running the DEBUG trap and we want to show the line
    number containing the function name.  Used by executing_line_number to
    report the correct line number.  Kind of a hack. */
-static int showing_function_line;
+__thread static int showing_function_line;
 
-static int connection_count;
+__thread static int connection_count;
 
 /* $LINENO ($BASH_LINENO) for use by an ERR trap.  Global so parse_and_execute
    can save and restore it. */
-int line_number_for_err_trap;
+__thread int line_number_for_err_trap;
 
 /* A convenience macro to avoid resetting line_number_for_err_trap while
    running the ERR trap. */
@@ -299,20 +299,20 @@ do { \
     : executing_line_number ()
 
 /* A sort of function nesting level counter */
-int funcnest = 0;
-int funcnest_max = 0;
+__thread int funcnest = 0;
+__thread int funcnest_max = 0;
 
-int evalnest = 0;
-int evalnest_max = EVALNEST_MAX;
+__thread int evalnest = 0;
+__thread int evalnest_max = EVALNEST_MAX;
 
-int sourcenest = 0;
-int sourcenest_max = SOURCENEST_MAX;
+__thread int sourcenest = 0;
+__thread int sourcenest_max = SOURCENEST_MAX;
 
-volatile int from_return_trap = 0;
+__thread volatile int from_return_trap = 0;
 
-int lastpipe_opt = 0;
+__thread int lastpipe_opt = 0;
 
-struct fd_bitmap *current_fds_to_close = (struct fd_bitmap *)NULL;
+__thread struct fd_bitmap *current_fds_to_close = (struct fd_bitmap *)NULL;
 
 #define FD_BITMAP_DEFAULT_SIZE 32
 
@@ -1784,9 +1784,9 @@ static void cpl_prune PARAMS((void));
 static void coproc_free PARAMS((struct coproc *));
 
 /* Will go away when there is fully-implemented support for multiple coprocs. */
-Coproc sh_coproc = { 0, NO_PID, -1, -1, 0, 0, 0, 0, 0 };
+__thread Coproc sh_coproc = { 0, NO_PID, -1, -1, 0, 0, 0, 0, 0 };
 
-cplist_t coproc_list = {0, 0, 0};
+__thread cplist_t coproc_list = {0, 0, 0};
 
 /* Functions to manage the list of coprocs */
 
@@ -3268,7 +3268,7 @@ execute_arith_for_command (arith_for_command)
 #endif
 
 #if defined (SELECT_COMMAND)
-static int LINES, COLS, tabsize;
+__thread static int LINES, COLS, tabsize;
 
 #define RP_SPACE ") "
 #define RP_SPACE_LEN 2
@@ -3946,7 +3946,7 @@ execute_arith_command (arith_command)
 
 #if defined (COND_COMMAND)
 
-static char * const nullstr = "";
+__thread static char * const nullstr = "";
 
 /* XXX - can COND ever be NULL when this is called? */
 static int

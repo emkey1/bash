@@ -59,20 +59,20 @@
 
 /* The currently executing macro string.  If this is non-zero,
    then it is a malloc ()'ed string where input is coming from. */
-char *rl_executing_macro = (char *)NULL;
+__thread char *rl_executing_macro = (char *)NULL;
 
 /* The offset in the above string to the next character to be read. */
-static int executing_macro_index;
+__thread static int executing_macro_index;
 
 /* The current macro string being built.  Characters get stuffed
    in here by add_macro_char (). */
-static char *current_macro = (char *)NULL;
+__thread static char *current_macro = (char *)NULL;
 
 /* The size of the buffer allocated to current_macro. */
-static int current_macro_size;
+__thread static int current_macro_size;
 
 /* The index at which characters are being added to current_macro. */
-static int current_macro_index;
+__thread static int current_macro_index;
 
 /* A structure used to save nested macro strings.
    It is a linked list of string/index for each saved macro. */
@@ -83,9 +83,9 @@ struct saved_macro {
 };
 
 /* The list of saved macros. */
-static struct saved_macro *macro_list = (struct saved_macro *)NULL;
+__thread static struct saved_macro *macro_list = (struct saved_macro *)NULL;
 
-static int macro_level = 0;
+__thread static int macro_level = 0;
 
 /* Set up to read subsequent input from STRING.
    STRING is free ()'ed when we are done with it. */

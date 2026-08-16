@@ -77,31 +77,31 @@ static void _rl_handle_signal (int);
 
 /* If non-zero, readline will install its own signal handlers for
    SIGINT, SIGTERM, SIGHUP, SIGQUIT, SIGALRM, SIGTSTP, SIGTTIN, and SIGTTOU. */
-int rl_catch_signals = 1;
+__thread int rl_catch_signals = 1;
 
 /* If non-zero, readline will install a signal handler for SIGWINCH. */
 #ifdef SIGWINCH
-int rl_catch_sigwinch = 1;
+__thread int rl_catch_sigwinch = 1;
 #else
 int rl_catch_sigwinch = 0;	/* for the readline state struct in readline.c */
 #endif
 
 /* Private variables. */
-int volatile _rl_caught_signal = 0;	/* should be sig_atomic_t, but that requires including <signal.h> everywhere */
+__thread int volatile _rl_caught_signal = 0;	/* should be sig_atomic_t, but that requires including <signal.h> everywhere */
 
 /* If non-zero, print characters corresponding to received signals as long as
    the user has indicated his desire to do so (_rl_echo_control_chars). */
-int _rl_echoctl = 0;
+__thread int _rl_echoctl = 0;
 
-int _rl_intr_char = 0;
-int _rl_quit_char = 0;
-int _rl_susp_char = 0;
+__thread int _rl_intr_char = 0;
+__thread int _rl_quit_char = 0;
+__thread int _rl_susp_char = 0;
 
-static int signals_set_flag;
-static int sigwinch_set_flag;
+__thread static int signals_set_flag;
+__thread static int sigwinch_set_flag;
 
 #if defined (HAVE_POSIX_SIGNALS)
-sigset_t _rl_orig_sigset;
+__thread sigset_t _rl_orig_sigset;
 #endif /* !HAVE_POSIX_SIGNALS */
 
 /* **************************************************************** */
@@ -110,16 +110,16 @@ sigset_t _rl_orig_sigset;
 /*								    */
 /* **************************************************************** */
 
-static sighandler_cxt old_int, old_term, old_hup, old_alrm, old_quit;
+__thread static sighandler_cxt old_int, old_term, old_hup, old_alrm, old_quit;
 #if defined (SIGTSTP)
-static sighandler_cxt old_tstp, old_ttou, old_ttin;
+__thread static sighandler_cxt old_tstp, old_ttou, old_ttin;
 #endif
 #if defined (SIGWINCH)
-static sighandler_cxt old_winch;
+__thread static sighandler_cxt old_winch;
 #endif
 
-_rl_sigcleanup_func_t *_rl_sigcleanup;
-void *_rl_sigcleanarg;
+__thread _rl_sigcleanup_func_t *_rl_sigcleanup;
+__thread void *_rl_sigcleanarg;
 
 /* Readline signal handler functions. */
 
@@ -410,8 +410,8 @@ rl_set_signals (void)
   sighandler_cxt dummy;
   SigHandler *oh;
 #if defined (HAVE_POSIX_SIGNALS)
-  static int sigmask_set = 0;
-  static sigset_t bset, oset;
+  __thread static int sigmask_set = 0;
+  __thread static sigset_t bset, oset;
 #endif
 
 #if defined (HAVE_POSIX_SIGNALS)
@@ -622,8 +622,8 @@ rl_check_signals (void)
 /* **************************************************************** */
 
 #if defined (HAVE_POSIX_SIGNALS)
-static sigset_t sigint_set, sigint_oset;
-static sigset_t sigwinch_set, sigwinch_oset;
+__thread static sigset_t sigint_set, sigint_oset;
+__thread static sigset_t sigwinch_set, sigwinch_oset;
 #else /* !HAVE_POSIX_SIGNALS */
 #  if defined (HAVE_BSD_SIGNALS)
 static int sigint_oldmask;
@@ -631,8 +631,8 @@ static int sigwinch_oldmask;
 #  endif /* HAVE_BSD_SIGNALS */
 #endif /* !HAVE_POSIX_SIGNALS */
 
-static int sigint_blocked;
-static int sigwinch_blocked;
+__thread static int sigint_blocked;
+__thread static int sigwinch_blocked;
 
 /* Cause SIGINT to not be delivered until the corresponding call to
    release_sigint(). */

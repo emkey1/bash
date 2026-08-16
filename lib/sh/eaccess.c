@@ -82,7 +82,7 @@ sh_stat (path, finfo)
      const char *path;
      struct stat *finfo;
 {
-  static char *pbuf = 0;
+  __thread static char *pbuf = 0;
 
   if (*path == '\0')
     {

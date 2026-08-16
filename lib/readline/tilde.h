@@ -33,23 +33,23 @@ typedef char *tilde_hook_func_t (char *);
    wants called before trying the standard tilde expansions.  The function
    is called with the text sans tilde, and returns a malloc()'ed string
    which is the expansion, or a NULL pointer if the expansion fails. */
-extern tilde_hook_func_t *tilde_expansion_preexpansion_hook;
+__thread extern tilde_hook_func_t *tilde_expansion_preexpansion_hook;
 
 /* If non-null, this contains the address of a function to call if the
    standard meaning for expanding a tilde fails.  The function is called
    with the text (sans tilde, as in "foo"), and returns a malloc()'ed string
    which is the expansion, or a NULL pointer if there is no expansion. */
-extern tilde_hook_func_t *tilde_expansion_failure_hook;
+__thread extern tilde_hook_func_t *tilde_expansion_failure_hook;
 
 /* When non-null, this is a NULL terminated array of strings which
    are duplicates for a tilde prefix.  Bash uses this to expand
    `=~' and `:~'. */
-extern char **tilde_additional_prefixes;
+__thread extern char **tilde_additional_prefixes;
 
 /* When non-null, this is a NULL terminated array of strings which match
    the end of a username, instead of just "/".  Bash sets this to
    `:' and `=~'. */
-extern char **tilde_additional_suffixes;
+__thread extern char **tilde_additional_suffixes;
 
 /* Return a new string which is the result of tilde expanding STRING. */
 extern char *tilde_expand (const char *);

@@ -67,8 +67,8 @@ typedef struct BSTREAM
 extern BUFFERED_STREAM **buffers;
 #endif
 
-extern int default_buffered_input;
-extern int bash_input_fd_changed;
+__thread extern int default_buffered_input;
+__thread extern int bash_input_fd_changed;
 
 #endif /* BUFFERED_INPUT */
 
@@ -88,7 +88,7 @@ typedef struct {
   sh_cunget_func_t *ungetter;
 } BASH_INPUT;
 
-extern BASH_INPUT bash_input;
+__thread extern BASH_INPUT bash_input;
 
 /* Functions from parse.y whose use directly or indirectly depends on the
    definitions in this file. */

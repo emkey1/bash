@@ -122,7 +122,7 @@ extern int get_exitstat PARAMS((WORD_LIST *));
 extern int read_octal PARAMS((char *));
 
 /* Keeps track of the current working directory. */
-extern char *the_current_working_directory;
+__thread extern char *the_current_working_directory;
 extern char *get_working_directory PARAMS((char *));
 extern void set_working_directory PARAMS((char *));
 
@@ -229,8 +229,8 @@ extern int source_file PARAMS((const char *, int));
 extern int fc_execute_file PARAMS((const char *));
 
 /* variables from common.c */
-extern sh_builtin_func_t *this_shell_builtin;
-extern sh_builtin_func_t *last_shell_builtin;
+__thread extern sh_builtin_func_t *this_shell_builtin;
+__thread extern sh_builtin_func_t *last_shell_builtin;
 
 extern SHELL_VAR *builtin_bind_variable PARAMS((char *, char *, int));
 extern SHELL_VAR *builtin_bind_var_to_int PARAMS((char *, intmax_t, int));
@@ -240,36 +240,36 @@ extern SHELL_VAR *builtin_find_indexed_array PARAMS((char *, int));
 extern int builtin_arrayref_flags PARAMS((WORD_DESC *, int));
 
 /* variables from evalfile.c */
-extern int sourcelevel;
+__thread extern int sourcelevel;
 
 /* variables from evalstring.c */
-extern int parse_and_execute_level;
+__thread extern int parse_and_execute_level;
 
 /* variables from break.def/continue.def */
-extern int breaking;
-extern int continuing;
-extern int loop_level;
+__thread extern int breaking;
+__thread extern int continuing;
+__thread extern int loop_level;
 
 /* variables from shift.def */
-extern int print_shift_error;
+__thread extern int print_shift_error;
 
 /* variables from shopt.def */
 #if defined (ARRAY_VARS)
-extern int expand_once_flag;
+__thread extern int expand_once_flag;
 #endif
 
 #if defined (EXTENDED_GLOB)
-extern int extglob_flag;
+__thread extern int extglob_flag;
 #endif
 
-extern int expaliases_flag;
+__thread extern int expaliases_flag;
 
 /* variables from source.def */
-extern int source_searches_cwd;
-extern int source_uses_path;
+__thread extern int source_searches_cwd;
+__thread extern int source_uses_path;
 
 /* variables from wait.def */
-extern int wait_intr_flag;
+__thread extern int wait_intr_flag;
 
 /* common code to set flags for valid_array_reference and builtin_bind_variable */
 #if defined (ARRAY_VARS)

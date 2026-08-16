@@ -63,34 +63,34 @@ extern void initialize_job_signals PARAMS((void));
 #endif
 
 /* Non-zero after SIGINT. */
-volatile sig_atomic_t interrupt_state = 0;
+__thread volatile sig_atomic_t interrupt_state = 0;
 
 /* Non-zero after SIGWINCH */
-volatile sig_atomic_t sigwinch_received = 0;
+__thread volatile sig_atomic_t sigwinch_received = 0;
 
 /* Non-zero after SIGTERM */
-volatile sig_atomic_t sigterm_received = 0;
+__thread volatile sig_atomic_t sigterm_received = 0;
 
 /* Set to the value of any terminating signal received. */
-volatile sig_atomic_t terminating_signal = 0;
+__thread volatile sig_atomic_t terminating_signal = 0;
 
 /* The environment at the top-level R-E loop.  We use this in
    the case of error return. */
-procenv_t top_level;
+__thread procenv_t top_level;
 
 #if defined (JOB_CONTROL) || defined (HAVE_POSIX_SIGNALS)
 /* The signal masks that this shell runs with. */
-sigset_t top_level_mask;
+__thread sigset_t top_level_mask;
 #endif /* JOB_CONTROL */
 
 /* When non-zero, we throw_to_top_level (). */
-int interrupt_immediately = 0;
+__thread int interrupt_immediately = 0;
 
 /* When non-zero, we call the terminating signal handler immediately. */
-int terminate_immediately = 0;
+__thread int terminate_immediately = 0;
 
 #if defined (SIGWINCH)
-static SigHandler *old_winch = (SigHandler *)SIG_DFL;
+__thread static SigHandler *old_winch = (SigHandler *)SIG_DFL;
 #endif
 
 static void initialize_shell_signals PARAMS((void));
@@ -123,7 +123,7 @@ struct termsig {
 /* The list of signals that would terminate the shell if not caught.
    We catch them, but just so that we can write the history file,
    and so forth. */
-static struct termsig terminating_signals[] = {
+__thread static struct termsig terminating_signals[] = {
 #ifdef SIGHUP
 {  SIGHUP, NULL_HANDLER, 0 },
 #endif
@@ -220,7 +220,7 @@ static struct termsig terminating_signals[] = {
 #define XSAFLAGS(x) (terminating_signals[x].orig_flags)
 #define XCOREDUMP(x) (terminating_signals[x].core_dump)
 
-static int termsigs_initialized = 0;
+__thread static int termsigs_initialized = 0;
 
 /* Initialize signals that will terminate the shell to do some
    unwind protection.  For non-interactive shells, we only call
@@ -487,7 +487,7 @@ restore_sigmask ()
 #endif
 }
 
-static int handling_termsig = 0;
+__thread static int handling_termsig = 0;
 
 #if defined (AOK_NATIVE_FORK)
 /* iSH-AOK: the signal latches, which are the cheapest of these to get wrong
@@ -503,10 +503,10 @@ static int handling_termsig = 0;
 void
 aok_reinit_signals ()
 {
-  extern int wait_signal_received;
-  extern int wait_intr_flag;
+  __thread extern int wait_signal_received;
+  __thread extern int wait_intr_flag;
 
-  extern int running_trap;
+  __thread extern int running_trap;
 
   /* A shell that exited from inside a trap handler leaves this set, and the
      next shell then believes it is already running one: run_pending_traps

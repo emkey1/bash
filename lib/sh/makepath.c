@@ -47,7 +47,7 @@
 
 extern char *get_working_directory PARAMS((char *));
 
-static char *nullpath = "";
+__thread static char *nullpath = "";
 
 /* Take PATH, an element from, e.g., $CDPATH, and DIR, a directory name,
    and paste them together into PATH/DIR.  Tilde expansion is performed on

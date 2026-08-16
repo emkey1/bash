@@ -62,17 +62,17 @@
 #define input_tty() (shell_tty != -1) ? shell_tty : fileno (stderr)
 
 #if !defined (errno)
-extern int errno;
+__thread extern int errno;
 #endif /* !errno */
 
-extern int shell_tty;
+__thread extern int shell_tty;
 
 #if defined (READLINE)
 /* Let's not call readline, forcing readline to initialize the termcap/terminfo
    variables it needs, unless we have to. */
-extern int interactive_shell;
-extern int no_line_editing;
-extern int bash_readline_initialized;
+__thread extern int interactive_shell;
+__thread extern int no_line_editing;
+__thread extern int bash_readline_initialized;
 extern void rl_set_screen_size PARAMS((int, int));
 #endif
 extern void sh_set_lines_and_columns PARAMS((int, int));

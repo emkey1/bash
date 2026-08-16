@@ -30,7 +30,7 @@
 #include "shell.h"
 
 /* A global variable which acts as a sentinel for an `error' list return. */
-GENERIC_LIST global_error_list;
+__thread GENERIC_LIST global_error_list;
 
 #ifdef INCLUDE_UNUSED
 /* Call FUNCTION on every member of LIST, a generic list. */

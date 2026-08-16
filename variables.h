@@ -227,36 +227,36 @@ typedef struct _vlist {
 #define MKLOC_INHERIT		0x04
 
 /* Special value for nameref with invalid value for creation or assignment */
-extern SHELL_VAR nameref_invalid_value;
+__thread extern SHELL_VAR nameref_invalid_value;
 #define INVALID_NAMEREF_VALUE	(void *)&nameref_invalid_value
 	
 /* Stuff for hacking variables. */
 typedef int sh_var_map_func_t PARAMS((SHELL_VAR *));
 
 /* Where we keep the variables and functions */
-extern VAR_CONTEXT *global_variables;
-extern VAR_CONTEXT *shell_variables;
+__thread extern VAR_CONTEXT *global_variables;
+__thread extern VAR_CONTEXT *shell_variables;
 
-extern HASH_TABLE *shell_functions;
-extern HASH_TABLE *temporary_env;
+__thread extern HASH_TABLE *shell_functions;
+__thread extern HASH_TABLE *temporary_env;
 
-extern int variable_context;
-extern char *dollar_vars[];
-extern char **export_env;
+__thread extern int variable_context;
+__thread extern char *dollar_vars[];
+__thread extern char **export_env;
 #if defined (AOK_NATIVE_FORK)
 extern void aok_reset_export_env PARAMS((void));
 #endif
 
-extern int tempenv_assign_error;
-extern int array_needs_making;
-extern int shell_level;
+__thread extern int tempenv_assign_error;
+__thread extern int array_needs_making;
+__thread extern int shell_level;
 
 /* XXX */
-extern WORD_LIST *rest_of_args;
-extern int posparam_count;
-extern pid_t dollar_dollar_pid;
+__thread extern WORD_LIST *rest_of_args;
+__thread extern int posparam_count;
+__thread extern pid_t dollar_dollar_pid;
 
-extern int localvar_inherit;		/* declared in variables.c */
+__thread extern int localvar_inherit;		/* declared in variables.c */
 
 extern void initialize_shell_variables PARAMS((char **, int));
 

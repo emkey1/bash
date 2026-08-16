@@ -59,13 +59,13 @@
 /* Declared here so it can be shared between the readline and history
    libraries. */
 #if defined (HANDLE_MULTIBYTE)
-int rl_byte_oriented = 0;
+__thread int rl_byte_oriented = 0;
 #else
 int rl_byte_oriented = 1;
 #endif
 
 /* Ditto */
-int _rl_utf8locale = 0;
+__thread int _rl_utf8locale = 0;
 
 /* **************************************************************** */
 /*								    */

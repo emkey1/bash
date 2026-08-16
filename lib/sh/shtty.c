@@ -30,8 +30,8 @@
 
 #include <shtty.h>
 
-static TTYSTRUCT ttin, ttout;
-static int ttsaved = 0;
+__thread static TTYSTRUCT ttin, ttout;
+__thread static int ttsaved = 0;
 
 int
 ttgetattr(fd, ttp)

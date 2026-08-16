@@ -60,8 +60,8 @@ typedef KEYMAP_ENTRY *Keymap;
 #define ISKMAP 1
 #define ISMACR 2
 
-extern KEYMAP_ENTRY_ARRAY emacs_standard_keymap, emacs_meta_keymap, emacs_ctlx_keymap;
-extern KEYMAP_ENTRY_ARRAY vi_insertion_keymap, vi_movement_keymap;
+__thread extern KEYMAP_ENTRY_ARRAY emacs_standard_keymap, emacs_meta_keymap, emacs_ctlx_keymap;
+__thread extern KEYMAP_ENTRY_ARRAY vi_insertion_keymap, vi_movement_keymap;
 
 /* Return a new, empty keymap.
    Free it with free() when you are done. */

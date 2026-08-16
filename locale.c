@@ -43,28 +43,28 @@
 extern int errno;
 #endif
 
-int locale_utf8locale;
-int locale_mb_cur_max;	/* value of MB_CUR_MAX for current locale (LC_CTYPE) */
-int locale_shiftstates = 0;
+__thread int locale_utf8locale;
+__thread int locale_mb_cur_max;	/* value of MB_CUR_MAX for current locale (LC_CTYPE) */
+__thread int locale_shiftstates = 0;
 
-int singlequote_translations = 0;	/* single-quote output of $"..." */
+__thread int singlequote_translations = 0;	/* single-quote output of $"..." */
 
-extern int dump_translatable_strings, dump_po_strings;
+__thread extern int dump_translatable_strings, dump_po_strings;
 
 /* The current locale when the program begins */
-static char *default_locale;
+__thread static char *default_locale;
 
 /* The current domain for textdomain(3). */
-static char *default_domain;
-static char *default_dir;
+__thread static char *default_domain;
+__thread static char *default_dir;
 
 /* tracks the value of LC_ALL; used to override values for other locale
    categories */
-static char *lc_all;
+__thread static char *lc_all;
 
 /* tracks the value of LC_ALL; used to provide defaults for locale
    categories */
-static char *lang;
+__thread static char *lang;
 
 /* Called to reset all of the locale variables to their appropriate values
    if (and only if) LC_ALL has not been assigned a value. */

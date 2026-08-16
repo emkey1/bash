@@ -41,7 +41,7 @@
 /* Values for flags word in struct _fileinfo */
 #define MBOX_INITIALIZED	0x01
 
-extern time_t shell_start_time;
+__thread extern time_t shell_start_time;
 
 extern int mailstat PARAMS((const char *, struct stat *));
 
@@ -55,16 +55,16 @@ typedef struct _fileinfo {
 } FILEINFO;
 
 /* The list of remembered mail files. */
-static FILEINFO **mailfiles = (FILEINFO **)NULL;
+__thread static FILEINFO **mailfiles = (FILEINFO **)NULL;
 
 /* Number of mail files that we have. */
-static int mailfiles_count;
+__thread static int mailfiles_count;
 
 /* The last known time that mail was checked. */
-static time_t last_time_mail_checked = 0;
+__thread static time_t last_time_mail_checked = 0;
 
 /* Non-zero means warn if a mail file has been read since last checked. */
-int mail_warning;
+__thread int mail_warning;
 
 static int find_mail_file PARAMS((char *));
 static void init_mail_file PARAMS((int));

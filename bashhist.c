@@ -57,7 +57,7 @@
 
 #if defined (READLINE)
 #  include "bashline.h"
-extern int rl_done, rl_dispatching;	/* should really include readline.h */
+__thread extern int rl_done, rl_dispatching;	/* should really include readline.h */
 #endif
 
 #ifndef HISTSIZE_DEFAULT
@@ -73,7 +73,7 @@ static int check_history_control PARAMS((char *));
 static void hc_erasedups PARAMS((char *));
 static void really_add_history PARAMS((char *));
 
-static struct ignorevar histignore =
+__thread static struct ignorevar histignore =
 {
   "HISTIGNORE",
   (struct ign *)0,
@@ -88,24 +88,24 @@ static struct ignorevar histignore =
 /* Non-zero means to remember lines typed to the shell on the history
    list.  This is different than the user-controlled behaviour; this
    becomes zero when we read lines from a file, for example. */
-int remember_on_history = 0;
-int enable_history_list = -1;	/* value for `set -o history' */
+__thread int remember_on_history = 0;
+__thread int enable_history_list = -1;	/* value for `set -o history' */
 
 /* The number of lines that Bash has added to this history session.  The
    difference between the number of the top element in the history list
    (offset from history_base) and the number of lines in the history file.
    Appending this session's history to the history file resets this to 0. */
-int history_lines_this_session;
+__thread int history_lines_this_session;
 
 /* The number of lines that Bash has read from the history file. */
-int history_lines_in_file;
+__thread int history_lines_in_file;
 
 #if defined (BANG_HISTORY)
 /* Non-zero means do no history expansion on this line, regardless
    of what history_expansion says. */
-int history_expansion_inhibited;
+__thread int history_expansion_inhibited;
 /* If non-zero, double quotes can quote the history expansion character. */
-int double_quotes_inhibit_history_expansion = 0;
+__thread int double_quotes_inhibit_history_expansion = 0;
 #endif
 
 /* With the old default, every line was saved in the history individually.
@@ -138,25 +138,25 @@ int double_quotes_inhibit_history_expansion = 0;
 
    This is now enabled by default.
    */
-int command_oriented_history = 1;
+__thread int command_oriented_history = 1;
 
 /* Set to 1 if the first line of a possibly-multi-line command was saved
    in the history list.  Managed by maybe_add_history(), but global so
    the history-manipluating builtins can see it. */
-int current_command_first_line_saved = 0;
+__thread int current_command_first_line_saved = 0;
 
 /* Set to the number of the most recent line of a possibly-multi-line command
    that contains a shell comment.  Used by bash_add_history() to determine
    whether to add a newline or a semicolon. */
-int current_command_line_comment = 0;
+__thread int current_command_line_comment = 0;
 
 /* Non-zero means to store newlines in the history list when using
    command_oriented_history rather than trying to use semicolons. */
-int literal_history;
+__thread int literal_history;
 
 /* Non-zero means to append the history to the history file at shell
    exit, even if the history has been stifled. */
-int force_append_history;
+__thread int force_append_history;
 
 /* A nit for picking at history saving.  Flags have the following values:
 
@@ -166,31 +166,31 @@ int force_append_history;
    line saved.
    Value & HC_ERASEDUPS means to remove all other matching lines from the
    history list before saving the latest line. */
-int history_control;
+__thread int history_control;
 
 /* Set to 1 if the last command was added to the history list successfully
    as a separate history entry; set to 0 if the line was ignored or added
    to a previous entry as part of command-oriented-history processing. */
-int hist_last_line_added;
+__thread int hist_last_line_added;
 
 /* Set to 1 if builtins/history.def:push_history added the last history
    entry. */
-int hist_last_line_pushed;
+__thread int hist_last_line_pushed;
 
 #if defined (READLINE)
 /* If non-zero, and readline is being used, the user is offered the
    chance to re-edit a failed history expansion. */
-int history_reediting;
+__thread int history_reediting;
 
 /* If non-zero, and readline is being used, don't directly execute a
    line with history substitution.  Reload it into the editing buffer
    instead and let the user further edit and confirm with a newline. */
-int hist_verify;
+__thread int hist_verify;
 
 #endif /* READLINE */
 
 /* Non-zero means to not save function definitions in the history list. */
-int dont_save_function_defs;
+__thread int dont_save_function_defs;
 
 #if defined (BANG_HISTORY)
 static int bash_history_inhibit_expansion PARAMS((char *, int));

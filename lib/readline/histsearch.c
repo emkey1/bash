@@ -49,7 +49,7 @@
 
 /* The list of alternate characters that can delimit a history search
    string. */
-char *history_search_delimiter_chars = (char *)NULL;
+__thread char *history_search_delimiter_chars = (char *)NULL;
 
 static int history_search_internal (const char *, int, int);
 

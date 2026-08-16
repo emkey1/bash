@@ -145,7 +145,7 @@ xrealloc (ptr, size)
 
 /* The pointer to the data made by tgetent is left here
    for tgetnum, tgetflag and tgetstr to find.  */
-static char *term_entry;
+__thread static char *term_entry;
 
 static char *tgetst1 ();
 
@@ -206,7 +206,7 @@ tgetstr (cap, area)
    gives meaning of character following \, or a space if no special meaning.
    Eight characters per line within the string.  */
 
-static char esctab[]
+__thread static char esctab[]
   = " \007\010  \033\014 \
       \012 \
   \015 \011 \013 \
@@ -292,15 +292,15 @@ tgetst1 (ptr, area)
 
 /* Outputting a string with padding.  */
 
-short ospeed;
+__thread short ospeed;
 /* If OSPEED is 0, we use this as the actual baud rate.  */
-int tputs_baud_rate;
-__private_extern__ char PC = '\0';
+__thread int tputs_baud_rate;
+__thread __private_extern__ char PC = '\0';
 
 /* Actual baud rate if positive;
    - baud rate / 100 if negative.  */
 
-static int speeds[] =
+__thread static int speeds[] =
   {
 #ifdef VMS
     0, 50, 75, 110, 134, 150, -3, -6, -12, -18,

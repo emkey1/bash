@@ -75,24 +75,24 @@ $END
 #define OPTFMT		"%-15s\t%s\n"
 
 extern int allow_null_glob_expansion, fail_glob_expansion, glob_dot_filenames;
-extern int cdable_vars, mail_warning, source_uses_path;
-extern int no_exit_on_failed_exec, print_shift_error;
+__thread extern int cdable_vars, mail_warning, source_uses_path;
+__thread extern int no_exit_on_failed_exec, print_shift_error;
 extern int check_hashed_filenames, promptvars;
 extern int cdspelling, expand_aliases;
 extern int extended_quote;
-extern int check_window_size;
+__thread extern int check_window_size;
 extern int glob_ignore_case, match_ignore_case;
-extern int hup_on_exit;
+__thread extern int hup_on_exit;
 extern int xpg_echo;
 extern int gnu_error_format;
-extern int check_jobs_at_exit;
-extern int autocd;
+__thread extern int check_jobs_at_exit;
+__thread extern int autocd;
 extern int glob_star;
 extern int glob_asciirange;
 extern int glob_always_skip_dot_and_dotdot;
 extern int lastpipe_opt;
-extern int inherit_errexit;
-extern int localvar_inherit;
+__thread extern int inherit_errexit;
+__thread extern int localvar_inherit;
 extern int localvar_unset;
 extern int varassign_redir_autoclose;
 extern int singlequote_translations;
@@ -103,11 +103,11 @@ extern int extended_glob;
 #endif
 
 #if defined (READLINE)
-extern int hist_verify, history_reediting, perform_hostname_completion;
-extern int no_empty_command_completion;
-extern int force_fignore;
-extern int dircomplete_spelling, dircomplete_expand;
-extern int complete_fullquote;
+__thread extern int hist_verify, history_reediting, perform_hostname_completion;
+__thread extern int no_empty_command_completion;
+__thread extern int force_fignore;
+__thread extern int dircomplete_spelling, dircomplete_expand;
+__thread extern int complete_fullquote;
 
 extern int enable_hostname_completion PARAMS((int));
 #endif
@@ -118,13 +118,13 @@ extern int progcomp_alias;
 #endif
 
 #if defined (DEBUGGER)
-extern int debugging_mode;
+__thread extern int debugging_mode;
 #endif
 
 #if defined (ARRAY_VARS)
-extern int assoc_expand_once;
-extern int array_expand_once;
-int expand_once_flag;
+__thread extern int assoc_expand_once;
+__thread extern int array_expand_once;
+__thread int expand_once_flag;
 #endif
 
 #if defined (SYSLOG_HISTORY)
@@ -150,11 +150,11 @@ static int set_assoc_expand PARAMS((char *, int));
 #endif
 
 #if defined (EXTENDED_GLOB)
-int extglob_flag = EXTGLOB_DEFAULT;
+__thread int extglob_flag = EXTGLOB_DEFAULT;
 static int shopt_set_extglob PARAMS((char *, int));
 #endif
 
-int expaliases_flag = 0;
+__thread int expaliases_flag = 0;
 static int shopt_set_expaliases PARAMS((char *, int));
 
 static int shopt_set_debug_mode PARAMS((char *, int));

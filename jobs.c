@@ -166,22 +166,22 @@ extern int killpg PARAMS((pid_t, int));
 typedef int sh_job_map_func_t PARAMS((JOB *, int, int, int));
 
 /* Variables used here but defined in other files. */
-extern WORD_LIST *subst_assign_varlist;
+__thread extern WORD_LIST *subst_assign_varlist;
 
-extern SigHandler **original_signals;
+__thread extern SigHandler **original_signals;
 
 extern void set_original_signal PARAMS((int, SigHandler *));
 
-static struct jobstats zerojs = { -1L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NO_JOB, NO_JOB, 0, 0 };
-struct jobstats js = { -1L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NO_JOB, NO_JOB, 0, 0 };
+__thread static struct jobstats zerojs = { -1L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NO_JOB, NO_JOB, 0, 0 };
+__thread struct jobstats js = { -1L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NO_JOB, NO_JOB, 0, 0 };
 
-ps_index_t pidstat_table[PIDSTAT_TABLE_SZ];
-struct bgpids bgpids = { 0, 0, 0, 0 };
+__thread ps_index_t pidstat_table[PIDSTAT_TABLE_SZ];
+__thread struct bgpids bgpids = { 0, 0, 0, 0 };
 
-struct procchain procsubs = { 0, 0, 0 };
+__thread struct procchain procsubs = { 0, 0, 0 };
 
 /* The array of known jobs. */
-JOB **jobs = (JOB **)NULL;
+__thread JOB **jobs = (JOB **)NULL;
 
 #if 0
 /* The number of slots currently allocated to JOBS. */
@@ -189,19 +189,19 @@ int job_slots = 0;
 #endif
 
 /* The controlling tty for this shell. */
-int shell_tty = -1;
+__thread int shell_tty = -1;
 
 /* The shell's process group. */
-pid_t shell_pgrp = NO_PID;
+__thread pid_t shell_pgrp = NO_PID;
 
 /* The terminal's process group. */
-pid_t terminal_pgrp = NO_PID;
+__thread pid_t terminal_pgrp = NO_PID;
 
 /* The process group of the shell's parent. */
-pid_t original_pgrp = NO_PID;
+__thread pid_t original_pgrp = NO_PID;
 
 /* The process group of the pipeline currently being made. */
-pid_t pipeline_pgrp = (pid_t)0;
+__thread pid_t pipeline_pgrp = (pid_t)0;
 
 #if defined (PGRP_PIPE)
 /* Pipes which each shell uses to communicate with the process group leader
@@ -211,28 +211,28 @@ int pgrp_pipe[2] = { -1, -1 };
 #endif
 
 /* Last child made by the shell.  */
-volatile pid_t last_made_pid = NO_PID;
+__thread volatile pid_t last_made_pid = NO_PID;
 
 /* Pid of the last asynchronous child. */
-volatile pid_t last_asynchronous_pid = NO_PID;
+__thread volatile pid_t last_asynchronous_pid = NO_PID;
 
 /* The pipeline currently being built. */
-PROCESS *the_pipeline = (PROCESS *)NULL;
+__thread PROCESS *the_pipeline = (PROCESS *)NULL;
 
 /* If this is non-zero, do job control. */
-int job_control = 1;
+__thread int job_control = 1;
 
 /* Are we running in background? (terminal_pgrp != shell_pgrp) */
-int running_in_background = 0;
+__thread int running_in_background = 0;
 
 /* Call this when you start making children. */
-int already_making_children = 0;
+__thread int already_making_children = 0;
 
 /* If this is non-zero, $LINES and $COLUMNS are reset after every process
    exits from get_tty_state(). */
-int check_window_size = CHECKWINSIZE_DEFAULT;
+__thread int check_window_size = CHECKWINSIZE_DEFAULT;
 
-PROCESS *last_procsub_child = (PROCESS *)NULL;
+__thread PROCESS *last_procsub_child = (PROCESS *)NULL;
 
 /* Functions local to this file. */
 
@@ -309,14 +309,14 @@ static ps_index_t bgp_getindex PARAMS((void));
 static void bgp_resize PARAMS((void));	/* XXX */
 
 #if defined (ARRAY_VARS)
-static int *pstatuses;		/* list of pipeline statuses */
-static int statsize;
+__thread static int *pstatuses;		/* list of pipeline statuses */
+__thread static int statsize;
 #endif
 
 /* Used to synchronize between wait_for and other functions and the SIGCHLD
    signal handler. */
-static int sigchld;
-static int queue_sigchld;
+__thread static int sigchld;
+__thread static int queue_sigchld;
 
 #define QUEUE_SIGCHLD(os)	(os) = sigchld, queue_sigchld++
 
@@ -333,20 +333,20 @@ static int queue_sigchld;
 	    } \
 	} while (0)
 
-static SigHandler *old_tstp, *old_ttou, *old_ttin;
-static SigHandler *old_cont = (SigHandler *)SIG_DFL;
+__thread static SigHandler *old_tstp, *old_ttou, *old_ttin;
+__thread static SigHandler *old_cont = (SigHandler *)SIG_DFL;
 
 /* A place to temporarily save the current pipeline. */
-static struct pipeline_saver *saved_pipeline;
-static int saved_already_making_children;
+__thread static struct pipeline_saver *saved_pipeline;
+__thread static int saved_already_making_children;
 
 /* Set this to non-zero whenever you don't want the jobs list to change at
    all: no jobs deleted and no status change notifications.  This is used,
    for example, when executing SIGCHLD traps, which may run arbitrary
    commands. */
-static int jobs_list_frozen;
+__thread static int jobs_list_frozen;
 
-static char retcode_name_buffer[64];
+__thread static char retcode_name_buffer[64];
 
 #if !defined (_POSIX_VERSION)
 
@@ -384,7 +384,7 @@ static char *
 current_working_directory ()
 {
   char *dir;
-  static char d[PATH_MAX];
+  __thread static char d[PATH_MAX];
 
   dir = get_string_value ("PWD");
 
@@ -1863,7 +1863,7 @@ printable_job_status (j, p, format)
      PROCESS *p;
      int format;
 {
-  static char *temp;
+  __thread static char *temp;
   int es;
 
   temp = _("Done");
@@ -2528,7 +2528,7 @@ default_tty_job_signals ()
 void
 get_original_tty_job_signals ()
 {
-  static int fetched = 0;
+  __thread static int fetched = 0;
 
   if (fetched == 0)
     {
@@ -2552,7 +2552,7 @@ get_original_tty_job_signals ()
    state kept in here.  When a job ends normally, we set the state in here
    to the state of the tty. */
 
-static TTYSTRUCT shell_tty_info;
+__thread static TTYSTRUCT shell_tty_info;
 
 #if defined (NEW_TTY_DRIVER)
 static struct tchars shell_tchars;
@@ -2855,12 +2855,12 @@ wait_for_background_pids (ps)
 
 /* Make OLD_SIGINT_HANDLER the SIGINT signal handler. */
 #define INVALID_SIGNAL_HANDLER (SigHandler *)wait_for_background_pids
-static SigHandler *old_sigint_handler = INVALID_SIGNAL_HANDLER;
+__thread static SigHandler *old_sigint_handler = INVALID_SIGNAL_HANDLER;
 
-static int wait_sigint_received;
-static int child_caught_sigint;
+__thread static int wait_sigint_received;
+__thread static int child_caught_sigint;
 
-int waiting_for_child;
+__thread int waiting_for_child;
 
 /* Clean up state after longjmp to wait_intr_buf */
 void
@@ -3688,7 +3688,7 @@ start_job (job, foreground)
   int already_running;
   sigset_t set, oset;
   char *wd, *s;
-  static TTYSTRUCT save_stty;
+  __thread static TTYSTRUCT save_stty;
 
   BLOCK_CHILD (set, oset);
 
@@ -3915,7 +3915,7 @@ waitchld (wpid, block)
   int ind;
 
   int call_set_current, last_stopped_job, job, children_exited, waitpid_flags;
-  static int wcontinued = WCONTINUED;	/* run-time fix for glibc problem */
+  __thread static int wcontinued = WCONTINUED;	/* run-time fix for glibc problem */
 
   call_set_current = children_exited = 0;
   last_stopped_job = NO_JOB;
@@ -5182,7 +5182,7 @@ void
 set_maxchild (nchild)
      int nchild;
 {
-  static int lmaxchild = -1;
+  __thread static int lmaxchild = -1;
 
   /* Initialize once. */
   if (lmaxchild < 0)

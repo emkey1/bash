@@ -25,10 +25,10 @@
 /* The command the spawned child is to run, in bash's own printed form, plus
    the descriptors it is to be started with. Set these immediately before
    make_child(); jobs.c reads them there and clears them again. */
-extern char *aok_fork_cmdtext;
-extern int aok_fork_pipe_in, aok_fork_pipe_out;
-extern int aok_fork_close_fds[AOK_FORK_MAX_CLOSE];
-extern int aok_fork_nclose;
+__thread extern char *aok_fork_cmdtext;
+__thread extern int aok_fork_pipe_in, aok_fork_pipe_out;
+__thread extern int aok_fork_close_fds[AOK_FORK_MAX_CLOSE];
+__thread extern int aok_fork_nclose;
 
 extern void aok_fork_clear PARAMS((void));
 
@@ -63,16 +63,16 @@ extern int aok_report_exec_failure PARAMS((char *, int));
 extern int aok_report_notfound PARAMS((char *, REDIRECT *, int, int));
 
 /* What a failed aok_spawn_disk_command would have exited with. */
-extern int aok_spawn_status;
+__thread extern int aok_spawn_status;
 
 /* The process group to start the next spawned child in: -1 for the shell's
    own, 0 for a group of its own led by the child, or an existing group. A
    forked child sets this for itself; a spawned one has to be told. */
-extern int aok_fork_pgid;
+__thread extern int aok_fork_pgid;
 
 /* Whether the spawned child gets SIGTSTP/SIGTTIN/SIGTTOU back at SIG_DFL, as
    make_child's child branch does with default_tty_job_signals. */
-extern int aok_fork_sigdefault;
+__thread extern int aok_fork_sigdefault;
 
 /* Re-entry. bash is a function here, called again for each `bash`, so every
    global holds what the last invocation left in it; these put the four files

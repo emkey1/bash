@@ -41,7 +41,7 @@
 
 #define STRDUP(x)	((x) ? savestring (x) : (char *)NULL)
 
-HASH_TABLE *prog_completes = (HASH_TABLE *)NULL;
+__thread HASH_TABLE *prog_completes = (HASH_TABLE *)NULL;
 
 static void free_progcomp PARAMS((PTR_T));
 

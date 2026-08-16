@@ -123,10 +123,10 @@ tparam (string, outstring, len, arg0, arg1, arg2, arg3)
   return tparam1 (string, outstring, len, NULL, NULL, arg);
 }
 
-__private_extern__ char *BC;
-__private_extern__ char *UP;
+__thread __private_extern__ char *BC;
+__thread __private_extern__ char *UP;
 
-static char tgoto_buf[50];
+__thread static char tgoto_buf[50];
 
 __private_extern__
 char *

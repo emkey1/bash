@@ -252,7 +252,7 @@ mkfifo (path, mode)
 int
 getmaxgroups ()
 {
-  static int maxgroups = -1;
+  __thread static int maxgroups = -1;
 
   if (maxgroups > 0)
     return maxgroups;
@@ -280,7 +280,7 @@ getmaxgroups ()
 long
 getmaxchild ()
 {
-  static long maxchild = -1L;
+  __thread static long maxchild = -1L;
 
   if (maxchild > 0)
     return maxchild;

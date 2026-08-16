@@ -47,8 +47,8 @@
 
 /* Private data for callback registration functions.  See comments in
    rl_callback_read_char for more details. */
-_rl_callback_func_t *_rl_callback_func = 0;
-_rl_callback_generic_arg *_rl_callback_data = 0;
+__thread _rl_callback_func_t *_rl_callback_func = 0;
+__thread _rl_callback_generic_arg *_rl_callback_data = 0;
 
 /* Applications can set this to non-zero to have readline's signal handlers
    installed during the entire duration of reading a complete line, as in
@@ -56,7 +56,7 @@ _rl_callback_generic_arg *_rl_callback_data = 0;
    readline receiving signals and not handling them until it's called again
    via rl_callback_read_char, thereby stealing them from the application.
    By default, signal handlers are only active while readline is active. */   
-int rl_persistent_signal_handlers = 0;
+__thread int rl_persistent_signal_handlers = 0;
 
 /* **************************************************************** */
 /*								    */
@@ -75,8 +75,8 @@ int rl_persistent_signal_handlers = 0;
    handlers are only installed when the application calls back into
    readline, so readline doesn't `steal' signals from the application.  */
 
-rl_vcpfunc_t *rl_linefunc;		/* user callback function */
-static int in_handler;		/* terminal_prepped and signals set? */
+__thread rl_vcpfunc_t *rl_linefunc;		/* user callback function */
+__thread static int in_handler;		/* terminal_prepped and signals set? */
 
 /* Make sure the terminal is set up, initialize readline, and prompt. */
 static void
@@ -128,7 +128,7 @@ rl_callback_read_char (void)
 {
   char *line;
   int eof, jcode;
-  static procenv_t olevel;
+  __thread static procenv_t olevel;
 
   if (rl_linefunc == NULL)
     {

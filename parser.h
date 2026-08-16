@@ -75,29 +75,29 @@ struct dstack {
 #define DOLBRACE_QUOTE2	0x80	/* single quote is semi-special in double quotes */
 
 /* variable declarations from parse.y */
-extern struct dstack dstack;
+__thread extern struct dstack dstack;
 
-extern char *primary_prompt;
-extern char *secondary_prompt;
+__thread extern char *primary_prompt;
+__thread extern char *secondary_prompt;
 
-extern char *current_prompt_string;
+__thread extern char *current_prompt_string;
 
-extern char *ps1_prompt;
-extern char *ps2_prompt;
-extern char *ps0_prompt;
+__thread extern char *ps1_prompt;
+__thread extern char *ps2_prompt;
+__thread extern char *ps0_prompt;
 
-extern int expand_aliases;
-extern int current_command_line_count;
-extern int saved_command_line_count;
-extern int shell_eof_token;
-extern int current_token;
-extern int parser_state;
-extern int need_here_doc;
+__thread extern int expand_aliases;
+__thread extern int current_command_line_count;
+__thread extern int saved_command_line_count;
+__thread extern int shell_eof_token;
+__thread extern int current_token;
+__thread extern int parser_state;
+__thread extern int need_here_doc;
 
-extern int ignoreeof;
-extern int eof_encountered;
-extern int eof_encountered_limit;
+__thread extern int ignoreeof;
+__thread extern int eof_encountered;
+__thread extern int eof_encountered_limit;
 
-extern int line_number, line_number_base;
+__thread extern int line_number, line_number_base;
 
 #endif /* _PARSER_H_ */

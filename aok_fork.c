@@ -52,7 +52,7 @@
 #include "subst.h"
 #include "jobs.h"
 #include "redir.h"
-extern REDIRECT *redirection_undo_list;
+__thread extern REDIRECT *redirection_undo_list;
 #include "flags.h"
 #include "trap.h"
 #include "alias.h"
@@ -805,9 +805,9 @@ aok_run_in_subshell (command, status_out)
    That it is re-parseable is not an assumption -- make_command_string exists to
    produce shell that `jobs` can display and a user can retype. */
 
-int aok_fork_pipe_in = -1;
-int aok_fork_pipe_out = -1;
-char *aok_fork_cmdtext = 0;
+__thread int aok_fork_pipe_in = -1;
+__thread int aok_fork_pipe_out = -1;
+__thread char *aok_fork_cmdtext = 0;
 
 /* Descriptors the forked child would have closed for itself before running.
    A fork gives the child its own copy of every descriptor and the child throws
@@ -817,14 +817,14 @@ char *aok_fork_cmdtext = 0;
    that -- an fd number left behind here would be applied to an unrelated
    descriptor on the next spawn, which is the kind of bug that surfaces
    somewhere else entirely. */
-int aok_fork_close_fds[AOK_FORK_MAX_CLOSE];
-int aok_fork_nclose = 0;
+__thread int aok_fork_close_fds[AOK_FORK_MAX_CLOSE];
+__thread int aok_fork_nclose = 0;
 
 /* What a failed aok_spawn_disk_command would have exited with -- 126 or 127.
    Set there because the diagnosis has to happen while the command's own
    redirections are still applied, and read by the caller, which is the one
    with somewhere to put an exit status. */
-int aok_spawn_status = 0;
+__thread int aok_spawn_status = 0;
 
 /* The process group the child is to start in: AOK_PGID_INHERIT for the
    shell's own, 0 for a group of its own led by the child, or an existing
@@ -842,11 +842,11 @@ int aok_spawn_status = 0;
    pointing somewhere that no longer read from it, and the shell never saw
    another keystroke. */
 #define AOK_PGID_INHERIT (-1)
-int aok_fork_pgid = AOK_PGID_INHERIT;
+__thread int aok_fork_pgid = AOK_PGID_INHERIT;
 
 /* Whether the child should get the job-control signals back at SIG_DFL.
    See aok_spawn_attr. */
-int aok_fork_sigdefault = 1;
+__thread int aok_fork_sigdefault = 1;
 
 /* posix_spawn attributes: the child's process group, and the dispositions a
    forked child would have restored for itself.

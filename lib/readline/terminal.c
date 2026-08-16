@@ -83,11 +83,11 @@ static void _emx_get_screensize (int *, int *);
 /* If the calling application sets this to a non-zero value, readline will
    use the $LINES and $COLUMNS environment variables to set its idea of the
    window size before interrogating the kernel. */
-int rl_prefer_env_winsize = 0;
+__thread int rl_prefer_env_winsize = 0;
 
 /* If this is non-zero, readline will set LINES and COLUMNS in the
    environment when it handles SIGWINCH. */
-int rl_change_environment = 1;
+__thread int rl_change_environment = 1;
 
 /* **************************************************************** */
 /*								    */
@@ -96,99 +96,99 @@ int rl_change_environment = 1;
 /* **************************************************************** */
 
 #ifndef __MSDOS__
-static char *term_buffer = (char *)NULL;
-static char *term_string_buffer = (char *)NULL;
+__thread static char *term_buffer = (char *)NULL;
+__thread static char *term_string_buffer = (char *)NULL;
 #endif
 
-static int tcap_initialized;
+__thread static int tcap_initialized;
 
 #if !defined (__linux__) && !defined (NCURSES_VERSION)
 #  if defined (__EMX__) || defined (NEED_EXTERN_PC)
 extern 
 #  endif /* __EMX__ || NEED_EXTERN_PC */
-char PC, *BC, *UP;
+__thread char PC, *BC, *UP;
 #endif /* !__linux__ && !NCURSES_VERSION */
 
 /* Some strings to control terminal actions.  These are output by tputs (). */
-char *_rl_term_clreol;
-char *_rl_term_clrpag;
-char *_rl_term_clrscroll;
-char *_rl_term_cr;
-char *_rl_term_backspace;
-char *_rl_term_goto;
-char *_rl_term_pc;
+__thread char *_rl_term_clreol;
+__thread char *_rl_term_clrpag;
+__thread char *_rl_term_clrscroll;
+__thread char *_rl_term_cr;
+__thread char *_rl_term_backspace;
+__thread char *_rl_term_goto;
+__thread char *_rl_term_pc;
 
 /* Non-zero if we determine that the terminal can do character insertion. */
-int _rl_terminal_can_insert = 0;
+__thread int _rl_terminal_can_insert = 0;
 
 /* How to insert characters. */
-char *_rl_term_im;
-char *_rl_term_ei;
-char *_rl_term_ic;
-char *_rl_term_ip;
-char *_rl_term_IC;
+__thread char *_rl_term_im;
+__thread char *_rl_term_ei;
+__thread char *_rl_term_ic;
+__thread char *_rl_term_ip;
+__thread char *_rl_term_IC;
 
 /* How to delete characters. */
-char *_rl_term_dc;
-char *_rl_term_DC;
+__thread char *_rl_term_dc;
+__thread char *_rl_term_DC;
 
 /* How to move forward a char, non-destructively */
-char *_rl_term_forward_char;
+__thread char *_rl_term_forward_char;
 
 /* How to go up a line. */
-char *_rl_term_up;
+__thread char *_rl_term_up;
 
 /* A visible bell; char if the terminal can be made to flash the screen. */
-static char *_rl_visible_bell;
+__thread static char *_rl_visible_bell;
 
 /* Non-zero means the terminal can auto-wrap lines. */
-int _rl_term_autowrap = -1;
+__thread int _rl_term_autowrap = -1;
 
 /* Non-zero means that this terminal has a meta key. */
-static int term_has_meta;
+__thread static int term_has_meta;
 
 /* The sequences to write to turn on and off the meta key, if this
    terminal has one. */
-static char *_rl_term_mm;
-static char *_rl_term_mo;
+__thread static char *_rl_term_mm;
+__thread static char *_rl_term_mo;
 
 /* The sequences to enter and exit standout mode. */
-static char *_rl_term_so;
-static char *_rl_term_se;
+__thread static char *_rl_term_so;
+__thread static char *_rl_term_se;
 
 /* The key sequences output by the arrow keys, if this terminal has any. */
-static char *_rl_term_ku;
-static char *_rl_term_kd;
-static char *_rl_term_kr;
-static char *_rl_term_kl;
+__thread static char *_rl_term_ku;
+__thread static char *_rl_term_kd;
+__thread static char *_rl_term_kr;
+__thread static char *_rl_term_kl;
 
 /* How to initialize and reset the arrow keys, if this terminal has any. */
-static char *_rl_term_ks;
-static char *_rl_term_ke;
+__thread static char *_rl_term_ks;
+__thread static char *_rl_term_ke;
 
 /* The key sequences sent by the Home and End keys, if any. */
-static char *_rl_term_kh;
-static char *_rl_term_kH;
-static char *_rl_term_at7;	/* @7 */
+__thread static char *_rl_term_kh;
+__thread static char *_rl_term_kH;
+__thread static char *_rl_term_at7;	/* @7 */
 
 /* Delete key */
-static char *_rl_term_kD;
+__thread static char *_rl_term_kD;
 
 /* Insert key */
-static char *_rl_term_kI;
+__thread static char *_rl_term_kI;
 
 /* Page up and page down keys */
-static char *_rl_term_kP;
-static char *_rl_term_kN;
+__thread static char *_rl_term_kP;
+__thread static char *_rl_term_kN;
 
 /* Cursor control */
-static char *_rl_term_vs;	/* very visible */
-static char *_rl_term_ve;	/* normal */
+__thread static char *_rl_term_vs;	/* very visible */
+__thread static char *_rl_term_ve;	/* normal */
 
 /* User-settable color sequences to begin and end the active region. Defaults
    are rl_term_so and rl_term_se on non-dumb terminals. */
-char *_rl_active_region_start_color = NULL;
-char *_rl_active_region_end_color = NULL;
+__thread char *_rl_active_region_start_color = NULL;
+__thread char *_rl_active_region_end_color = NULL;
 
 /* It's not clear how HPUX is so broken here. */
 #ifdef TGETENT_BROKEN
@@ -206,13 +206,13 @@ char *_rl_active_region_end_color = NULL;
 static void bind_termcap_arrow_keys (Keymap);
 
 /* Variables that hold the screen dimensions, used by the display code. */
-int _rl_screenwidth, _rl_screenheight, _rl_screenchars;
+__thread int _rl_screenwidth, _rl_screenheight, _rl_screenchars;
 
 /* Non-zero means the user wants to enable the keypad. */
-int _rl_enable_keypad;
+__thread int _rl_enable_keypad;
 
 /* Non-zero means the user wants to enable a meta key. */
-int _rl_enable_meta = 1;
+__thread int _rl_enable_meta = 1;
 
 #if defined (__EMX__)
 static void
@@ -874,7 +874,7 @@ _rl_region_color_off (void)
 /*								    */
 /* **************************************************************** */
 
-static int enabled_meta = 0;	/* flag indicating we enabled meta mode */
+__thread static int enabled_meta = 0;	/* flag indicating we enabled meta mode */
 
 void
 _rl_enable_meta_key (void)

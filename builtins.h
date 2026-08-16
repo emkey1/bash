@@ -60,9 +60,9 @@ struct builtin {
 };
 
 /* Found in builtins.c, created by builtins/mkbuiltins. */
-extern int num_shell_builtins;	/* Number of shell builtins. */
-extern struct builtin static_shell_builtins[];
-extern struct builtin *shell_builtins;
-extern struct builtin *current_builtin;
+__thread extern int num_shell_builtins;	/* Number of shell builtins. */
+__thread extern struct builtin static_shell_builtins[];
+__thread extern struct builtin *shell_builtins;
+__thread extern struct builtin *current_builtin;
 
 #endif /* BUILTINS_H */

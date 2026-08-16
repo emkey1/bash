@@ -59,7 +59,7 @@ extern int fnmatch (const char *, const char *, int);
 #  define GLOBASCII_DEFAULT 0
 #endif
 
-int glob_asciirange = GLOBASCII_DEFAULT;
+__thread int glob_asciirange = GLOBASCII_DEFAULT;
 
 #if FNMATCH_EQUIV_FALLBACK
 /* Construct a string w1 = "c1" and a pattern w2 = "[[=c2=]]" and pass them
@@ -103,8 +103,8 @@ charcmp (c1, c2, forcecoll)
      int c1, c2;
      int forcecoll;
 {
-  static char s1[2] = { ' ', '\0' };
-  static char s2[2] = { ' ', '\0' };
+  __thread static char s1[2] = { ' ', '\0' };
+  __thread static char s2[2] = { ' ', '\0' };
   int ret;
 
   /* Eight bits only.  Period. */
@@ -391,8 +391,8 @@ charcmp_wc (c1, c2, forcecoll)
      wint_t c1, c2;
      int forcecoll;
 {
-  static wchar_t s1[2] = { L' ', L'\0' };
-  static wchar_t s2[2] = { L' ', L'\0' };
+  __thread static wchar_t s1[2] = { L' ', L'\0' };
+  __thread static wchar_t s2[2] = { L' ', L'\0' };
   int r;
 
   if (c1 == c2)

@@ -45,13 +45,13 @@ static char *split_ignorespec PARAMS((char *, int *));
 #include <glob/glob.h>
 
 /* Control whether * matches .files in globbing. */
-int glob_dot_filenames;
+__thread int glob_dot_filenames;
 
 /* Control whether the extended globbing features are enabled. */
-int extended_glob = EXTGLOB_DEFAULT;
+__thread int extended_glob = EXTGLOB_DEFAULT;
 
 /* Control enabling special handling of `**' */
-int glob_star = 0;
+__thread int glob_star = 0;
 
 /* Return nonzero if STRING has any unquoted special globbing chars in it.
    This is supposed to be called when pathname expansion is performed, so
@@ -436,7 +436,7 @@ shell_glob_filename (pathname, qflags)
 
 /* Stuff for GLOBIGNORE. */
 
-static struct ignorevar globignore =
+__thread static struct ignorevar globignore =
 {
   "GLOBIGNORE",
   (struct ign *)0,

@@ -71,29 +71,29 @@ static char *hist_inittime (void);
 /* **************************************************************** */
 
 /* An array of HIST_ENTRY.  This is where we store the history. */
-static HIST_ENTRY **the_history = (HIST_ENTRY **)NULL;
+__thread static HIST_ENTRY **the_history = (HIST_ENTRY **)NULL;
 
 /* Non-zero means that we have enforced a limit on the amount of
    history that we save. */
-static int history_stifled;
+__thread static int history_stifled;
 
 /* The current number of slots allocated to the input_history. */
-static int history_size;
+__thread static int history_size;
 
 /* If HISTORY_STIFLED is non-zero, then this is the maximum number of
    entries to remember. */
-int history_max_entries;
-int max_input_history;	/* backwards compatibility */
+__thread int history_max_entries;
+__thread int max_input_history;	/* backwards compatibility */
 
 /* The current location of the interactive history pointer.  Just makes
    life easier for outside callers. */
-int history_offset;
+__thread int history_offset;
 
 /* The number of strings currently stored in the history list. */
-int history_length;
+__thread int history_length;
 
 /* The logical `base' of the history array.  It defaults to 1. */
-int history_base = 1;
+__thread int history_base = 1;
 
 /* Return the current HISTORY_STATE of the history. */
 HISTORY_STATE *

@@ -35,7 +35,7 @@
 #include "findcmd.h"
 #include "hashcmd.h"
 
-HASH_TABLE *hashed_filenames = (HASH_TABLE *)NULL;
+__thread HASH_TABLE *hashed_filenames = (HASH_TABLE *)NULL;
 
 static void phash_freedata PARAMS((PTR_T));
 

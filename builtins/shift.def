@@ -47,7 +47,7 @@ Exit Status:
 Returns success unless N is negative or greater than $#.
 $END
 
-int print_shift_error;
+__thread int print_shift_error;
 
 /* Shift the arguments ``left''.  Shift DOLLAR_VARS down then take one
    off of REST_OF_ARGS and place it into DOLLAR_VARS[9].  If LIST has

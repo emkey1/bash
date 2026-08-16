@@ -48,13 +48,13 @@ typedef int QSFUNC ();
 
 extern int _rl_qsort_string_compare (char **, char **);
 
-FUNMAP **funmap;
-static int funmap_size;
-static int funmap_entry;
+__thread FUNMAP **funmap;
+__thread static int funmap_size;
+__thread static int funmap_entry;
 
 /* After initializing the function map, this is the index of the first
    program specific function. */
-int funmap_program_specific_entry_start;
+__thread int funmap_program_specific_entry_start;
 
 static const FUNMAP default_funmap[] = {
   { "abort", rl_abort },
@@ -226,7 +226,7 @@ rl_add_funmap_entry (const char *name, rl_command_func_t *function)
   return funmap_entry;
 }
 
-static int funmap_initialized;
+__thread static int funmap_initialized;
 
 /* Make the funmap contain all of the default entries. */
 void

@@ -63,10 +63,10 @@ static int rd_token PARAMS((char *, int));
 
 /* Non-zero means expand all words on the line.  Otherwise, expand
    after first expansion if the expansion ends in a space. */
-int alias_expand_all = 0;
+__thread int alias_expand_all = 0;
 
 /* The list of aliases that we have. */
-HASH_TABLE *aliases = (HASH_TABLE *)NULL;
+__thread HASH_TABLE *aliases = (HASH_TABLE *)NULL;
 
 void
 initialize_aliases ()
@@ -305,7 +305,7 @@ alias_expand_word (s)
 
 /* If this is 1, we are checking the next token read for alias expansion
    because it is the first word in a command. */
-static int command_word;
+__thread static int command_word;
 
 /* This is for skipping quoted strings in alias expansions. */
 #define quote_char(c)  (((c) == '\'') || ((c) == '"'))

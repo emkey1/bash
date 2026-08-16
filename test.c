@@ -98,17 +98,17 @@ extern int errno;
 
 #define TEST_ERREXIT_STATUS	2
 
-static procenv_t test_exit_buf;
-static int test_error_return;
+__thread static procenv_t test_exit_buf;
+__thread static int test_error_return;
 #define test_exit(val) \
 	do { test_error_return = val; sh_longjmp (test_exit_buf, 1); } while (0)
 
 extern int sh_stat PARAMS((const char *, struct stat *));
 
-static int pos;		/* The offset of the current argument in ARGV. */
-static int argc;	/* The number of arguments present in ARGV. */
-static char **argv;	/* The argument list. */
-static int noeval;
+__thread static int pos;		/* The offset of the current argument in ARGV. */
+__thread static int argc;	/* The number of arguments present in ARGV. */
+__thread static char **argv;	/* The argument list. */
+__thread static int noeval;
 
 static void test_syntax_error PARAMS((char *, char *)) __attribute__((__noreturn__));
 static void beyond PARAMS((void)) __attribute__((__noreturn__));

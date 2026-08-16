@@ -30,7 +30,7 @@
 
 #include "bashintl.h"
 
-extern char *shell_name;
+__thread extern char *shell_name;
 
 /* Defines from version.h */
 const char * const dist_version = DISTVERSION;
@@ -47,7 +47,7 @@ const char * const bash_copyright = N_("Copyright (C) 2022 Free Software Foundat
 const char * const bash_license = N_("License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n");
 
 /* If == 31, shell compatible with bash-3.1, == 32 with bash-3.2, and so on */
-int shell_compatibility_level = DEFAULT_COMPAT_LEVEL;
+__thread int shell_compatibility_level = DEFAULT_COMPAT_LEVEL;
 
 /* Functions for getting, setting, and displaying the shell version. */
 
@@ -59,7 +59,7 @@ extern void show_shell_version PARAMS((int));
 char *
 shell_version_string ()
 {
-  static char tt[32] = { '\0' };
+  __thread static char tt[32] = { '\0' };
 
   if (tt[0] == '\0')
     {

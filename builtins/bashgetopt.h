@@ -28,14 +28,14 @@
 #define GETOPT_EOF	-1
 #define GETOPT_HELP	-99
 
-extern char *list_optarg;
-extern int list_optflags;
+__thread extern char *list_optarg;
+__thread extern int list_optflags;
 
-extern int list_optopt;
-extern int list_opttype;
+__thread extern int list_optopt;
+__thread extern int list_opttype;
 
-extern WORD_LIST *lcurrent;
-extern WORD_LIST *loptend;
+__thread extern WORD_LIST *lcurrent;
+__thread extern WORD_LIST *loptend;
 
 extern int internal_getopt PARAMS((WORD_LIST *, char *));
 extern void reset_internal_getopt PARAMS((void));

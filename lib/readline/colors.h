@@ -62,7 +62,7 @@ struct bin_str
 /* file type indicators (dir, sock, fifo, ...)
    Default value is initialized in parse-colors.c.
    It is then modified from the values of $LS_COLORS. */
-extern struct bin_str _rl_color_indicator[];
+__thread extern struct bin_str _rl_color_indicator[];
 
 /* The LS_COLORS variable is in a termcap-like format. */
 typedef struct _color_ext_type
@@ -74,7 +74,7 @@ typedef struct _color_ext_type
 
 /* file extensions indicators (.txt, .log, .jpg, ...)
    Values are taken from $LS_COLORS in rl_parse_colors(). */
-extern COLOR_EXT_TYPE *_rl_color_ext_list;
+__thread extern COLOR_EXT_TYPE *_rl_color_ext_list;
 
 #define FILETYPE_INDICATORS				\
   {							\

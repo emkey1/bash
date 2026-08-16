@@ -121,9 +121,9 @@ sh_single_quote (char *string)
 
 /* Set the environment variables LINES and COLUMNS to lines and cols,
    respectively. */
-static char setenv_buf[INT_STRLEN_BOUND (int) + 1];
-static char putenv_buf1[INT_STRLEN_BOUND (int) + 6 + 1];	/* sizeof("LINES=") == 6 */
-static char putenv_buf2[INT_STRLEN_BOUND (int) + 8 + 1];	/* sizeof("COLUMNS=") == 8 */
+__thread static char setenv_buf[INT_STRLEN_BOUND (int) + 1];
+__thread static char putenv_buf1[INT_STRLEN_BOUND (int) + 6 + 1];	/* sizeof("LINES=") == 6 */
+__thread static char putenv_buf2[INT_STRLEN_BOUND (int) + 8 + 1];	/* sizeof("COLUMNS=") == 8 */
 
 void
 sh_set_lines_and_columns (int lines, int cols)
@@ -154,7 +154,7 @@ sh_get_env_value (const char *varname)
 char *
 sh_get_home_dir (void)
 {
-  static char *home_dir = (char *)NULL;
+  __thread static char *home_dir = (char *)NULL;
   struct passwd *entry;
 
   if (home_dir)

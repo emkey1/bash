@@ -53,13 +53,13 @@
 
 /* Non-zero tells rl_delete_text and rl_insert_text to not add to
    the undo list. */
-int _rl_doing_an_undo = 0;
+__thread int _rl_doing_an_undo = 0;
 
 /* How many unclosed undo groups we currently have. */
-int _rl_undo_group_level = 0;
+__thread int _rl_undo_group_level = 0;
 
 /* The current undo list for THE_LINE. */
-UNDO_LIST *rl_undo_list = (UNDO_LIST *)NULL;
+__thread UNDO_LIST *rl_undo_list = (UNDO_LIST *)NULL;
 
 /* **************************************************************** */
 /*								    */

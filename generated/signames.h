@@ -2,7 +2,7 @@
    Do not edit.  Edit support/mksignames.c instead. */
 
 /* A translation list so we can be polite to our users. */
-char *signal_names[NSIG + 4] = {
+__thread char *signal_names[NSIG + 4] = {
     "EXIT",
     "SIGHUP",
     "SIGINT",

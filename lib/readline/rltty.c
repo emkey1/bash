@@ -49,8 +49,8 @@
 extern int errno;
 #endif /* !errno */
 
-rl_vintfunc_t *rl_prep_term_function = rl_prep_terminal;
-rl_voidfunc_t *rl_deprep_term_function = rl_deprep_terminal;
+__thread rl_vintfunc_t *rl_prep_term_function = rl_prep_terminal;
+__thread rl_voidfunc_t *rl_deprep_term_function = rl_deprep_terminal;
 
 static void set_winsize (int);
 
@@ -67,9 +67,9 @@ static void set_winsize (int);
 #define TPX_BRACKPASTE	0x02
 #define TPX_METAKEY	0x04
 
-static int terminal_prepped;
+__thread static int terminal_prepped;
 
-static _RL_TTY_CHARS _rl_tty_chars, _rl_last_tty_chars;
+__thread static _RL_TTY_CHARS _rl_tty_chars, _rl_last_tty_chars;
 
 /* If non-zero, means that this process has called tcflow(fd, TCOOFF)
    and output is suspended. */
@@ -330,7 +330,7 @@ prepare_terminal_settings (int meta_flag, TIOTYPE oldtio, TIOTYPE *tiop)
 #  define SETATTR(tty, tiop)	(ioctl (tty, TCSETAW, tiop))
 #endif /* !TERMIOS_TTY_DRIVER */
 
-static TIOTYPE otio;
+__thread static TIOTYPE otio;
 
 static void save_tty_chars (TIOTYPE *);
 static int _get_tty_settings (int, TIOTYPE *);
@@ -951,8 +951,8 @@ _rl_restore_tty_signals (void)
 }
 #else
 
-static TIOTYPE sigstty, nosigstty;
-static int tty_sigs_disabled = 0;
+__thread static TIOTYPE sigstty, nosigstty;
+__thread static int tty_sigs_disabled = 0;
 
 int
 _rl_disable_tty_signals (void)

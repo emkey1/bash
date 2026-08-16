@@ -59,7 +59,7 @@
 
 static bool get_funky_string (char **dest, const char **src, bool equals_end, size_t *output_count);
 
-struct bin_str _rl_color_indicator[] =
+__thread struct bin_str _rl_color_indicator[] =
   {
     { LEN_STR_PAIR ("\033[") },         //  lc: Left of color sequence
     { LEN_STR_PAIR ("m") },             //  rc: Right of color sequence

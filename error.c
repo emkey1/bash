@@ -55,7 +55,7 @@ extern int errno;
 extern int executing_line_number PARAMS((void));
 
 #if defined (JOB_CONTROL)
-extern pid_t shell_pgrp;
+__thread extern pid_t shell_pgrp;
 extern int give_terminal_to PARAMS((pid_t, int));
 #endif /* JOB_CONTROL */
 
@@ -73,7 +73,7 @@ static void error_prolog PARAMS((int));
 
 const char * const the_current_maintainer = MAINTAINER;
 
-int gnu_error_format = 0;
+__thread int gnu_error_format = 0;
 
 static void
 error_prolog (print_lineno)

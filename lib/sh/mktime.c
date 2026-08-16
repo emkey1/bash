@@ -168,7 +168,7 @@ ydhms_tm_diff (year, yday, hour, min, sec, tp)
 }
 
 
-static time_t localtime_offset;
+__thread static time_t localtime_offset;
 
 /* Convert *TP to a time_t value.  */
 time_t

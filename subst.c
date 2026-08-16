@@ -148,58 +148,58 @@ extern int errno;
 typedef WORD_LIST *EXPFUNC PARAMS((char *, int));
 
 /* Process ID of the last command executed within command substitution. */
-pid_t last_command_subst_pid = NO_PID;
-pid_t current_command_subst_pid = NO_PID;
+__thread pid_t last_command_subst_pid = NO_PID;
+__thread pid_t current_command_subst_pid = NO_PID;
 
 /* Variables used to keep track of the characters in IFS. */
-SHELL_VAR *ifs_var;
-char *ifs_value;
-unsigned char ifs_cmap[UCHAR_MAX + 1];
-int ifs_is_set, ifs_is_null;
+__thread SHELL_VAR *ifs_var;
+__thread char *ifs_value;
+__thread unsigned char ifs_cmap[UCHAR_MAX + 1];
+__thread int ifs_is_set, ifs_is_null;
 
 #if defined (HANDLE_MULTIBYTE)
-unsigned char ifs_firstc[MB_LEN_MAX];
-size_t ifs_firstc_len;
+__thread unsigned char ifs_firstc[MB_LEN_MAX];
+__thread size_t ifs_firstc_len;
 #else
 unsigned char ifs_firstc;
 #endif
 
 /* If non-zero, command substitution inherits the value of errexit option */
-int inherit_errexit = 0;
+__thread int inherit_errexit = 0;
 
 /* Sentinel to tell when we are performing variable assignments preceding a
    command name and putting them into the environment.  Used to make sure
    we use the temporary environment when looking up variable values. */
-int assigning_in_environment;
+__thread int assigning_in_environment;
 
 /* Used to hold a list of variable assignments preceding a command.  Global
    so the SIGCHLD handler in jobs.c can unwind-protect it when it runs a
    SIGCHLD trap and so it can be saved and restored by the trap handlers. */
-WORD_LIST *subst_assign_varlist = (WORD_LIST *)NULL;
+__thread WORD_LIST *subst_assign_varlist = (WORD_LIST *)NULL;
 
 /* Tell the expansion functions to not longjmp back to top_level on fatal
    errors.  Enabled when doing completion and prompt string expansion. */
-int no_longjmp_on_fatal_error = 0;
+__thread int no_longjmp_on_fatal_error = 0;
 
 /* Non-zero means to allow unmatched globbed filenames to expand to
    a null file. */
-int allow_null_glob_expansion;
+__thread int allow_null_glob_expansion;
 
 /* Non-zero means to throw an error when globbing fails to match anything. */
-int fail_glob_expansion;
+__thread int fail_glob_expansion;
 
 /* If non-zero, perform `&' substitution on the replacement string in the
    pattern substitution word expansion. */
-int patsub_replacement = 1;
+__thread int patsub_replacement = 1;
 
 /* Extern functions and variables from different files. */
-extern struct fd_bitmap *current_fds_to_close;
-extern int wordexp_only;
-extern int singlequote_translations;
-extern int extended_quote;
+__thread extern struct fd_bitmap *current_fds_to_close;
+__thread extern int wordexp_only;
+__thread extern int singlequote_translations;
+__thread extern int extended_quote;
 
 #if defined (JOB_CONTROL) && defined (PROCESS_SUBSTITUTION)
-extern PROCESS *last_procsub_child;
+__thread extern PROCESS *last_procsub_child;
 #endif
 
 #if !defined (HAVE_WCSDUP) && defined (HANDLE_MULTIBYTE)
@@ -215,24 +215,24 @@ char *glob_argv_flags;
 static int glob_argv_flags_size;
 #endif
 
-static WORD_LIST *cached_quoted_dollar_at = 0;
+__thread static WORD_LIST *cached_quoted_dollar_at = 0;
 
 /* Distinguished error values to return from expansion functions */
-static WORD_LIST expand_word_error, expand_word_fatal;
-static WORD_DESC expand_wdesc_error, expand_wdesc_fatal;
-static char expand_param_error, expand_param_fatal, expand_param_unset;
-static char extract_string_error, extract_string_fatal;
+__thread static WORD_LIST expand_word_error, expand_word_fatal;
+__thread static WORD_DESC expand_wdesc_error, expand_wdesc_fatal;
+__thread static char expand_param_error, expand_param_fatal, expand_param_unset;
+__thread static char extract_string_error, extract_string_fatal;
 
 /* Set by expand_word_unsplit and several of the expand_string_XXX functions;
    used to inhibit splitting and re-joining $* on $IFS, primarily when doing
    assignment statements.  The idea is that if we're in a context where this
    is set, we're not going to be performing word splitting, so we use the same
    rules to expand $* as we would if it appeared within double quotes. */
-static int expand_no_split_dollar_star = 0;
+__thread static int expand_no_split_dollar_star = 0;
 
 /* A WORD_LIST of words to be expanded by expand_word_list_internal,
    without any leading variable assignments. */
-static WORD_LIST *garglist = (WORD_LIST *)NULL;
+__thread static WORD_LIST *garglist = (WORD_LIST *)NULL;
 
 static char *quoted_substring PARAMS((char *, int, int));
 static int quoted_strlen PARAMS((char *));
@@ -1800,7 +1800,7 @@ extract_heredoc_dolbrace_string (string, sindex, quoted, flags)
 }
 
 #define PARAMEXPNEST_MAX	32	// for now
-static int dbstate[PARAMEXPNEST_MAX];
+__thread static int dbstate[PARAMEXPNEST_MAX];
 
 /* Extract a parameter expansion expression within ${ and } from STRING.
    Obey the Posix.2 rules for finding the ending `}': count braces while
@@ -6227,9 +6227,9 @@ make_named_pipe ()
 /* dev_fd_list[I] value of -1 means the process has been reaped and file
    descriptor I needs to be closed. Value of 0 means the slot is unused. */
 
-static pid_t *dev_fd_list = (pid_t *)NULL;
-static int nfds;
-static int totfds;	/* The highest possible number of open files. */
+__thread static pid_t *dev_fd_list = (pid_t *)NULL;
+__thread static int nfds;
+__thread static int totfds;	/* The highest possible number of open files. */
 
 void
 clear_fifo (i)
@@ -10841,7 +10841,7 @@ return0:
 
 #if defined (ARRAY_VARS)
 /* Characters that need to be backslash-quoted after expanding array subscripts */
-static char abstab[256] = { '\1' };
+__thread static char abstab[256] = { '\1' };
 
 /* Run an array subscript through the appropriate word expansions. */
 char *

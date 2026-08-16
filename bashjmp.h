@@ -23,12 +23,12 @@
 
 #include "posixjmp.h"
 
-extern procenv_t	top_level;
-extern procenv_t	subshell_top_level;
-extern procenv_t	return_catch;	/* used by `return' builtin */
-extern procenv_t	wait_intr_buf;
+__thread extern procenv_t	top_level;
+__thread extern procenv_t	subshell_top_level;
+__thread extern procenv_t	return_catch;	/* used by `return' builtin */
+__thread extern procenv_t	wait_intr_buf;
 
-extern int no_longjmp_on_fatal_error;
+__thread extern int no_longjmp_on_fatal_error;
 
 #define SHFUNC_RETURN()	sh_longjmp (return_catch, 1)
 

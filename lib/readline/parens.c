@@ -57,9 +57,9 @@ static int find_matching_open (char *, int, int);
 
 /* Non-zero means try to blink the matching open parenthesis when the
    close parenthesis is inserted. */
-int rl_blink_matching_paren = 0;
+__thread int rl_blink_matching_paren = 0;
 
-static int _paren_blink_usec = 500000;
+__thread static int _paren_blink_usec = 500000;
 
 /* Change emacs_standard_keymap to have bindings for paren matching when
    ON_OR_OFF is 1, change them back to self_insert when ON_OR_OFF == 0. */

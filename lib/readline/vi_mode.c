@@ -78,51 +78,51 @@
 
 /* This is global so other parts of the code can check whether the last
    command was a text modification command. */
-int _rl_vi_last_command = 'i';	/* default `.' puts you in insert mode */
+__thread int _rl_vi_last_command = 'i';	/* default `.' puts you in insert mode */
 
-_rl_vimotion_cxt *_rl_vimvcxt = 0;
+__thread _rl_vimotion_cxt *_rl_vimvcxt = 0;
 
 /* Non-zero indicates we are redoing a vi-mode command with `.' */
-int _rl_vi_redoing;
+__thread int _rl_vi_redoing;
 
 /* Non-zero means enter insertion mode. */
-static int _rl_vi_doing_insert;
+__thread static int _rl_vi_doing_insert;
 
 /* Command keys which do movement for xxx_to commands. */
 static const char * const vi_motion = " hl^$0ftFT;,%wbeWBE|`";
 
 /* Keymap used for vi replace characters.  Created dynamically since
    rarely used. */
-static Keymap vi_replace_map;
+__thread static Keymap vi_replace_map;
 
 /* The number of characters inserted in the last replace operation. */
-static int vi_replace_count;
+__thread static int vi_replace_count;
 
 /* If non-zero, we have text inserted after a c[motion] command that put
    us implicitly into insert mode.  Some people want this text to be
    attached to the command so that it is `redoable' with `.'. */
-static int vi_continued_command;
-static char *vi_insert_buffer;
-static int vi_insert_buffer_size;
+__thread static int vi_continued_command;
+__thread static char *vi_insert_buffer;
+__thread static int vi_insert_buffer_size;
 
-static int _rl_vi_last_repeat = 1;
-static int _rl_vi_last_arg_sign = 1;
-static int _rl_vi_last_motion;
+__thread static int _rl_vi_last_repeat = 1;
+__thread static int _rl_vi_last_arg_sign = 1;
+__thread static int _rl_vi_last_motion;
 #if defined (HANDLE_MULTIBYTE)
-static char _rl_vi_last_search_mbchar[MB_LEN_MAX];
-static int _rl_vi_last_search_mblen;
+__thread static char _rl_vi_last_search_mbchar[MB_LEN_MAX];
+__thread static int _rl_vi_last_search_mblen;
 #else
 static int _rl_vi_last_search_char;
 #endif
-static char _rl_vi_last_replacement[MB_LEN_MAX+1];	/* reserve for trailing NULL */
+__thread static char _rl_vi_last_replacement[MB_LEN_MAX+1];	/* reserve for trailing NULL */
 
-static int _rl_vi_last_key_before_insert;
+__thread static int _rl_vi_last_key_before_insert;
 
 /* Text modification commands.  These are the `redoable' commands. */
 static const char * const vi_textmod = "_*\\AaIiCcDdPpYyRrSsXx~";
 
 /* Arrays for the saved marks. */
-static int vi_mark_chars['z' - 'a' + 1];
+__thread static int vi_mark_chars['z' - 'a' + 1];
 
 static void _rl_vi_replace_insert (int);
 static void _rl_vi_save_replace (void);
@@ -1761,7 +1761,7 @@ rl_vi_first_print (int count, int key)
   return (rl_vi_back_to_indent (1, key));
 }
 
-static int _rl_cs_dir, _rl_cs_orig_dir;
+__thread static int _rl_cs_dir, _rl_cs_orig_dir;
 
 #if defined (READLINE_CALLBACKS)
 static int
@@ -1803,8 +1803,8 @@ rl_vi_char_search (int count, int key)
 {
   int c;
 #if defined (HANDLE_MULTIBYTE)
-  static char *target;
-  static int tlen;
+  __thread static char *target;
+  __thread static int tlen;
 #else
   static char target;
 #endif

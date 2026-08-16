@@ -109,40 +109,40 @@ static int _rl_subseq_getchar (int);
 
 const char *rl_library_version = RL_LIBRARY_VERSION;
 
-int rl_readline_version = RL_READLINE_VERSION;
+__thread int rl_readline_version = RL_READLINE_VERSION;
 
 /* True if this is `real' readline as opposed to some stub substitute. */
-int rl_gnu_readline_p = 1;
+__thread int rl_gnu_readline_p = 1;
 
 /* A pointer to the keymap that is currently in use.
    By default, it is the standard emacs keymap. */
-Keymap _rl_keymap = emacs_standard_keymap;
+__thread Keymap _rl_keymap = emacs_standard_keymap;
 
 /* The current style of editing. */
-int rl_editing_mode = emacs_mode;
+__thread int rl_editing_mode = emacs_mode;
 
 /* The current insert mode:  input (the default) or overwrite */
-int rl_insert_mode = RL_IM_DEFAULT;
+__thread int rl_insert_mode = RL_IM_DEFAULT;
 
 /* Non-zero if we called this function from _rl_dispatch().  It's present
    so functions can find out whether they were called from a key binding
    or directly from an application. */
-int rl_dispatching;
+__thread int rl_dispatching;
 
 /* Non-zero if the previous command was a kill command. */
-int _rl_last_command_was_kill = 0;
+__thread int _rl_last_command_was_kill = 0;
 
 /* The current value of the numeric argument specified by the user. */
-int rl_numeric_arg = 1;
+__thread int rl_numeric_arg = 1;
 
 /* Non-zero if an argument was typed. */
-int rl_explicit_arg = 0;
+__thread int rl_explicit_arg = 0;
 
 /* Temporary value used while generating the argument. */
-int rl_arg_sign = 1;
+__thread int rl_arg_sign = 1;
 
 /* Non-zero means we have been called at least once before. */
-static int rl_initialized;
+__thread static int rl_initialized;
 
 #if 0
 /* If non-zero, this program is running in an EMACS buffer. */
@@ -150,126 +150,126 @@ static int running_in_emacs;
 #endif
 
 /* Flags word encapsulating the current readline state. */
-unsigned long rl_readline_state = RL_STATE_NONE;
+__thread unsigned long rl_readline_state = RL_STATE_NONE;
 
 /* The current offset in the current input line. */
-int rl_point;
+__thread int rl_point;
 
 /* Mark in the current input line. */
-int rl_mark;
+__thread int rl_mark;
 
 /* Length of the current input line. */
-int rl_end;
+__thread int rl_end;
 
 /* Make this non-zero to return the current input_line. */
-int rl_done;
+__thread int rl_done;
 
 /* If non-zero when readline_internal returns, it means we found EOF */
-int rl_eof_found = 0;
+__thread int rl_eof_found = 0;
 
 /* The last function executed by readline. */
-rl_command_func_t *rl_last_func = (rl_command_func_t *)NULL;
+__thread rl_command_func_t *rl_last_func = (rl_command_func_t *)NULL;
 
 /* Top level environment for readline_internal (). */
-procenv_t _rl_top_level;
+__thread procenv_t _rl_top_level;
 
 /* The streams we interact with. */
-FILE *_rl_in_stream, *_rl_out_stream;
+__thread FILE *_rl_in_stream, *_rl_out_stream;
 
 /* The names of the streams that we do input and output to. */
-FILE *rl_instream = (FILE *)NULL;
-FILE *rl_outstream = (FILE *)NULL;
+__thread FILE *rl_instream = (FILE *)NULL;
+__thread FILE *rl_outstream = (FILE *)NULL;
 
 /* Non-zero means echo characters as they are read.  Defaults to no echo;
    set to 1 if there is a controlling terminal, we can get its attributes,
    and the attributes include `echo'.  Look at rltty.c:prepare_terminal_settings
    for the code that sets it. */
-int _rl_echoing_p = 0;
+__thread int _rl_echoing_p = 0;
 
 /* Current prompt. */
-char *rl_prompt = (char *)NULL;
-int rl_visible_prompt_length = 0;
+__thread char *rl_prompt = (char *)NULL;
+__thread int rl_visible_prompt_length = 0;
 
 /* Set to non-zero by calling application if it has already printed rl_prompt
    and does not want readline to do it the first time. */
-int rl_already_prompted = 0;
+__thread int rl_already_prompted = 0;
 
 /* The number of characters read in order to type this complete command. */
-int rl_key_sequence_length = 0;
+__thread int rl_key_sequence_length = 0;
 
 /* If non-zero, then this is the address of a function to call just
    before readline_internal_setup () prints the first prompt. */
-rl_hook_func_t *rl_startup_hook = (rl_hook_func_t *)NULL;
+__thread rl_hook_func_t *rl_startup_hook = (rl_hook_func_t *)NULL;
 
 /* Any readline function can set this and have it run just before the user's
    rl_startup_hook. */
-rl_hook_func_t *_rl_internal_startup_hook = (rl_hook_func_t *)NULL;
+__thread rl_hook_func_t *_rl_internal_startup_hook = (rl_hook_func_t *)NULL;
 
 /* If non-zero, this is the address of a function to call just before
    readline_internal_setup () returns and readline_internal starts
    reading input characters. */
-rl_hook_func_t *rl_pre_input_hook = (rl_hook_func_t *)NULL;
+__thread rl_hook_func_t *rl_pre_input_hook = (rl_hook_func_t *)NULL;
 
 /* What we use internally.  You should always refer to RL_LINE_BUFFER. */
-static char *the_line;
+__thread static char *the_line;
 
 /* The character that can generate an EOF.  Really read from
    the terminal driver... just defaulted here. */
-int _rl_eof_char = CTRL ('D');
+__thread int _rl_eof_char = CTRL ('D');
 
 /* Non-zero makes this the next keystroke to read. */
-int rl_pending_input = 0;
+__thread int rl_pending_input = 0;
 
 /* Pointer to a useful terminal name. */
 const char *rl_terminal_name = (const char *)NULL;
 
 /* Non-zero means to always use horizontal scrolling in line display. */
-int _rl_horizontal_scroll_mode = 0;
+__thread int _rl_horizontal_scroll_mode = 0;
 
 /* Non-zero means to display an asterisk at the starts of history lines
    which have been modified. */
-int _rl_mark_modified_lines = 0;
+__thread int _rl_mark_modified_lines = 0;
 
 /* The style of `bell' notification preferred.  This can be set to NO_BELL,
    AUDIBLE_BELL, or VISIBLE_BELL. */
-int _rl_bell_preference = AUDIBLE_BELL;
+__thread int _rl_bell_preference = AUDIBLE_BELL;
      
 /* String inserted into the line by rl_insert_comment (). */
-char *_rl_comment_begin;
+__thread char *_rl_comment_begin;
 
 /* Keymap holding the function currently being executed. */
-Keymap rl_executing_keymap;
+__thread Keymap rl_executing_keymap;
 
 /* The function currently being executed. */
-rl_command_func_t *_rl_executing_func;
+__thread rl_command_func_t *_rl_executing_func;
 
 /* Keymap we're currently using to dispatch. */
-Keymap _rl_dispatching_keymap;
+__thread Keymap _rl_dispatching_keymap;
 
 /* Non-zero means to erase entire line, including prompt, on empty input lines. */
-int rl_erase_empty_line = 0;
+__thread int rl_erase_empty_line = 0;
 
 /* Non-zero means to read only this many characters rather than up to a
    character bound to accept-line. */
-int rl_num_chars_to_read = 0;
+__thread int rl_num_chars_to_read = 0;
 
 /* Line buffer and maintenance. */
-char *rl_line_buffer = (char *)NULL;
-int rl_line_buffer_len = 0;
+__thread char *rl_line_buffer = (char *)NULL;
+__thread int rl_line_buffer_len = 0;
 
 /* Key sequence `contexts' */
-_rl_keyseq_cxt *_rl_kscxt = 0;
+__thread _rl_keyseq_cxt *_rl_kscxt = 0;
 
-int rl_executing_key;
-char *rl_executing_keyseq = 0;
-int _rl_executing_keyseq_size = 0;
+__thread int rl_executing_key;
+__thread char *rl_executing_keyseq = 0;
+__thread int _rl_executing_keyseq_size = 0;
 
-struct _rl_cmd _rl_pending_command;
-struct _rl_cmd *_rl_command_to_execute = (struct _rl_cmd *)NULL;
+__thread struct _rl_cmd _rl_pending_command;
+__thread struct _rl_cmd *_rl_command_to_execute = (struct _rl_cmd *)NULL;
 
 /* Timeout (specified in milliseconds) when reading characters making up an
    ambiguous multiple-key sequence */
-int _rl_keyseq_timeout = 500;
+__thread int _rl_keyseq_timeout = 500;
 
 #define RESIZE_KEYSEQ_BUFFER() \
   do \
@@ -292,39 +292,39 @@ int _rl_keyseq_timeout = 500;
 
 /* Non-zero means do not parse any lines other than comments and
    parser directives. */
-unsigned char _rl_parsing_conditionalized_out = 0;
+__thread unsigned char _rl_parsing_conditionalized_out = 0;
 
 /* Non-zero means to convert characters with the meta bit set to
    escape-prefixed characters so we can indirect through
    emacs_meta_keymap or vi_escape_keymap. */
-int _rl_convert_meta_chars_to_ascii = 1;
+__thread int _rl_convert_meta_chars_to_ascii = 1;
 
 /* Non-zero means to output characters with the meta bit set directly
    rather than as a meta-prefixed escape sequence. */
-int _rl_output_meta_chars = 0;
+__thread int _rl_output_meta_chars = 0;
 
 /* Non-zero means to look at the termios special characters and bind
    them to equivalent readline functions at startup. */
-int _rl_bind_stty_chars = 1;
+__thread int _rl_bind_stty_chars = 1;
 
 /* Non-zero means to go through the history list at every newline (or
    whenever rl_done is set and readline returns) and revert each line to
    its initial state. */
-int _rl_revert_all_at_newline = 0;
+__thread int _rl_revert_all_at_newline = 0;
 
 /* Non-zero means to honor the termios ECHOCTL bit and echo control
    characters corresponding to keyboard-generated signals. */
-int _rl_echo_control_chars = 1;
+__thread int _rl_echo_control_chars = 1;
 
 /* Non-zero means to prefix the displayed prompt with a character indicating
    the editing mode: @ for emacs, : for vi-command, + for vi-insert. */
-int _rl_show_mode_in_prompt = 0;
+__thread int _rl_show_mode_in_prompt = 0;
 
 /* Non-zero means to attempt to put the terminal in `bracketed paste mode',
    where it will prefix pasted text with an escape sequence and send
    another to mark the end of the paste. */
-int _rl_enable_bracketed_paste = BRACKETED_PASTE_DEFAULT;
-int _rl_enable_active_region = BRACKETED_PASTE_DEFAULT;
+__thread int _rl_enable_bracketed_paste = BRACKETED_PASTE_DEFAULT;
+__thread int _rl_enable_active_region = BRACKETED_PASTE_DEFAULT;
 
 /* **************************************************************** */
 /*								    */
@@ -333,7 +333,7 @@ int _rl_enable_active_region = BRACKETED_PASTE_DEFAULT;
 /* **************************************************************** */
 
 /* Non-zero means treat 0200 bit in terminal input as Meta bit. */
-int _rl_meta_flag = 0;	/* Forward declaration */
+__thread int _rl_meta_flag = 0;	/* Forward declaration */
 
 /* Set up the prompt and expand it.  Called from readline() and
    rl_callback_handler_install (). */
@@ -564,7 +564,7 @@ readline_internal_char (void)
 readline_internal_charloop (void)
 #endif
 {
-  static int lastc, eof_found;
+  __thread static int lastc, eof_found;
   int c, code, lk, r;
 
   lastc = EOF;

@@ -39,7 +39,7 @@ $PRODUCES setattr.c
 #include "common.h"
 #include "bashgetopt.h"
 
-extern sh_builtin_func_t *this_shell_builtin;
+__thread extern sh_builtin_func_t *this_shell_builtin;
 
 #ifdef ARRAY_VARS
 extern int declare_builtin PARAMS((WORD_LIST *));

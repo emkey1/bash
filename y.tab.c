@@ -175,16 +175,16 @@ do { \
 } while (0)
 
 #if defined (EXTENDED_GLOB)
-extern int extended_glob, extglob_flag;
+__thread extern int extended_glob, extglob_flag;
 #endif
 
 #if defined (TRANSLATABLE_STRINGS)
-extern int dump_translatable_strings, dump_po_strings;
-extern int singlequote_translations;
+__thread extern int dump_translatable_strings, dump_po_strings;
+__thread extern int singlequote_translations;
 #endif /* TRANSLATABLE_STRINGS */
 
 #if !defined (errno)
-extern int errno;
+__thread extern int errno;
 #endif
 
 /* **************************************************************** */
@@ -268,8 +268,8 @@ static void print_prompt PARAMS((void));
 
 #if defined (HANDLE_MULTIBYTE)
 static void set_line_mbstate PARAMS((void));
-static char *shell_input_line_property = NULL;
-static size_t shell_input_line_propsize = 0;
+__thread static char *shell_input_line_property = NULL;
+__thread static size_t shell_input_line_propsize = 0;
 #else
 #  define set_line_mbstate()
 #endif
@@ -281,108 +281,108 @@ extern int yydebug;
 #endif
 
 /* Default prompt strings */
-char *primary_prompt = PPROMPT;
-char *secondary_prompt = SPROMPT;
+__thread char *primary_prompt = PPROMPT;
+__thread char *secondary_prompt = SPROMPT;
 
 /* PROMPT_STRING_POINTER points to one of these, never to an actual string. */
-char *ps1_prompt, *ps2_prompt;
+__thread char *ps1_prompt, *ps2_prompt;
 
 /* Displayed after reading a command but before executing it in an interactive shell */
-char *ps0_prompt;
+__thread char *ps0_prompt;
 
 /* Handle on the current prompt string.  Indirectly points through
    ps1_ or ps2_prompt. */
-char **prompt_string_pointer = (char **)NULL;
-char *current_prompt_string;
+__thread char **prompt_string_pointer = (char **)NULL;
+__thread char *current_prompt_string;
 
 /* Non-zero means we expand aliases in commands. */
-int expand_aliases = 0;
+__thread int expand_aliases = 0;
 
 /* If non-zero, the decoded prompt string undergoes parameter and
    variable substitution, command substitution, arithmetic substitution,
    string expansion, process substitution, and quote removal in
    decode_prompt_string. */
-int promptvars = 1;
+__thread int promptvars = 1;
 
 /* If non-zero, $'...' and $"..." are expanded when they appear within
    a ${...} expansion, even when the expansion appears within double
    quotes. */
-int extended_quote = 1;
+__thread int extended_quote = 1;
 
 /* The number of lines read from input while creating the current command. */
-int current_command_line_count;
+__thread int current_command_line_count;
 
 /* The number of lines in a command saved while we run parse_and_execute */
-int saved_command_line_count;
+__thread int saved_command_line_count;
 
 /* The token that currently denotes the end of parse. */
-int shell_eof_token;
+__thread int shell_eof_token;
 
 /* The token currently being read. */
-int current_token;
+__thread int current_token;
 
 /* The current parser state. */
-int parser_state;
+__thread int parser_state;
 
 /* Variables to manage the task of reading here documents, because we need to
    defer the reading until after a complete command has been collected. */
-static REDIRECT *redir_stack[HEREDOC_MAX];
-int need_here_doc;
+__thread static REDIRECT *redir_stack[HEREDOC_MAX];
+__thread int need_here_doc;
 
 /* Where shell input comes from.  History expansion is performed on each
    line when the shell is interactive. */
-static char *shell_input_line = (char *)NULL;
-static size_t shell_input_line_index;
-static size_t shell_input_line_size;	/* Amount allocated for shell_input_line. */
-static size_t shell_input_line_len;	/* strlen (shell_input_line) */
+__thread static char *shell_input_line = (char *)NULL;
+__thread static size_t shell_input_line_index;
+__thread static size_t shell_input_line_size;	/* Amount allocated for shell_input_line. */
+__thread static size_t shell_input_line_len;	/* strlen (shell_input_line) */
 
 /* Either zero or EOF. */
-static int shell_input_line_terminator;
+__thread static int shell_input_line_terminator;
 
 /* The line number in a script on which a function definition starts. */
-static int function_dstart;
+__thread static int function_dstart;
 
 /* The line number in a script on which a function body starts. */
-static int function_bstart;
+__thread static int function_bstart;
 
 /* The line number in a script at which an arithmetic for command starts. */
-static int arith_for_lineno;
+__thread static int arith_for_lineno;
 
 /* The decoded prompt string.  Used if READLINE is not defined or if
    editing is turned off.  Analogous to current_readline_prompt. */
-static char *current_decoded_prompt;
+__thread static char *current_decoded_prompt;
 
 /* The last read token, or NULL.  read_token () uses this for context
    checking. */
-static int last_read_token;
+__thread static int last_read_token;
 
 /* The token read prior to last_read_token. */
-static int token_before_that;
+__thread static int token_before_that;
 
 /* The token read prior to token_before_that. */
-static int two_tokens_ago;
+__thread static int two_tokens_ago;
 
-static int global_extglob;
+__thread static int global_extglob;
 
 /* The line number in a script where the word in a `case WORD', `select WORD'
    or `for WORD' begins.  This is a nested command maximum, since the array
    index is decremented after a case, select, or for command is parsed. */
 #define MAX_CASE_NEST	128
-static int word_lineno[MAX_CASE_NEST+1];
-static int word_top = -1;
+__thread static int word_lineno[MAX_CASE_NEST+1];
+__thread static int word_top = -1;
 
 /* If non-zero, it is the token that we want read_token to return
    regardless of what text is (or isn't) present to be read.  This
    is reset by read_token.  If token_to_read == WORD or
    ASSIGNMENT_WORD, yylval.word should be set to word_desc_to_read. */
-static int token_to_read;
-static WORD_DESC *word_desc_to_read;
+__thread static int token_to_read;
+__thread static WORD_DESC *word_desc_to_read;
 
-static REDIRECTEE source;
-static REDIRECTEE redir;
+__thread static REDIRECTEE source;
+__thread static REDIRECTEE redir;
 
-static FILE *yyoutstream;
-static FILE *yyerrstream;
+__thread static FILE *yyoutstream;
+__thread static FILE *yyerrstream;
 
 #line 388 "y.tab.c"
 
@@ -556,7 +556,7 @@ typedef union YYSTYPE YYSTYPE;
 #endif
 
 
-extern YYSTYPE yylval;
+__thread extern YYSTYPE yylval;
 
 
 int yyparse (void);
@@ -1682,12 +1682,12 @@ yydestruct (const char *yymsg,
 
 
 /* Lookahead token kind.  */
-int yychar;
+__thread int yychar;
 
 /* The semantic value of the lookahead symbol.  */
-YYSTYPE yylval;
+__thread YYSTYPE yylval;
 /* Number of syntax errors so far.  */
-int yynerrs;
+__thread int yynerrs;
 
 
 
@@ -3707,7 +3707,7 @@ yyreturnlab:
 #endif
 
 /* Global var is non-zero when end of file has been reached. */
-int EOF_Reached = 0;
+__thread int EOF_Reached = 0;
 
 #ifdef DEBUG
 static void
@@ -3739,7 +3739,7 @@ return_EOF ()
 
 /* Variable containing the current get and unget functions.
    See ./input.h for a clearer description. */
-BASH_INPUT bash_input;
+__thread BASH_INPUT bash_input;
 
 /* Set all of the fields in BASH_INPUT to NULL.  Free bash_input.name if it
    is non-null, avoiding a memory leak. */
@@ -3827,9 +3827,9 @@ input_file_descriptor ()
 /* **************************************************************** */
 
 #if defined (READLINE)
-char *current_readline_prompt = (char *)NULL;
-char *current_readline_line = (char *)NULL;
-int current_readline_line_index = 0;
+__thread char *current_readline_prompt = (char *)NULL;
+__thread char *current_readline_line = (char *)NULL;
+__thread int current_readline_line_index = 0;
 
 static int
 yy_readline_get ()
@@ -4061,17 +4061,17 @@ typedef struct stream_saver {
 } STREAM_SAVER;
 
 /* The globally known line number. */
-int line_number = 0;
+__thread int line_number = 0;
 
 /* The line number offset set by assigning to LINENO.  Not currently used. */
-int line_number_base = 0;
+__thread int line_number_base = 0;
 
 #if defined (COND_COMMAND)
-static int cond_lineno;
-static int cond_token;
+__thread static int cond_lineno;
+__thread static int cond_token;
 #endif
 
-STREAM_SAVER *stream_list = (STREAM_SAVER *)NULL;
+__thread STREAM_SAVER *stream_list = (STREAM_SAVER *)NULL;
 
 void
 push_stream (reset_lineno)
@@ -4221,7 +4221,7 @@ typedef struct string_saver {
   int flags;
 } STRING_SAVER;
 
-STRING_SAVER *pushed_string_list = (STRING_SAVER *)NULL;
+__thread STRING_SAVER *pushed_string_list = (STRING_SAVER *)NULL;
 
 /*
  * Push the current shell_input_line onto a stack of such lines and make S
@@ -4395,8 +4395,8 @@ static char *
 read_a_line (remove_quoted_newline)
      int remove_quoted_newline;
 {
-  static char *line_buffer = (char *)NULL;
-  static int buffer_size = 0;
+  __thread static char *line_buffer = (char *)NULL;
+  __thread static int buffer_size = 0;
   int indx, c, peekc, pass_next;
 
 #if defined (READLINE)
@@ -4517,7 +4517,7 @@ read_secondary_line (remove_quoted_newline)
 
 /* Reserved words.  These are only recognized as the first word of a
    command. */
-STRING_INT_ALIST word_token_alist[] = {
+__thread STRING_INT_ALIST word_token_alist[] = {
   { "if", IF },
   { "then", THEN },
   { "else", ELSE },
@@ -4552,7 +4552,7 @@ STRING_INT_ALIST word_token_alist[] = {
 };
 
 /* other tokens that can be returned by read_token() */
-STRING_INT_ALIST other_token_alist[] = {
+__thread STRING_INT_ALIST other_token_alist[] = {
   /* Multiple-character tokens with special values */
   { "--", TIMEIGN },
   { "-p", TIMEOPT },
@@ -4601,12 +4601,12 @@ STRING_INT_ALIST other_token_alist[] = {
    can use them to decide when to add otherwise blank lines to the history. */
 
 /* The primary delimiter stack. */
-struct dstack dstack = {  (char *)NULL, 0, 0 };
+__thread struct dstack dstack = {  (char *)NULL, 0, 0 };
 
 /* A temporary delimiter stack to be used when decoding prompt strings.
    This is needed because command substitutions in prompt strings (e.g., PS2)
    can screw up the parser's quoting state. */
-static struct dstack temp_dstack = { (char *)NULL, 0, 0 };
+__thread static struct dstack temp_dstack = { (char *)NULL, 0, 0 };
 
 /* Macro for accessing the top delimiter on the stack.  Returns the
    delimiter or zero if none. */
@@ -4634,9 +4634,9 @@ static struct dstack temp_dstack = { (char *)NULL, 0, 0 };
 /* This implements one-character lookahead/lookbehind across physical input
    lines, to avoid something being lost because it's pushed back with
    shell_ungetc when we're at the start of a line. */
-static int eol_ungetc_lookahead = 0;
+__thread static int eol_ungetc_lookahead = 0;
 
-static int unquoted_backslash = 0;
+__thread static int unquoted_backslash = 0;
 
 static int
 shell_getc (remove_quoted_newline)
@@ -5180,10 +5180,10 @@ push_token (x)
 
 /* Place to remember the token.  We try to keep the buffer
    at a reasonable size, but it can grow. */
-static char *token = (char *)NULL;
+__thread static char *token = (char *)NULL;
 
 /* Current size of the token buffer. */
-static size_t token_buffer_size;
+__thread static size_t token_buffer_size;
 
 /* Command to read_token () explaining what we want it to do. */
 #define READ 0
@@ -5237,11 +5237,11 @@ yylex ()
 
 /* When non-zero, we have read the required tokens
    which allow ESAC to be the next one read. */
-static int esacs_needed_count;
+__thread static int esacs_needed_count;
 
 /* When non-zero, we can read IN as an acceptable token, regardless of how
    many newlines we read. */
-static int expecting_in_token;
+__thread static int expecting_in_token;
 
 static void
 push_heredoc (r)
@@ -5278,7 +5278,7 @@ gather_here_documents ()
 
 /* When non-zero, an open-brace used to create a group is awaiting a close
    brace partner. */
-static int open_brace_count;
+__thread static int open_brace_count;
 
 /* In the following three macros, `token' is always last_read_token */
 
@@ -5984,7 +5984,7 @@ tokword:
       } \
   } while (0)
 
-static char matched_pair_error;
+__thread static char matched_pair_error;
 
 static char *
 parse_matched_pair (qc, open, close, lenp, flags)
@@ -7799,7 +7799,7 @@ char *
 history_delimiting_chars (line)
      const char *line;
 {
-  static int last_was_heredoc = 0;	/* was the last entry the start of a here document? */
+  __thread static int last_was_heredoc = 0;	/* was the last entry the start of a here document? */
   register int i;
 
   if ((parser_state & PST_HEREDOC) == 0)
@@ -8639,15 +8639,15 @@ discard_parser_constructs (error_p)
 /* Do that silly `type "bye" to exit' stuff.  You know, "ignoreeof". */
 
 /* A flag denoting whether or not ignoreeof is set. */
-int ignoreeof = 0;
+__thread int ignoreeof = 0;
 
 /* The number of times that we have encountered an EOF character without
    another character intervening.  When this gets above the limit, the
    shell terminates. */
-int eof_encountered = 0;
+__thread int eof_encountered = 0;
 
 /* The limit for eof_encountered. */
-int eof_encountered_limit = 10;
+__thread int eof_encountered_limit = 10;
 
 /* If we have EOF as the only input unit, this user wants to leave
    the shell.  If the shell is not interactive, then just leave.
@@ -8704,7 +8704,7 @@ handle_eof_input_unit ()
 /* It's very important that these two functions treat the characters
    between ( and ) identically. */
 
-static WORD_LIST parse_string_error;
+__thread static WORD_LIST parse_string_error;
 
 /* Take a string and run it through the shell parser, returning the
    resultant word list.  Used by compound array assignment. */

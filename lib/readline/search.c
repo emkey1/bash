@@ -53,19 +53,19 @@
 #endif
 #define abs(x)		(((x) >= 0) ? (x) : -(x))
 
-_rl_search_cxt *_rl_nscxt = 0;
+__thread _rl_search_cxt *_rl_nscxt = 0;
 
-static char *noninc_search_string = (char *) NULL;
-static int noninc_history_pos;
+__thread static char *noninc_search_string = (char *) NULL;
+__thread static int noninc_history_pos;
 
-static char *prev_line_found = (char *) NULL;
+__thread static char *prev_line_found = (char *) NULL;
 
-static int _rl_history_search_len;
-/*static*/ int _rl_history_search_pos;
-static int _rl_history_search_flags;
+__thread static int _rl_history_search_len;
+/*static*/ __thread int _rl_history_search_pos;
+__thread static int _rl_history_search_flags;
 
-static char *history_search_string;
-static int history_string_size;
+__thread static char *history_search_string;
+__thread static int history_string_size;
 
 static void make_history_line_current (HIST_ENTRY *);
 static int noninc_search_from_pos (char *, int, int, int, int *);

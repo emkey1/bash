@@ -98,23 +98,23 @@ static const char *default_suffixes[] =
    wants called before trying the standard tilde expansions.  The function
    is called with the text sans tilde, and returns a malloc()'ed string
    which is the expansion, or a NULL pointer if the expansion fails. */
-tilde_hook_func_t *tilde_expansion_preexpansion_hook = (tilde_hook_func_t *)NULL;
+__thread tilde_hook_func_t *tilde_expansion_preexpansion_hook = (tilde_hook_func_t *)NULL;
 
 /* If non-null, this contains the address of a function to call if the
    standard meaning for expanding a tilde fails.  The function is called
    with the text (sans tilde, as in "foo"), and returns a malloc()'ed string
    which is the expansion, or a NULL pointer if there is no expansion. */
-tilde_hook_func_t *tilde_expansion_failure_hook = (tilde_hook_func_t *)NULL;
+__thread tilde_hook_func_t *tilde_expansion_failure_hook = (tilde_hook_func_t *)NULL;
 
 /* When non-null, this is a NULL terminated array of strings which
    are duplicates for a tilde prefix.  Bash uses this to expand
    `=~' and `:~'. */
-char **tilde_additional_prefixes = (char **)default_prefixes;
+__thread char **tilde_additional_prefixes = (char **)default_prefixes;
 
 /* When non-null, this is a NULL terminated array of strings which match
    the end of a username, instead of just "/".  Bash sets this to
    `:' and `=~'. */
-char **tilde_additional_suffixes = (char **)default_suffixes;
+__thread char **tilde_additional_suffixes = (char **)default_suffixes;
 
 static int tilde_find_prefix (const char *, int *);
 static int tilde_find_suffix (const char *);

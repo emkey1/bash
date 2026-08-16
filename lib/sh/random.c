@@ -36,9 +36,9 @@
 
 #include "shell.h"
 
-extern time_t shell_start_time;
+__thread extern time_t shell_start_time;
 
-extern int last_random_value;
+__thread extern int last_random_value;
 
 static u_bits32_t intrand32 PARAMS((u_bits32_t));
 static u_bits32_t genseed PARAMS((void));
@@ -48,7 +48,7 @@ static void sbrand32 PARAMS((u_bits32_t));
 static void perturb_rand32 PARAMS((void));
 
 /* The random number seed.  You can change this by setting RANDOM. */
-static u_bits32_t rseed = 1;
+__thread static u_bits32_t rseed = 1;
 
 /* Returns a 32-bit pseudo-random number. */
 static u_bits32_t
@@ -129,10 +129,10 @@ seedrand ()
   sbrand (iv);
 }
 
-static u_bits32_t rseed32 = 1073741823;
-static int last_rand32;
+__thread static u_bits32_t rseed32 = 1073741823;
+__thread static int last_rand32;
 
-static int urandfd = -1;
+__thread static int urandfd = -1;
 
 #define BASH_RAND32_MAX	0x7fffffff	/* 32 bits */
 
@@ -192,7 +192,7 @@ getrandom (buf, len, flags)
 {
   int oflags;
   ssize_t r;
-  static int urand_unavail = 0;
+  __thread static int urand_unavail = 0;
 
 #if HAVE_GETENTROPY
   r = getentropy (buf, len);

@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <string.h>
 
-extern int locale_utf8locale;
+__thread extern int locale_utf8locale;
 
 extern int utf8_mbscmp (const char *, const char *);
 

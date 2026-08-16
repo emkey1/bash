@@ -29,7 +29,7 @@
    If the type byte is ISKMAP, then the pointer is the address of
    a keymap. */
 
-KEYMAP_ENTRY_ARRAY emacs_standard_keymap = {
+__thread KEYMAP_ENTRY_ARRAY emacs_standard_keymap = {
 
   /* Control keys. */
   { ISFUNC, rl_set_mark },			/* Control-@ */
@@ -312,7 +312,7 @@ KEYMAP_ENTRY_ARRAY emacs_standard_keymap = {
 #endif /* KEYMAP_SIZE > 128 */
 };
 
-KEYMAP_ENTRY_ARRAY emacs_meta_keymap = {
+__thread KEYMAP_ENTRY_ARRAY emacs_meta_keymap = {
 
   /* Meta keys.  Just like above, but the high bit is set. */
   { ISFUNC, (rl_command_func_t *)0x0 },	/* Meta-Control-@ */
@@ -592,7 +592,7 @@ KEYMAP_ENTRY_ARRAY emacs_meta_keymap = {
 #endif /* KEYMAP_SIZE > 128 */
 };
 
-KEYMAP_ENTRY_ARRAY emacs_ctlx_keymap = {
+__thread KEYMAP_ENTRY_ARRAY emacs_ctlx_keymap = {
 
   /* Control keys. */
   { ISFUNC, (rl_command_func_t *)0x0 },		/* Control-@ */

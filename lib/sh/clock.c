@@ -46,7 +46,7 @@ clock_t_to_secs (t, sp, sfp)
      time_t *sp;
      int *sfp;
 {
-  static long clk_tck = -1;
+  __thread static long clk_tck = -1;
 
   if (clk_tck == -1)
     clk_tck = get_clk_tck ();

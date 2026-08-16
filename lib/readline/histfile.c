@@ -115,25 +115,25 @@ extern int errno;
 #endif
 
 /* history file version; currently unused */
-int history_file_version = 1;
+__thread int history_file_version = 1;
 
 /* If non-zero, we write timestamps to the history file in history_do_write() */
-int history_write_timestamps = 0;
+__thread int history_write_timestamps = 0;
 
 /* If non-zero, we assume that a history file that starts with a timestamp
    uses timestamp-delimited entries and can include multi-line history
    entries. Used by read_history_range */
-int history_multiline_entries = 0;
+__thread int history_multiline_entries = 0;
 
 /* Immediately after a call to read_history() or read_history_range(), this
    will return the number of lines just read from the history file in that
    call. */
-int history_lines_read_from_file = 0;
+__thread int history_lines_read_from_file = 0;
 
 /* Immediately after a call to write_history() or history_do_write(), this
    will return the number of lines just written to the history file in that
    call.  This also works with history_truncate_file. */
-int history_lines_written_to_file = 0;
+__thread int history_lines_written_to_file = 0;
 
 /* Does S look like the beginning of a history timestamp entry?  Placeholder
    for more extensive tests. */

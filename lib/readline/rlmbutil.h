@@ -220,6 +220,6 @@ _rl_wcwidth (WCHAR_T wc)
 
 #endif /* !HANDLE_MULTIBYTE */
 
-extern int rl_byte_oriented;
+__thread extern int rl_byte_oriented;
 
 #endif /* _RL_MBUTIL_H_ */

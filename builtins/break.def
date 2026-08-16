@@ -49,13 +49,13 @@ $END
 static int check_loop_level PARAMS((void));
 
 /* The depth of while's and until's. */
-int loop_level = 0;
+__thread int loop_level = 0;
 
 /* Non-zero when a "break" instruction is encountered. */
-int breaking = 0;
+__thread int breaking = 0;
 
 /* Non-zero when we have encountered a continue instruction. */
-int continuing = 0;
+__thread int continuing = 0;
 
 /* Set up to break x levels, where x defaults to 1, but can be specified
    as the first argument. */

@@ -71,8 +71,8 @@ extern int errno;
 extern const char * const bash_getcwd_errstr;
 
 /* Used by some builtins and the mainline code. */
-sh_builtin_func_t *last_shell_builtin = (sh_builtin_func_t *)NULL;
-sh_builtin_func_t *this_shell_builtin = (sh_builtin_func_t *)NULL;
+__thread sh_builtin_func_t *last_shell_builtin = (sh_builtin_func_t *)NULL;
+__thread sh_builtin_func_t *this_shell_builtin = (sh_builtin_func_t *)NULL;
 
 /* **************************************************************** */
 /*								    */
@@ -474,7 +474,7 @@ if (n != posparam_count)
 #endif
 }
 
-static int changed_dollar_vars;
+__thread static int changed_dollar_vars;
 
 /* Have the dollar variables been reset to new values since we last
    checked? */
@@ -618,7 +618,7 @@ read_octal (string)
 
 /* Return a consed string which is the current working directory.
    FOR_WHOM is the name of the caller for error printing.  */
-char *the_current_working_directory = (char *)NULL;
+__thread char *the_current_working_directory = (char *)NULL;
 
 char *
 get_working_directory (for_whom)
