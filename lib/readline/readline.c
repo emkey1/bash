@@ -221,7 +221,7 @@ __thread int _rl_eof_char = CTRL ('D');
 __thread int rl_pending_input = 0;
 
 /* Pointer to a useful terminal name. */
-const char *rl_terminal_name = (const char *)NULL;
+__thread const char *rl_terminal_name = (const char *)NULL;
 
 /* Non-zero means to always use horizontal scrolling in line display. */
 __thread int _rl_horizontal_scroll_mode = 0;

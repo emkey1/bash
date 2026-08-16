@@ -74,32 +74,32 @@ $END
 
 #define OPTFMT		"%-15s\t%s\n"
 
-extern int allow_null_glob_expansion, fail_glob_expansion, glob_dot_filenames;
+__thread extern int allow_null_glob_expansion, fail_glob_expansion, glob_dot_filenames;
 __thread extern int cdable_vars, mail_warning, source_uses_path;
 __thread extern int no_exit_on_failed_exec, print_shift_error;
-extern int check_hashed_filenames, promptvars;
-extern int cdspelling, expand_aliases;
-extern int extended_quote;
+__thread extern int check_hashed_filenames, promptvars;
+__thread extern int cdspelling, expand_aliases;
+__thread extern int extended_quote;
 __thread extern int check_window_size;
-extern int glob_ignore_case, match_ignore_case;
+__thread extern int glob_ignore_case, match_ignore_case;
 __thread extern int hup_on_exit;
-extern int xpg_echo;
-extern int gnu_error_format;
+__thread extern int xpg_echo;
+__thread extern int gnu_error_format;
 __thread extern int check_jobs_at_exit;
 __thread extern int autocd;
-extern int glob_star;
-extern int glob_asciirange;
-extern int glob_always_skip_dot_and_dotdot;
-extern int lastpipe_opt;
+__thread extern int glob_star;
+__thread extern int glob_asciirange;
+__thread extern int glob_always_skip_dot_and_dotdot;
+__thread extern int lastpipe_opt;
 __thread extern int inherit_errexit;
 __thread extern int localvar_inherit;
-extern int localvar_unset;
-extern int varassign_redir_autoclose;
-extern int singlequote_translations;
-extern int patsub_replacement;
+__thread extern int localvar_unset;
+__thread extern int varassign_redir_autoclose;
+__thread extern int singlequote_translations;
+__thread extern int patsub_replacement;
 
 #if defined (EXTENDED_GLOB)
-extern int extended_glob;
+__thread extern int extended_glob;
 #endif
 
 #if defined (READLINE)
@@ -113,8 +113,8 @@ extern int enable_hostname_completion PARAMS((int));
 #endif
 
 #if defined (PROGRAMMABLE_COMPLETION)
-extern int prog_completion_enabled;
-extern int progcomp_alias;
+__thread extern int prog_completion_enabled;
+__thread extern int progcomp_alias;
 #endif
 
 #if defined (DEBUGGER)
@@ -159,115 +159,279 @@ static int shopt_set_expaliases PARAMS((char *, int));
 
 static int shopt_set_debug_mode PARAMS((char *, int));
 
-static int shopt_login_shell;
-static int shopt_compat31;
-static int shopt_compat32;
-static int shopt_compat40;
-static int shopt_compat41;
-static int shopt_compat42;
-static int shopt_compat43;
-static int shopt_compat44;
+static __thread int shopt_login_shell;
+static __thread int shopt_compat31;
+static __thread int shopt_compat32;
+static __thread int shopt_compat40;
+static __thread int shopt_compat41;
+static __thread int shopt_compat42;
+static __thread int shopt_compat43;
+static __thread int shopt_compat44;
 
 typedef int shopt_set_func_t PARAMS((char *, int));
 
 /* If you add a new variable name here, make sure to set the default value
    appropriately in reset_shopt_options. */
 
-static struct {
+static __thread struct {
   char *name;
   int  *value;
   shopt_set_func_t *set_func;
 } shopt_vars[] = {
-  { "autocd", &autocd, (shopt_set_func_t *)NULL },
+  { "autocd", 0, (shopt_set_func_t *)NULL },
 #if defined (ARRAY_VARS)
-  { "assoc_expand_once", &expand_once_flag, set_assoc_expand },
+  { "assoc_expand_once", 0, set_assoc_expand },
 #endif
-  { "cdable_vars", &cdable_vars, (shopt_set_func_t *)NULL },
-  { "cdspell", &cdspelling, (shopt_set_func_t *)NULL },
-  { "checkhash", &check_hashed_filenames, (shopt_set_func_t *)NULL },
+  { "cdable_vars", 0, (shopt_set_func_t *)NULL },
+  { "cdspell", 0, (shopt_set_func_t *)NULL },
+  { "checkhash", 0, (shopt_set_func_t *)NULL },
 #if defined (JOB_CONTROL)
-  { "checkjobs", &check_jobs_at_exit, (shopt_set_func_t *)NULL },
+  { "checkjobs", 0, (shopt_set_func_t *)NULL },
 #endif
-  { "checkwinsize", &check_window_size, (shopt_set_func_t *)NULL },
+  { "checkwinsize", 0, (shopt_set_func_t *)NULL },
 #if defined (HISTORY)
-  { "cmdhist", &command_oriented_history, (shopt_set_func_t *)NULL },
+  { "cmdhist", 0, (shopt_set_func_t *)NULL },
 #endif
-  { "compat31", &shopt_compat31, set_compatibility_level },
-  { "compat32", &shopt_compat32, set_compatibility_level },
-  { "compat40", &shopt_compat40, set_compatibility_level },
-  { "compat41", &shopt_compat41, set_compatibility_level },
-  { "compat42", &shopt_compat42, set_compatibility_level },
-  { "compat43", &shopt_compat43, set_compatibility_level },
-  { "compat44", &shopt_compat44, set_compatibility_level },
+  { "compat31", 0, set_compatibility_level },
+  { "compat32", 0, set_compatibility_level },
+  { "compat40", 0, set_compatibility_level },
+  { "compat41", 0, set_compatibility_level },
+  { "compat42", 0, set_compatibility_level },
+  { "compat43", 0, set_compatibility_level },
+  { "compat44", 0, set_compatibility_level },
 #if defined (READLINE)
-  { "complete_fullquote", &complete_fullquote, (shopt_set_func_t *)NULL},
-  { "direxpand", &dircomplete_expand, shopt_set_complete_direxpand },
-  { "dirspell", &dircomplete_spelling, (shopt_set_func_t *)NULL },
+  { "complete_fullquote", 0, (shopt_set_func_t *)NULL},
+  { "direxpand", 0, shopt_set_complete_direxpand },
+  { "dirspell", 0, (shopt_set_func_t *)NULL },
 #endif
-  { "dotglob", &glob_dot_filenames, (shopt_set_func_t *)NULL },
-  { "execfail", &no_exit_on_failed_exec, (shopt_set_func_t *)NULL },
-  { "expand_aliases", &expaliases_flag, shopt_set_expaliases },
+  { "dotglob", 0, (shopt_set_func_t *)NULL },
+  { "execfail", 0, (shopt_set_func_t *)NULL },
+  { "expand_aliases", 0, shopt_set_expaliases },
 #if defined (DEBUGGER)
-  { "extdebug", &debugging_mode, shopt_set_debug_mode },
+  { "extdebug", 0, shopt_set_debug_mode },
 #endif
 #if defined (EXTENDED_GLOB)
-  { "extglob", &extglob_flag, shopt_set_extglob },
+  { "extglob", 0, shopt_set_extglob },
 #endif
-  { "extquote", &extended_quote, (shopt_set_func_t *)NULL },
-  { "failglob", &fail_glob_expansion, (shopt_set_func_t *)NULL },
+  { "extquote", 0, (shopt_set_func_t *)NULL },
+  { "failglob", 0, (shopt_set_func_t *)NULL },
 #if defined (READLINE)
-  { "force_fignore", &force_fignore, (shopt_set_func_t *)NULL },
+  { "force_fignore", 0, (shopt_set_func_t *)NULL },
 #endif
-  { "globasciiranges", &glob_asciirange, (shopt_set_func_t *)NULL },
-  { "globskipdots", &glob_always_skip_dot_and_dotdot, (shopt_set_func_t *)NULL },
-  { "globstar", &glob_star, (shopt_set_func_t *)NULL },
-  { "gnu_errfmt", &gnu_error_format, (shopt_set_func_t *)NULL },
+  { "globasciiranges", 0, (shopt_set_func_t *)NULL },
+  { "globskipdots", 0, (shopt_set_func_t *)NULL },
+  { "globstar", 0, (shopt_set_func_t *)NULL },
+  { "gnu_errfmt", 0, (shopt_set_func_t *)NULL },
 #if defined (HISTORY)
-  { "histappend", &force_append_history, (shopt_set_func_t *)NULL },
+  { "histappend", 0, (shopt_set_func_t *)NULL },
 #endif
 #if defined (READLINE)
-  { "histreedit", &history_reediting, (shopt_set_func_t *)NULL },
-  { "histverify", &hist_verify, (shopt_set_func_t *)NULL },
-  { "hostcomplete", &perform_hostname_completion, shopt_enable_hostname_completion },
+  { "histreedit", 0, (shopt_set_func_t *)NULL },
+  { "histverify", 0, (shopt_set_func_t *)NULL },
+  { "hostcomplete", 0, shopt_enable_hostname_completion },
 #endif
-  { "huponexit", &hup_on_exit, (shopt_set_func_t *)NULL },
-  { "inherit_errexit", &inherit_errexit, (shopt_set_func_t *)NULL },
-  { "interactive_comments", &interactive_comments, set_shellopts_after_change },
-  { "lastpipe", &lastpipe_opt, (shopt_set_func_t *)NULL },
+  { "huponexit", 0, (shopt_set_func_t *)NULL },
+  { "inherit_errexit", 0, (shopt_set_func_t *)NULL },
+  { "interactive_comments", 0, set_shellopts_after_change },
+  { "lastpipe", 0, (shopt_set_func_t *)NULL },
 #if defined (HISTORY)
-  { "lithist", &literal_history, (shopt_set_func_t *)NULL },
+  { "lithist", 0, (shopt_set_func_t *)NULL },
 #endif
-  { "localvar_inherit", &localvar_inherit, (shopt_set_func_t *)NULL },
-  { "localvar_unset", &localvar_unset, (shopt_set_func_t *)NULL },
-  { "login_shell", &shopt_login_shell, set_login_shell },
-  { "mailwarn", &mail_warning, (shopt_set_func_t *)NULL },
+  { "localvar_inherit", 0, (shopt_set_func_t *)NULL },
+  { "localvar_unset", 0, (shopt_set_func_t *)NULL },
+  { "login_shell", 0, set_login_shell },
+  { "mailwarn", 0, (shopt_set_func_t *)NULL },
 #if defined (READLINE)
-  { "no_empty_cmd_completion", &no_empty_command_completion, (shopt_set_func_t *)NULL },
+  { "no_empty_cmd_completion", 0, (shopt_set_func_t *)NULL },
 #endif
-  { "nocaseglob", &glob_ignore_case, (shopt_set_func_t *)NULL },
-  { "nocasematch", &match_ignore_case, (shopt_set_func_t *)NULL },
-  { "noexpand_translation", &singlequote_translations, (shopt_set_func_t *)NULL },
-  { "nullglob",	&allow_null_glob_expansion, (shopt_set_func_t *)NULL },
-  { "patsub_replacement", &patsub_replacement, (shopt_set_func_t *)NULL },
+  { "nocaseglob", 0, (shopt_set_func_t *)NULL },
+  { "nocasematch", 0, (shopt_set_func_t *)NULL },
+  { "noexpand_translation", 0, (shopt_set_func_t *)NULL },
+  { "nullglob",	0, (shopt_set_func_t *)NULL },
+  { "patsub_replacement", 0, (shopt_set_func_t *)NULL },
 #if defined (PROGRAMMABLE_COMPLETION)
-  { "progcomp", &prog_completion_enabled, (shopt_set_func_t *)NULL },
+  { "progcomp", 0, (shopt_set_func_t *)NULL },
 #  if defined (ALIAS)
-  { "progcomp_alias", &progcomp_alias, (shopt_set_func_t *)NULL },
+  { "progcomp_alias", 0, (shopt_set_func_t *)NULL },
 #  endif
 #endif
-  { "promptvars", &promptvars, (shopt_set_func_t *)NULL },
+  { "promptvars", 0, (shopt_set_func_t *)NULL },
 #if defined (RESTRICTED_SHELL)
-  { "restricted_shell", &restricted_shell, set_restricted_shell },
+  { "restricted_shell", 0, set_restricted_shell },
 #endif
-  { "shift_verbose", &print_shift_error, (shopt_set_func_t *)NULL },
-  { "sourcepath", &source_uses_path, (shopt_set_func_t *)NULL },
+  { "shift_verbose", 0, (shopt_set_func_t *)NULL },
+  { "sourcepath", 0, (shopt_set_func_t *)NULL },
 #if defined (SYSLOG_HISTORY) && defined (SYSLOG_SHOPT)
-  { "syslog_history", &syslog_history, (shopt_set_func_t *)NULL },
+  { "syslog_history", 0, (shopt_set_func_t *)NULL },
 #endif
-  { "varredir_close", &varassign_redir_autoclose, (shopt_set_func_t *)NULL },
-  { "xpg_echo", &xpg_echo, (shopt_set_func_t *)NULL },
+  { "varredir_close", 0, (shopt_set_func_t *)NULL },
+  { "xpg_echo", 0, (shopt_set_func_t *)NULL },
   { (char *)0, (int *)0, (shopt_set_func_t *)NULL }
 };
+
+/* iSH-AOK: shopt_vars[] pointed at variables that are thread-local now,
+   so its addresses are no longer compile-time constants. The entries
+   below carry the same #if lines as the table, which is what keeps the
+   indices in step with it. Generated by tools/bash-tls-fix-tables.py. */
+void
+aok_fix_shopt_vars ()
+{
+  static __thread int aok_done;
+  int aok_i = 0;
+
+  if (aok_done)
+    return;
+  aok_done = 1;
+
+  shopt_vars[aok_i].value = &autocd;
+  aok_i++;
+#if defined (ARRAY_VARS)
+  shopt_vars[aok_i].value = &expand_once_flag;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &cdable_vars;
+  aok_i++;
+  shopt_vars[aok_i].value = &cdspelling;
+  aok_i++;
+  shopt_vars[aok_i].value = &check_hashed_filenames;
+  aok_i++;
+#if defined (JOB_CONTROL)
+  shopt_vars[aok_i].value = &check_jobs_at_exit;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &check_window_size;
+  aok_i++;
+#if defined (HISTORY)
+  shopt_vars[aok_i].value = &command_oriented_history;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &shopt_compat31;
+  aok_i++;
+  shopt_vars[aok_i].value = &shopt_compat32;
+  aok_i++;
+  shopt_vars[aok_i].value = &shopt_compat40;
+  aok_i++;
+  shopt_vars[aok_i].value = &shopt_compat41;
+  aok_i++;
+  shopt_vars[aok_i].value = &shopt_compat42;
+  aok_i++;
+  shopt_vars[aok_i].value = &shopt_compat43;
+  aok_i++;
+  shopt_vars[aok_i].value = &shopt_compat44;
+  aok_i++;
+#if defined (READLINE)
+  shopt_vars[aok_i].value = &complete_fullquote;
+  aok_i++;
+  shopt_vars[aok_i].value = &dircomplete_expand;
+  aok_i++;
+  shopt_vars[aok_i].value = &dircomplete_spelling;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &glob_dot_filenames;
+  aok_i++;
+  shopt_vars[aok_i].value = &no_exit_on_failed_exec;
+  aok_i++;
+  shopt_vars[aok_i].value = &expaliases_flag;
+  aok_i++;
+#if defined (DEBUGGER)
+  shopt_vars[aok_i].value = &debugging_mode;
+  aok_i++;
+#endif
+#if defined (EXTENDED_GLOB)
+  shopt_vars[aok_i].value = &extglob_flag;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &extended_quote;
+  aok_i++;
+  shopt_vars[aok_i].value = &fail_glob_expansion;
+  aok_i++;
+#if defined (READLINE)
+  shopt_vars[aok_i].value = &force_fignore;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &glob_asciirange;
+  aok_i++;
+  shopt_vars[aok_i].value = &glob_always_skip_dot_and_dotdot;
+  aok_i++;
+  shopt_vars[aok_i].value = &glob_star;
+  aok_i++;
+  shopt_vars[aok_i].value = &gnu_error_format;
+  aok_i++;
+#if defined (HISTORY)
+  shopt_vars[aok_i].value = &force_append_history;
+  aok_i++;
+#endif
+#if defined (READLINE)
+  shopt_vars[aok_i].value = &history_reediting;
+  aok_i++;
+  shopt_vars[aok_i].value = &hist_verify;
+  aok_i++;
+  shopt_vars[aok_i].value = &perform_hostname_completion;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &hup_on_exit;
+  aok_i++;
+  shopt_vars[aok_i].value = &inherit_errexit;
+  aok_i++;
+  shopt_vars[aok_i].value = &interactive_comments;
+  aok_i++;
+  shopt_vars[aok_i].value = &lastpipe_opt;
+  aok_i++;
+#if defined (HISTORY)
+  shopt_vars[aok_i].value = &literal_history;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &localvar_inherit;
+  aok_i++;
+  shopt_vars[aok_i].value = &localvar_unset;
+  aok_i++;
+  shopt_vars[aok_i].value = &shopt_login_shell;
+  aok_i++;
+  shopt_vars[aok_i].value = &mail_warning;
+  aok_i++;
+#if defined (READLINE)
+  shopt_vars[aok_i].value = &no_empty_command_completion;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &glob_ignore_case;
+  aok_i++;
+  shopt_vars[aok_i].value = &match_ignore_case;
+  aok_i++;
+  shopt_vars[aok_i].value = &singlequote_translations;
+  aok_i++;
+  shopt_vars[aok_i].value = &allow_null_glob_expansion;
+  aok_i++;
+  shopt_vars[aok_i].value = &patsub_replacement;
+  aok_i++;
+#if defined (PROGRAMMABLE_COMPLETION)
+  shopt_vars[aok_i].value = &prog_completion_enabled;
+  aok_i++;
+#  if defined (ALIAS)
+  shopt_vars[aok_i].value = &progcomp_alias;
+  aok_i++;
+#  endif
+#endif
+  shopt_vars[aok_i].value = &promptvars;
+  aok_i++;
+#if defined (RESTRICTED_SHELL)
+  shopt_vars[aok_i].value = &restricted_shell;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &print_shift_error;
+  aok_i++;
+  shopt_vars[aok_i].value = &source_uses_path;
+  aok_i++;
+#if defined (SYSLOG_HISTORY) && defined (SYSLOG_SHOPT)
+  shopt_vars[aok_i].value = &syslog_history;
+  aok_i++;
+#endif
+  shopt_vars[aok_i].value = &varassign_redir_autoclose;
+  aok_i++;
+  shopt_vars[aok_i].value = &xpg_echo;
+  aok_i++;
+  aok_i++;
+}
+
 
 #define N_SHOPT_OPTIONS		(sizeof (shopt_vars) / sizeof (shopt_vars[0]))
 
@@ -772,7 +936,7 @@ set_restricted_shell (option_name, mode)
      char *option_name;
      int mode;
 {
-  static int save_restricted = -1;
+  static __thread int save_restricted = -1;
 
   if (save_restricted == -1)
     save_restricted = shell_is_restricted (shell_name);

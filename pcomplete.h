@@ -144,7 +144,7 @@ __thread extern ITEMLIST it_users;
 __thread extern ITEMLIST it_variables;
 
 __thread extern COMPSPEC *pcomp_curcs;
-extern const char *pcomp_curcmd;
+__thread extern const char *pcomp_curcmd;
 
 /* Functions from pcomplib.c */
 extern COMPSPEC *compspec_create PARAMS((void));

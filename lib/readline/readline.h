@@ -585,7 +585,7 @@ __thread extern int rl_numeric_arg;
 __thread extern rl_command_func_t *rl_last_func;
 
 /* The name of the terminal to use. */
-extern const char *rl_terminal_name;
+__thread extern const char *rl_terminal_name;
 
 /* The input and output streams. */
 __thread extern FILE *rl_instream;
@@ -699,12 +699,12 @@ __thread extern rl_completion_func_t *rl_attempted_completion_function;
 /* The basic list of characters that signal a break between words for the
    completer routine.  The initial contents of this variable is what
    breaks words in the shell, i.e. "n\"\\'`@$>". */
-extern const char *rl_basic_word_break_characters;
+__thread extern const char *rl_basic_word_break_characters;
 
 /* The list of characters that signal a break between words for
    rl_complete_internal.  The default list is the contents of
    rl_basic_word_break_characters.  */
-extern const char *rl_completer_word_break_characters;
+__thread extern const char *rl_completer_word_break_characters;
 
 /* Hook function to allow an application to set the completion word
    break characters before readline breaks up the line.  Allows
@@ -715,18 +715,18 @@ __thread extern rl_cpvfunc_t *rl_completion_word_break_hook;
    Completion occurs on the entire substring, and within the substring   
    rl_completer_word_break_characters are treated as any other character,
    unless they also appear within this list. */
-extern const char *rl_completer_quote_characters;
+__thread extern const char *rl_completer_quote_characters;
 
 /* List of quote characters which cause a word break. */
-extern const char *rl_basic_quote_characters;
+__thread extern const char *rl_basic_quote_characters;
 
 /* List of characters that need to be quoted in filenames by the completer. */
-extern const char *rl_filename_quote_characters;
+__thread extern const char *rl_filename_quote_characters;
 
 /* List of characters that are word break characters, but should be left
    in TEXT when it is passed to the completion function.  The shell uses
    this to help determine what kind of completing to do. */
-extern const char *rl_special_prefixes;
+__thread extern const char *rl_special_prefixes;
 
 /* If non-zero, then this is the address of a function to call when
    completing on a directory name.  The function is called with

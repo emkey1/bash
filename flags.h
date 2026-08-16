@@ -37,7 +37,7 @@ struct flags_alist {
   int *value;
 };
 
-extern const struct flags_alist shell_flags[];
+__thread extern struct flags_alist shell_flags[];
 __thread extern char optflags[];
 
 __thread extern int

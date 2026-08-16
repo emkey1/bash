@@ -50,7 +50,7 @@
 #include "tilde.h"
 
 #if defined (TEST) || defined (STATIC_MALLOC)
-static void *xmalloc (), *xrealloc ();
+static __thread void *xmalloc (), *xrealloc ();
 #else
 #  include "xmalloc.h"
 #endif /* TEST || STATIC_MALLOC */

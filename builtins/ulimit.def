@@ -229,7 +229,7 @@ typedef struct {
   const char * const units;	/* scale */
 } RESOURCE_LIMITS;
 
-static RESOURCE_LIMITS limits[] = {
+static __thread RESOURCE_LIMITS limits[] = {
 #ifdef RLIMIT_NPTS
   { 'P',	RLIMIT_NPTS,  1,	"number of pseudoterminals",	(char *)NULL },
 #endif
@@ -297,9 +297,9 @@ typedef struct _cmd {
   char *arg;
 } ULCMD;
 
-static ULCMD *cmdlist;
-static int ncmd;
-static int cmdlistsz;
+static __thread ULCMD *cmdlist;
+static __thread int ncmd;
+static __thread int cmdlistsz;
 
 #if !defined (HAVE_RESOURCE) && !defined (HAVE_ULIMIT)
 long
@@ -324,7 +324,7 @@ _findlim (opt)
   return -1;
 }
 
-static char optstring[4 + 2 * NCMDS];
+static __thread char optstring[4 + 2 * NCMDS];
 
 /* Report or set limits associated with certain per-process resources.
    See the help documentation in builtins.c for a full description. */

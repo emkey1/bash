@@ -58,7 +58,7 @@ $END
 
 static sighandler suspend_continue PARAMS((int));
 
-static SigHandler *old_cont;
+static __thread SigHandler *old_cont;
 #if 0
 static SigHandler *old_stop;
 #endif

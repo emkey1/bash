@@ -92,6 +92,11 @@ extern void aok_reinit_groups PARAMS((void));
 extern void aok_reinit_history PARAMS((void));
 extern void aok_reinit_fignore PARAMS((void));
 
+/* Fill in the option tables whose addresses stopped being compile-time
+   constants when bash's globals became thread-local. Once per thread, before
+   bash's main; see aok_fork.c. */
+extern void aok_tls_fixups PARAMS((void));
+
 #endif /* AOK_NATIVE_FORK */
 
 #endif /* _AOK_FORK_H_ */

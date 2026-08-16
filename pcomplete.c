@@ -182,8 +182,8 @@ __thread ITEMLIST it_users = { LIST_DYNAMIC };		/* unused */
 __thread ITEMLIST it_variables = { LIST_DYNAMIC, it_init_variables, (STRINGLIST *)0 };
 
 __thread COMPSPEC *pcomp_curcs;
-const char *pcomp_curcmd;
-const char *pcomp_curtxt;
+__thread const char *pcomp_curcmd;
+__thread const char *pcomp_curtxt;
 
 __thread char *pcomp_line;
 __thread int pcomp_ind;

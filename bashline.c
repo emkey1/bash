@@ -313,7 +313,7 @@ __thread static char *bash_completer_word_break_characters = " \t\n\"'@><=;|&(:"
 __thread static char *bash_nohostname_word_break_characters = " \t\n\"'><=;|&(:";
 /* )) */
 
-static const char *default_filename_quote_characters = " \t\n\\\"'@<>=;|&()#$`?*[!:{~";	/*}*/
+static __thread const char *default_filename_quote_characters = " \t\n\\\"'@<>=;|&()#$`?*[!:{~";	/*}*/
 __thread static char *custom_filename_quote_characters = 0;
 __thread static char filename_bstab[256];
 
@@ -2402,7 +2402,7 @@ command_subst_completion_function (text, state)
      int state;
 {
   __thread static char **matches = (char **)NULL;
-  static const char *orig_start;
+  static __thread const char *orig_start;
   __thread static char *filename_text = (char *)NULL;
   __thread static int cmd_index, start_len;
   char *value;
@@ -3645,7 +3645,7 @@ history_completion_generator (hint_text, state)
      int state;
 {
   __thread static int local_index, len;
-  static const char *text;
+  static __thread const char *text;
 
   /* If this is the first call to the generator, then initialize the
      list of strings to complete over. */

@@ -65,13 +65,13 @@ static int cdxattr PARAMS((char *, char **));
 static void resetxattr PARAMS((void));
 
 /* Change this to 1 to get cd spelling correction by default. */
-int cdspelling = 0;
+__thread int cdspelling = 0;
 
-int cdable_vars;
+__thread int cdable_vars;
 
-static int eflag;	/* file scope so bindpwd() can see it */
-static int xattrflag;	/* O_XATTR support for openat */
-static int xattrfd = -1;
+static __thread int eflag;	/* file scope so bindpwd() can see it */
+static __thread int xattrflag;	/* O_XATTR support for openat */
+static __thread int xattrfd = -1;
 
 $BUILTIN cd
 $FUNCTION cd_builtin
@@ -478,7 +478,7 @@ $END
 
 /* Non-zero means that pwd always prints the physical directory, without
    symbolic links. */
-static int verbatim_pwd;
+static __thread int verbatim_pwd;
 
 /* Print the name of the current working directory. */
 int

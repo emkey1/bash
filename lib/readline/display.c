@@ -99,8 +99,18 @@ struct line_state
 /* The line display buffers.  One is the line currently displayed on
    the screen.  The other is the line about to be displayed. */
 __thread static struct line_state line_state_array[2];
-__thread static struct line_state *line_state_visible = &line_state_array[0];
-__thread static struct line_state *line_state_invisible = &line_state_array[1];
+/* iSH-AOK: line_state_array is thread-local now, so its address is not a
+   compile-time constant. aok_fix_line_state below points these at it, once per
+   thread, before readline runs. */
+__thread static struct line_state *line_state_visible;
+__thread static struct line_state *line_state_invisible;
+
+void
+aok_fix_line_state ()
+{
+  line_state_visible = &line_state_array[0];
+  line_state_invisible = &line_state_array[1];
+}
 __thread static int line_structures_initialized = 0;
 
 /* Backwards-compatible names. */

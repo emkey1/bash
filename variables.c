@@ -111,8 +111,8 @@
 extern char **environ;
 
 /* Variables used here and defined in other files. */
-extern time_t shell_start_time;
-extern struct timeval shellstart;
+__thread extern time_t shell_start_time;
+__thread extern struct timeval shellstart;
 
 /* The list of shell variables that the user has created at the global
    scope, or that came from the environment. */
@@ -125,12 +125,12 @@ __thread VAR_CONTEXT *shell_variables = (VAR_CONTEXT *)NULL;
    the environment. */
 __thread HASH_TABLE *shell_functions = (HASH_TABLE *)NULL;
 
-HASH_TABLE *invalid_env = (HASH_TABLE *)NULL;
+__thread HASH_TABLE *invalid_env = (HASH_TABLE *)NULL;
 
 #if defined (DEBUGGER)
 /* The table of shell function definitions that the user defined or that
    came from the environment. */
-HASH_TABLE *shell_function_defs = (HASH_TABLE *)NULL;
+__thread HASH_TABLE *shell_function_defs = (HASH_TABLE *)NULL;
 #endif
 
 /* The current variable context.  This is really a count of how deep into
@@ -144,7 +144,7 @@ __thread int localvar_inherit = 0;
 /* If non-zero, calling `unset' on local variables in previous scopes marks
    them as invisible so lookups find them unset. This is the same behavior
    as local variables in the current local scope. */
-int localvar_unset = 0;
+__thread int localvar_unset = 0;
 
 /* The set of shell assignments which are made only in the environment
    for a single command. */
@@ -174,17 +174,17 @@ __thread int shell_level = 0;
    manufactured from the union of the initial environment and the
    shell variables that are marked for export. */
 __thread char **export_env = (char **)NULL;
-static int export_env_index;
-static int export_env_size;
+static __thread int export_env_index;
+static __thread int export_env_size;
 
 #if defined (READLINE)
-static int winsize_assignment;		/* currently assigning to LINES or COLUMNS */
+static __thread int winsize_assignment;		/* currently assigning to LINES or COLUMNS */
 #endif
 
 __thread SHELL_VAR nameref_invalid_value;
-static SHELL_VAR nameref_maxloop_value;
+static __thread SHELL_VAR nameref_maxloop_value;
 
-static HASH_TABLE *last_table_searched;	/* hash_lookup sets this */
+static __thread HASH_TABLE *last_table_searched;	/* hash_lookup sets this */
 static VAR_CONTEXT *last_context_searched;
 
 /* Some forward declarations. */
@@ -1343,7 +1343,7 @@ set_string_value (SHELL_VAR *var, const char *value, int flags)
 /* The value of $SECONDS.  This is the number of seconds since shell
    invocation, or, the number of seconds since the last assignment + the
    value of the last assignment. */
-static intmax_t seconds_value_assigned;
+static __thread intmax_t seconds_value_assigned;
 
 static SHELL_VAR *
 assign_seconds (self, value, unused, key)
@@ -1394,8 +1394,8 @@ init_seconds_var ()
 
 /* Functions for $RANDOM and $SRANDOM */
 
-int last_random_value;
-static int seeded_subshell = 0;
+__thread int last_random_value;
+static __thread int seeded_subshell = 0;
 
 static SHELL_VAR *
 assign_random (self, value, unused, key)
@@ -1549,7 +1549,7 @@ get_bash_argv0 (var)
   return (set_string_value (var, dollar_vars[0], 0));
 }
 
-static char *static_shell_name = 0;
+static __thread char *static_shell_name = 0;
 
 static SHELL_VAR *
 assign_bash_argv0 (var, value, unused, key)
@@ -1680,7 +1680,7 @@ get_dirstack (self)
    user than the first (su in the guest), which would otherwise be handed the
    first user's $GROUPS. A function static and a file static have the same
    lifetime; only the reach differs. */
-static char **group_set = (char **)NULL;
+static __thread char **group_set = (char **)NULL;
 
 /* We don't want to initialize the group set with a call to getgroups()
    unless we're asked to, but we only want to do it once. */
@@ -1707,7 +1707,7 @@ static SHELL_VAR *
 get_bashargcv (self)
      SHELL_VAR *self;
 {
-  static int self_semaphore = 0;
+  static __thread int self_semaphore = 0;
 
   /* Backwards compatibility: if we refer to BASH_ARGV or BASH_ARGC at the
      top level without enabling debug mode, and we don't have an instance
@@ -4548,8 +4548,8 @@ find_tempenv_variable (name)
   return (temporary_env ? hash_lookup (name, temporary_env) : (SHELL_VAR *)NULL);
 }
 
-char **tempvar_list;
-int tvlist_ind;
+__thread char **tempvar_list;
+__thread int tvlist_ind;
 
 /* Take a variable from an assignment statement preceding a posix special
    builtin (including `return') and create a global variable from it. This
@@ -4848,7 +4848,7 @@ mk_env_string (name, value, attributes)
 
 #ifdef DEBUG
 /* Debugging */
-static int
+static __thread int
 valid_exportstr (v)
      SHELL_VAR *v;
 {
@@ -5613,9 +5613,9 @@ struct saved_dollar_vars {
   int count;
 };
 
-static struct saved_dollar_vars *dollar_arg_stack = (struct saved_dollar_vars *)NULL;
-static int dollar_arg_stack_slots;
-static int dollar_arg_stack_index;
+static __thread struct saved_dollar_vars *dollar_arg_stack = (struct saved_dollar_vars *)NULL;
+static __thread int dollar_arg_stack_slots;
+static __thread int dollar_arg_stack_index;
 
 /* Functions to manipulate dollar_vars array. Need to keep these in sync with
    whatever remember_args() does. */
@@ -5854,7 +5854,7 @@ struct name_and_function {
   sh_sv_func_t *function;
 };
 
-static struct name_and_function special_vars[] = {
+static __thread struct name_and_function special_vars[] = {
   { "BASH_COMPAT", sv_shcompat },
   { "BASH_XTRACEFD", sv_xtracefd },
 
@@ -5978,7 +5978,7 @@ void
 stupidly_hack_special_variables (name)
      char *name;
 {
-  static int sv_sorted = 0;
+  static __thread int sv_sorted = 0;
   int i;
 
   if (sv_sorted == 0)	/* shouldn't need, but it's fairly cheap. */
@@ -6531,7 +6531,7 @@ set_pipestatus_from_exit (s)
      int s;
 {
 #if defined (ARRAY_VARS)
-  static int v[2] = { 0, -1 };
+  static __thread int v[2] = { 0, -1 };
 
   v[0] = s;
   set_pipestatus_array (v, 1);

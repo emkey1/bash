@@ -190,7 +190,7 @@ extern int errno;
 #  define TIMELEN_MAX 128
 #endif
 
-extern time_t shell_start_time;
+__thread extern time_t shell_start_time;
 
 #if !HAVE_ASPRINTF
 extern int asprintf PARAMS((char **, const char *, ...)) __attribute__((__format__ (printf, 2, 3)));
@@ -229,21 +229,21 @@ static floatmax_t getfloatmax PARAMS((void));
 
 static intmax_t asciicode PARAMS((void));
 
-static WORD_LIST *garglist, *orig_arglist;
-static int retval;
-static int conversion_error;
+static __thread WORD_LIST *garglist, *orig_arglist;
+static __thread int retval;
+static __thread int conversion_error;
 
 /* printf -v var support */
-static int vflag = 0;
-static int bindflags = 0;
-static char *vbuf, *vname;
-static size_t vbsize;
-static int vblen;
+static __thread int vflag = 0;
+static __thread int bindflags = 0;
+static __thread char *vbuf, *vname;
+static __thread size_t vbsize;
+static __thread int vblen;
 
-static intmax_t tw;
+static __thread intmax_t tw;
 
-static char *conv_buf;
-static size_t conv_bufsize;
+static __thread char *conv_buf;
+static __thread size_t conv_bufsize;
 
 int
 printf_builtin (list)

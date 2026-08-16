@@ -102,7 +102,7 @@ static void print_compactions PARAMS((unsigned long));
 static void print_arg PARAMS((const char *, const char *, int));
 static void print_cmd_name PARAMS((const char *));
 
-static char *Garg, *Warg, *Parg, *Sarg, *Xarg, *Farg, *Carg;
+static __thread char *Garg, *Warg, *Parg, *Sarg, *Xarg, *Farg, *Carg;
 
 static const struct _compacts {
   const char * const actname;

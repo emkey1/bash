@@ -124,8 +124,8 @@ __thread extern int autocd;
 __thread extern int check_window_size;
 
 /* from version.c */
-__thread extern int build_version, patch_level;
-__thread extern char *dist_version, *release_status;
+extern int build_version, patch_level;
+extern char *dist_version, *release_status;
 
 __thread extern int locale_mb_cur_max;
 __thread extern int locale_utf8locale;

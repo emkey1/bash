@@ -51,7 +51,7 @@ $END
 __thread extern int check_jobs_at_exit;
 
 static int exit_or_logout PARAMS((WORD_LIST *));
-static int sourced_logout;
+static __thread int sourced_logout;
 
 int
 exit_builtin (list)

@@ -30,7 +30,7 @@ extern KEYMAP_ENTRY_ARRAY vi_escape_keymap;
 #endif
 
 /* The keymap arrays for handling vi mode. */
-__thread KEYMAP_ENTRY_ARRAY vi_movement_keymap = {
+KEYMAP_ENTRY_ARRAY vi_movement_keymap = {
   /* The regular control keys come first. */
   { ISFUNC, (rl_command_func_t *)0x0 },		/* Control-@ */
   { ISFUNC, (rl_command_func_t *)0x0 },		/* Control-a */
@@ -309,7 +309,7 @@ __thread KEYMAP_ENTRY_ARRAY vi_movement_keymap = {
 #endif /* KEYMAP_SIZE > 128 */
 };
 
-__thread KEYMAP_ENTRY_ARRAY vi_insertion_keymap = {
+KEYMAP_ENTRY_ARRAY vi_insertion_keymap = {
   /* The regular control keys come first. */
   { ISFUNC, (rl_command_func_t *)0x0 },		/* Control-@ */
   { ISFUNC, rl_insert },			/* Control-a */

@@ -296,15 +296,15 @@ __thread int _rl_page_completions = 1;
 /* The basic list of characters that signal a break between words for the
    completer routine.  The contents of this variable is what breaks words
    in the shell, i.e. " \t\n\"\\'`@$><=" */
-const char *rl_basic_word_break_characters = " \t\n\"\\'`@$><=;|&{("; /* }) */
+__thread const char *rl_basic_word_break_characters = " \t\n\"\\'`@$><=;|&{("; /* }) */
 
 /* List of basic quoting characters. */
-const char *rl_basic_quote_characters = "\"'";
+__thread const char *rl_basic_quote_characters = "\"'";
 
 /* The list of characters that signal a break between words for
    rl_complete_internal.  The default list is the contents of
    rl_basic_word_break_characters.  */
-const char *rl_completer_word_break_characters = 0;
+__thread const char *rl_completer_word_break_characters = 0;
 
 /* Hook function to allow an application to set the completion word
    break characters before readline breaks up the line.  Allows
@@ -315,15 +315,15 @@ __thread rl_cpvfunc_t *rl_completion_word_break_hook = (rl_cpvfunc_t *)NULL;
    Completion occurs on the entire substring, and within the substring
    rl_completer_word_break_characters are treated as any other character,
    unless they also appear within this list. */
-const char *rl_completer_quote_characters = (const char *)NULL;
+__thread const char *rl_completer_quote_characters = (const char *)NULL;
 
 /* List of characters that should be quoted in filenames by the completer. */
-const char *rl_filename_quote_characters = (const char *)NULL;
+__thread const char *rl_filename_quote_characters = (const char *)NULL;
 
 /* List of characters that are word break characters, but should be left
    in TEXT when it is passed to the completion function.  The shell uses
    this to help determine what kind of completing to do. */
-const char *rl_special_prefixes = (const char *)NULL;
+__thread const char *rl_special_prefixes = (const char *)NULL;
 
 /* If non-zero, then disallow duplicates in the matches. */
 __thread int rl_ignore_completion_duplicates = 1;

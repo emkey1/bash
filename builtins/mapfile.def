@@ -104,7 +104,7 @@ static int run_callback PARAMS((const char *, unsigned int, const char *));
 #define MAPF_CLEARARRAY	0x01
 #define MAPF_CHOP	0x02
 
-static int delim;
+static __thread int delim;
 
 static int
 run_callback (callback, curindex, curline)

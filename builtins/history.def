@@ -326,7 +326,7 @@ histtime (hlist, histtimefmt)
      HIST_ENTRY *hlist;
      const char *histtimefmt;
 {
-  static char timestr[TIMELEN_MAX];
+  static __thread char timestr[TIMELEN_MAX];
   time_t t;
   struct tm *tm;
 

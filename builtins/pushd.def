@@ -149,13 +149,13 @@ extern int errno;
 #endif /* !errno */
 
 /* The list of remembered directories. */
-static char **pushd_directory_list = (char **)NULL;
+static __thread char **pushd_directory_list = (char **)NULL;
 
 /* Number of existing slots in this list. */
-static int directory_list_size;
+static __thread int directory_list_size;
 
 /* Offset to the end of the list. */
-static int directory_list_offset;
+static __thread int directory_list_offset;
 
 static void pushd_error PARAMS((int, char *));
 static void clear_directory_stack PARAMS((void));

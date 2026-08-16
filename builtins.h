@@ -59,10 +59,18 @@ struct builtin {
   char *handle;			/* for future use */
 };
 
-/* Found in builtins.c, created by builtins/mkbuiltins. */
-__thread extern int num_shell_builtins;	/* Number of shell builtins. */
-__thread extern struct builtin static_shell_builtins[];
-__thread extern struct builtin *shell_builtins;
-__thread extern struct builtin *current_builtin;
+/* Found in builtins.c, created by builtins/mkbuiltins.
+
+   Shared, not __thread. These are defined in the generated bash_builtins.c,
+   which mkbuiltins writes without any storage-class qualifier -- so making the
+   declaration thread-local here contradicts the definition, and the compiler
+   says so. They also do not need to be per-shell: the table is the set of
+   builtins bash was compiled with, identical in every shell. `enable`/`disable`
+   flip flags inside it, which is a real cross-shell effect and the one thing
+   two live shells can still see each other through. */
+extern int num_shell_builtins;	/* Number of shell builtins. */
+extern struct builtin static_shell_builtins[];
+extern struct builtin *shell_builtins;
+extern struct builtin *current_builtin;
 
 #endif /* BUILTINS_H */

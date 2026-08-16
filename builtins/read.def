@@ -138,13 +138,13 @@ static sighandler sigalrm PARAMS((int));
 static void reset_timeout PARAMS((void));
 
 /* Try this to see what the rest of the shell can do with the information. */
-sh_timer *read_timeout;
+__thread sh_timer *read_timeout;
 
-static int reading, tty_modified;
+static __thread int reading, tty_modified;
 static SigHandler *old_alrm;
-static unsigned char delim;
+static __thread unsigned char delim;
 
-static struct ttsave termsave;
+static __thread struct ttsave termsave;
 
 /* In all cases, SIGALRM just sets a flag that we check periodically.  This
    avoids problems with the semi-tricky stuff we do with the xfree of
@@ -1137,9 +1137,9 @@ read_tty_modified ()
 }
 
 #if defined (READLINE)
-static rl_completion_func_t *old_attempted_completion_function = 0;
-static rl_hook_func_t *old_startup_hook;
-static char *deftext;
+static __thread rl_completion_func_t *old_attempted_completion_function = 0;
+static __thread rl_hook_func_t *old_startup_hook;
+static __thread char *deftext;
 
 static void
 reset_attempted_completion_function (cp)
@@ -1222,12 +1222,12 @@ set_readline_timeout (t, sec, usec)
   rl_set_timeout (sec, usec);
 }
 
-static int old_delim_ctype;
-static rl_command_func_t *old_delim_func;
-static int old_newline_ctype;
-static rl_command_func_t *old_newline_func;
+static __thread int old_delim_ctype;
+static __thread rl_command_func_t *old_delim_func;
+static __thread int old_newline_ctype;
+static __thread rl_command_func_t *old_newline_func;
 
-static unsigned char delim_char;
+static __thread unsigned char delim_char;
 
 static void
 set_eol_delim (c)

@@ -44,7 +44,7 @@ extern char **environ;
    This screws our scheme.  However, Bash will run on the NeXT using
    the C library getenv (), since right now the only environment variable
    that we care about is HOME, and that is already defined.  */
-static char *last_tempenv_value = (char *)NULL;
+static __thread char *last_tempenv_value = (char *)NULL;
 
 char *
 getenv (name)

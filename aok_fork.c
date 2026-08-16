@@ -1152,3 +1152,41 @@ aok_spawn_disk_command (command, args, env, redirects, pipe_in, pipe_out)
     { errno = err; return (pid_t) -1; }
   return pid;
 }
+
+/* ------------------------------------------------- thread-local table fixups
+
+   bash's globals are __thread so that more than one native bash can be live in
+   the app at once (docs/bash_native_plan.md). The option tables that used to
+   hold `&some_option` cannot: the address of a thread-local is not a
+   compile-time constant. tools/bash-tls-fix-tables.py moved those addresses
+   into per-table fixup functions, and this calls them.
+
+   Once per thread, before bash's main, from kernel/bash_glue.c. They are
+   pointer fixups with no dependencies of their own, so the earliest moment is
+   also the safest; each guards itself with a thread-local flag, so calling
+   this twice is free. */
+extern void aok_fix_shopt_vars PARAMS((void));
+extern void aok_fix_o_options PARAMS((void));
+extern void aok_fix_shell_flags PARAMS((void));
+extern void aok_fix_posix_vars PARAMS((void));
+extern void aok_fix_long_args PARAMS((void));
+#if defined (READLINE)
+extern void aok_fix_boolean_varlist PARAMS((void));
+extern void aok_fix_tc_strings PARAMS((void));
+extern void aok_fix_line_state PARAMS((void));
+#endif
+
+void
+aok_tls_fixups ()
+{
+  aok_fix_shopt_vars ();
+  aok_fix_o_options ();
+  aok_fix_shell_flags ();
+  aok_fix_posix_vars ();
+  aok_fix_long_args ();
+#if defined (READLINE)
+  aok_fix_boolean_varlist ();
+  aok_fix_tc_strings ();
+  aok_fix_line_state ();
+#endif
+}
