@@ -244,7 +244,7 @@ aok_buf_end_line (buf, var)
      swallows the redirection -- so the silencing has to enclose the command
      rather than follow it. */
   if (readonly_p (var))
-    return aok_buf_str (buf, " ; } 2>/dev/null\n");
+    return aok_buf_str (buf, " ; }\n");
   return aok_buf_str (buf, "\n");
 }
 
@@ -352,7 +352,7 @@ aok_emit_readonly (buf, var)
     return 0;
   if (aok_buf_str (buf, "{ readonly ") < 0 ||
       aok_buf_str (buf, var->name) < 0 ||
-      aok_buf_str (buf, " ; } 2>/dev/null\n") < 0)
+      aok_buf_str (buf, " ; }\n") < 0)
     return -1;
   return 0;
 }
@@ -499,7 +499,7 @@ aok_emit_options (buf)
   for (i = 0; (on = aok_shopt_state (i, &name)) >= 0; i++)
     if (aok_buf_str (buf, on ? "shopt -s " : "shopt -u ") < 0 ||
 	aok_buf_str (buf, name) < 0 ||
-	aok_buf_str (buf, " 2>/dev/null\n") < 0)
+	aok_buf_str (buf, "\n") < 0)
       return -1;
 
   for (i = 0; (on = aok_minus_o_state (i, &name)) >= 0; i++)
@@ -519,7 +519,7 @@ aok_emit_options (buf)
 	continue;
       if (aok_buf_str (buf, on ? "set -o " : "set +o ") < 0 ||
 	  aok_buf_str (buf, name) < 0 ||
-	  aok_buf_str (buf, " 2>/dev/null\n") < 0)
+	  aok_buf_str (buf, "\n") < 0)
 	return -1;
     }
 
@@ -551,7 +551,7 @@ aok_emit_aliases (buf)
 	  aok_buf_str (buf, list[i]->name) < 0 ||
 	  aok_buf_str (buf, "=") < 0 ||
 	  aok_emit_quoted (buf, list[i]->value) < 0 ||
-	  aok_buf_str (buf, " 2>/dev/null\n") < 0)
+	  aok_buf_str (buf, "\n") < 0)
 	{ free (list); return -1; }
     }
   free (list);
@@ -620,7 +620,7 @@ aok_emit_traps (buf)
 	  aok_emit_quoted (buf, body) < 0 ||
 	  aok_buf_str (buf, " ") < 0 ||
 	  aok_buf_str (buf, name) < 0 ||
-	  aok_buf_str (buf, " 2>/dev/null\n") < 0)
+	  aok_buf_str (buf, "\n") < 0)
 	return -1;
     }
   return 0;
@@ -647,6 +647,23 @@ aok_serialize_state ()
   if (aok_buf_str (&buf, "set +u\n") < 0)
     goto fail;
 
+  /* Stderr goes to /dev/null for the WHOLE state, restored just before the
+     command. Every line used to carry its own `2>/dev/null`, and that is the
+     single biggest cost in a subshell: measured, 120 such lines cost 9.2ms
+     against 1.4ms for the same lines under one `exec` -- because each
+     redirection is an open/dup2/close through the shim, ~85 times per
+     subshell. It made ( : ) cost 8.3ms when the spawn and a full bash startup
+     together are only 1.8ms.
+
+     `exec` rather than wrapping the state in `{ ... } 2>/dev/null`, which
+     looks equivalent and is not: bash parses a -c string COMMAND BY COMMAND,
+     and a brace group is one command. Everything inside it would be parsed
+     before `shopt -s extglob` below had run, so every function body containing
+     `?(...)` would fail to parse -- the exact bug that made a login shell
+     unusable. Separate commands keep the incremental parse. */
+  if (aok_buf_str (&buf, "exec {__aok_stderr}>&2 2>/dev/null\n") < 0)
+    goto fail;
+
   /* extglob ON for the definitions that follow, whatever the parent's own
      setting is, and back to the parent's setting with the other options at the
      end. This is not a preference, it is what makes the state PARSE.
@@ -665,7 +682,7 @@ aok_serialize_state ()
      extglob back to whatever the parent actually had, and the COMMAND is parsed
      after that -- bash reads a -c string command by command, which is what
      makes both halves of this work. */
-  if (aok_buf_str (&buf, "shopt -s extglob 2>/dev/null\n") < 0)
+  if (aok_buf_str (&buf, "shopt -s extglob\n") < 0)
     goto fail;
   if (aok_emit_aliases (&buf) < 0)
     goto fail;
@@ -703,6 +720,14 @@ aok_serialize_state ()
   if (aok_buf_str (&buf, exit_immediately_on_error ? "set -e\n" : "") < 0)
     goto fail;
   if (aok_buf_str (&buf, unbound_vars_is_error ? "set -u\n" : "") < 0)
+    goto fail;
+
+  /* Stderr back to where it came from, before the command runs -- the command
+     is the caller's and its diagnostics are not ours to swallow. Emitted after
+     the options block so that a `set -u` above cannot fire on the reference. */
+  if (aok_buf_str (&buf, "exec 2>&$__aok_stderr {__aok_stderr}>&-\n") < 0)
+    goto fail;
+  if (aok_buf_str (&buf, "unset __aok_stderr\n") < 0)
     goto fail;
 
   /* $? last of all, since every line above sets it. `(exit N)` is how a shell
