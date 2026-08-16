@@ -1674,6 +1674,14 @@ get_dirstack (self)
 #endif /* PUSHD AND POPD && ARRAY_VARS */
 
 #if defined (ARRAY_VARS)
+/* get_groupset's cache. At file scope rather than inside the function so that
+   aok_reinit_variables can drop it between bash invocations: a native bash is
+   a function call, and the second invocation can be running as a different
+   user than the first (su in the guest), which would otherwise be handed the
+   first user's $GROUPS. A function static and a file static have the same
+   lifetime; only the reach differs. */
+static char **group_set = (char **)NULL;
+
 /* We don't want to initialize the group set with a call to getgroups()
    unless we're asked to, but we only want to do it once. */
 static SHELL_VAR *
@@ -1683,7 +1691,6 @@ get_groupset (self)
   register int i;
   int ng;
   ARRAY *a;
-  static char **group_set = (char **)NULL;
 
   if (group_set == 0)
     {
@@ -5138,6 +5145,12 @@ aok_reinit_variables ()
 {
   clear_dollar_vars ();          /* dollar_vars[1..9], rest_of_args, posparam_count */
   flush_temporary_env ();
+#if defined (ARRAY_VARS)
+  /* Dropped, never freed: general.c's group_vector owns that storage and hands
+     the same pointer back forever. general.c's aok_reinit_groups drops its half
+     in the same pass. */
+  group_set = (char **)NULL;
+#endif
   invalid_env = (HASH_TABLE *)NULL;
   shell_function_defs = (HASH_TABLE *)NULL;
   variable_context = 0;
