@@ -986,6 +986,8 @@ aok_run_in_subshell (command, status_out)
   size_t out_len, out_cap;
   ssize_t n;
   int err, status;
+  SigHandler *old_chld;
+  int chld_blocked;
 
   if (status_out)
     *status_out = 0;
@@ -1018,6 +1020,36 @@ aok_run_in_subshell (command, status_out)
   argv[4] = (char *) 0;
   /* No spawn attributes here: a command substitution's child stays in the
      shell's own process group. */
+  /* bash's own SIGCHLD handler is stood down from before the spawn until
+     after the waitpid below, because otherwise it reaps this child and
+     throws its status away.
+
+     kernel/fork.c gives a native-spawned task SIGCHLD as its exit signal. It
+     has to: a native ZSH waits for a job by sleeping in sigsuspend until its
+     handler reaps, so with no exit signal the child finished, became a
+     zombie, and the shell hung forever on its first external command. bash
+     does not wait that way, but it does install sigchld_handler for job
+     control, and that handler runs the moment the child exits. waitchld()
+     reaps with waitpid(-1, WNOHANG) in a loop and records a status only for
+     pids in its OWN jobs table -- a re-launch child is not one, so the status
+     is discarded. The waitpid below then returns -1/ECHILD, `status' keeps
+     the 0 it was initialised to, and that 0 becomes the caller's `$?'.
+
+     Measured: `x=$(sh -c "exit 6"); echo $?' printed 0 where emulated bash,
+     real bash and native zsh all print 6, and `( sh -c "exit 6" )' and
+     PIPESTATUS were unaffected -- only command substitution, which is the
+     one path that reads a status back out of a re-launch.
+
+     SIG_DFL rather than sigprocmask: in a native program the host never
+     delivers these. nlibc_sigaction records the handler and the shim runs it
+     from a checkpoint, and a checkpoint inside our own waitpid is exactly
+     where it fires -- so masking the signal does not stop the handler that
+     has already been recorded. Taking bash's handler out of that table for
+     the duration does. A SIGCHLD for a real job arriving in this window is
+     not lost work: waitchld() rescans on demand the next time bash looks. */
+  old_chld = signal (SIGCHLD, SIG_DFL);
+  chld_blocked = (old_chld != SIG_ERR);
+
   envp = aok_relaunch_env ();
   err = aok_spawn_relaunch (&pid, &fa, (void **) 0, argv, envp);
   aok_relaunch_env_free (envp);
@@ -1026,6 +1058,8 @@ aok_run_in_subshell (command, status_out)
     {
       close (out_pipe[0]); close (out_pipe[1]);
       free (script);
+      if (chld_blocked)
+	signal (SIGCHLD, old_chld);
       errno = err;
       return (char *) 0;
     }
@@ -1057,7 +1091,12 @@ aok_run_in_subshell (command, status_out)
   free (script);
 
   status = 0;
-  waitpid (pid, &status, 0);
+  if (waitpid (pid, &status, 0) < 0)
+    status = 0;
+  /* Restored only now, after the child has already been reaped, so bash's
+     handler comes back to a world with nothing of ours left to take. */
+  if (chld_blocked)
+    signal (SIGCHLD, old_chld);
   if (status_out)
     *status_out = status;
 
