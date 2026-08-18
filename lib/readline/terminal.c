@@ -466,7 +466,7 @@ static __thread struct _tc_string tc_strings[] =
 void
 aok_fix_tc_strings ()
 {
-  static __thread __thread int aok_done;
+  static __thread int aok_done;
   int aok_i = 0;
 
   if (aok_done)

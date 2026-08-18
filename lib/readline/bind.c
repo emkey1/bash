@@ -1934,7 +1934,7 @@ static __thread struct {
 void
 aok_fix_boolean_varlist ()
 {
-  static __thread __thread int aok_done;
+  static __thread int aok_done;
   int aok_i = 0;
 
   if (aok_done)
