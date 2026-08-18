@@ -5217,6 +5217,20 @@ execute_function (var, words, flags, fds_to_close, async, subshell)
       jump_to_top_level (DISCARD);
     }
 
+  /* AOK: the same refusal, on the resource that actually runs out here.
+     FUNCNEST is unset by default, so the check above does nothing for an
+     ordinary shell -- and bash compiled as a native program recurses on a guest
+     task's thread, whose stack is much smaller than the main thread's. Running
+     off the end takes the WHOLE APP rather than this shell. Measured before this
+     existed: `r() { r; }; r` killed the ish process and the command after it
+     never ran. See nlibc_stack_exhausted in kernel/native_libc.c. */
+  if (nlibc_stack_exhausted ())
+    {
+      internal_error (_("%s: maximum function nesting level exceeded (out of stack)"), var->name);
+      funcnest = 0;
+      jump_to_top_level (DISCARD);
+    }
+
 #if defined (ARRAY_VARS)
   GET_ARRAY_FROM_VAR ("FUNCNAME", funcname_v, funcname_a);
   GET_ARRAY_FROM_VAR ("BASH_SOURCE", bash_source_v, bash_source_a);
