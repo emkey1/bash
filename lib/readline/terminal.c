@@ -106,11 +106,15 @@ __thread static int tcap_initialized;
 #  if defined (__EMX__) || defined (NEED_EXTERN_PC)
 extern 
 #  endif /* __EMX__ || NEED_EXTERN_PC */
-/* iSH-AOK: PC is extern -- lib/termcap/termcap.c defines it. Before the globals
-   were thread-local these were tentative definitions that merged as common
-   symbols; __thread makes them real, so two definitions would collide. BC and
-   UP are only ever declared elsewhere, so readline still defines those. */
-__thread extern char PC;
+/* iSH-AOK: readline defines all three. PC used to be extern here because
+   lib/termcap/termcap.c defined it, and two definitions would collide now that
+   __thread makes them real rather than tentative (common) symbols. That file
+   is no longer in the build -- tgetent and friends route to the shim's
+   terminfo reader instead (kernel/native_termcap.c, deps/bash-shim/termcap.h),
+   which reads the guest's database rather than the /etc/termcap the bundled
+   copy wanted and no supported rootfs ships. So PC needs a definition, and
+   this is where it belongs: the code below is the only code that writes it. */
+__thread char PC;
 __thread char *BC, *UP;
 #endif /* !__linux__ && !NCURSES_VERSION */
 

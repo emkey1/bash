@@ -108,10 +108,18 @@ extern int bash_brace_completion PARAMS((int, int));
 #endif /* BRACE_COMPLETION */
 
 /* To avoid including curses.h/term.h/termcap.h and that whole mess. */
+/* iSH-AOK: skipped when tputs is a macro, which is how kernel/native_libc.h
+   routes it to the shim's terminfo reader. That reader is declared with the
+   historical `char *` prototype (deps/bash-shim/termcap.h says why), so this
+   declaration would rename to it and then conflict on the const. Nothing in
+   this file calls tputs -- the declaration is upstream tidiness -- so losing
+   it when routed costs nothing. */
+#ifndef tputs
 #ifdef _MINIX
 extern int tputs PARAMS((const char *string, int nlines, void (*outx)(int)));
 #else
 extern int tputs PARAMS((const char *string, int nlines, int (*outx)(int)));
+#endif
 #endif
 
 /* Forward declarations */
