@@ -74,56 +74,56 @@ $END
 
 #define OPTFMT		"%-15s\t%s\n"
 
-__thread extern int allow_null_glob_expansion, fail_glob_expansion, glob_dot_filenames;
-__thread extern int cdable_vars, mail_warning, source_uses_path;
-__thread extern int no_exit_on_failed_exec, print_shift_error;
-__thread extern int check_hashed_filenames, promptvars;
-__thread extern int cdspelling, expand_aliases;
-__thread extern int extended_quote;
-__thread extern int check_window_size;
-__thread extern int glob_ignore_case, match_ignore_case;
-__thread extern int hup_on_exit;
-__thread extern int xpg_echo;
-__thread extern int gnu_error_format;
-__thread extern int check_jobs_at_exit;
-__thread extern int autocd;
-__thread extern int glob_star;
-__thread extern int glob_asciirange;
-__thread extern int glob_always_skip_dot_and_dotdot;
-__thread extern int lastpipe_opt;
-__thread extern int inherit_errexit;
-__thread extern int localvar_inherit;
-__thread extern int localvar_unset;
-__thread extern int varassign_redir_autoclose;
-__thread extern int singlequote_translations;
-__thread extern int patsub_replacement;
+extern __thread int allow_null_glob_expansion, fail_glob_expansion, glob_dot_filenames;
+extern __thread int cdable_vars, mail_warning, source_uses_path;
+extern __thread int no_exit_on_failed_exec, print_shift_error;
+extern __thread int check_hashed_filenames, promptvars;
+extern __thread int cdspelling, expand_aliases;
+extern __thread int extended_quote;
+extern __thread int check_window_size;
+extern __thread int glob_ignore_case, match_ignore_case;
+extern __thread int hup_on_exit;
+extern __thread int xpg_echo;
+extern __thread int gnu_error_format;
+extern __thread int check_jobs_at_exit;
+extern __thread int autocd;
+extern __thread int glob_star;
+extern __thread int glob_asciirange;
+extern __thread int glob_always_skip_dot_and_dotdot;
+extern __thread int lastpipe_opt;
+extern __thread int inherit_errexit;
+extern __thread int localvar_inherit;
+extern __thread int localvar_unset;
+extern __thread int varassign_redir_autoclose;
+extern __thread int singlequote_translations;
+extern __thread int patsub_replacement;
 
 #if defined (EXTENDED_GLOB)
-__thread extern int extended_glob;
+extern __thread int extended_glob;
 #endif
 
 #if defined (READLINE)
-__thread extern int hist_verify, history_reediting, perform_hostname_completion;
-__thread extern int no_empty_command_completion;
-__thread extern int force_fignore;
-__thread extern int dircomplete_spelling, dircomplete_expand;
-__thread extern int complete_fullquote;
+extern __thread int hist_verify, history_reediting, perform_hostname_completion;
+extern __thread int no_empty_command_completion;
+extern __thread int force_fignore;
+extern __thread int dircomplete_spelling, dircomplete_expand;
+extern __thread int complete_fullquote;
 
 extern int enable_hostname_completion PARAMS((int));
 #endif
 
 #if defined (PROGRAMMABLE_COMPLETION)
-__thread extern int prog_completion_enabled;
-__thread extern int progcomp_alias;
+extern __thread int prog_completion_enabled;
+extern __thread int progcomp_alias;
 #endif
 
 #if defined (DEBUGGER)
-__thread extern int debugging_mode;
+extern __thread int debugging_mode;
 #endif
 
 #if defined (ARRAY_VARS)
-__thread extern int assoc_expand_once;
-__thread extern int array_expand_once;
+extern __thread int assoc_expand_once;
+extern __thread int array_expand_once;
 __thread int expand_once_flag;
 #endif
 

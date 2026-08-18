@@ -77,8 +77,8 @@ $END
 extern int errno;
 #endif /* !errno */
 
-__thread extern REDIRECT *redirection_undo_list;
-__thread extern char *exec_argv0;
+extern __thread REDIRECT *redirection_undo_list;
+extern __thread char *exec_argv0;
 
 __thread int no_exit_on_failed_exec;
 

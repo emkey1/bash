@@ -85,7 +85,7 @@ $END
 #include "common.h"
 #include "bashgetopt.h"
 
-__thread extern int wait_signal_received;
+extern __thread int wait_signal_received;
 
 __thread procenv_t wait_intr_buf;
 __thread int wait_intr_flag;

@@ -98,7 +98,7 @@ extern int unlink PARAMS((const char *));
 
 extern FILE *sh_mktmpfp PARAMS((char *, int, char **));
 
-__thread extern int suppress_debug_trap_verbose;
+extern __thread int suppress_debug_trap_verbose;
 
 /* **************************************************************** */
 /*								    */
