@@ -96,11 +96,11 @@ __thread int rl_change_environment = 1;
 /* **************************************************************** */
 
 #ifndef __MSDOS__
-__thread static char *term_buffer = (char *)NULL;
-__thread static char *term_string_buffer = (char *)NULL;
+static __thread char *term_buffer = (char *)NULL;
+static __thread char *term_string_buffer = (char *)NULL;
 #endif
 
-__thread static int tcap_initialized;
+static __thread int tcap_initialized;
 
 #if !defined (__linux__) && !defined (NCURSES_VERSION)
 #  if defined (__EMX__) || defined (NEED_EXTERN_PC)
@@ -148,51 +148,51 @@ __thread char *_rl_term_forward_char;
 __thread char *_rl_term_up;
 
 /* A visible bell; char if the terminal can be made to flash the screen. */
-__thread static char *_rl_visible_bell;
+static __thread char *_rl_visible_bell;
 
 /* Non-zero means the terminal can auto-wrap lines. */
 __thread int _rl_term_autowrap = -1;
 
 /* Non-zero means that this terminal has a meta key. */
-__thread static int term_has_meta;
+static __thread int term_has_meta;
 
 /* The sequences to write to turn on and off the meta key, if this
    terminal has one. */
-__thread static char *_rl_term_mm;
-__thread static char *_rl_term_mo;
+static __thread char *_rl_term_mm;
+static __thread char *_rl_term_mo;
 
 /* The sequences to enter and exit standout mode. */
-__thread static char *_rl_term_so;
-__thread static char *_rl_term_se;
+static __thread char *_rl_term_so;
+static __thread char *_rl_term_se;
 
 /* The key sequences output by the arrow keys, if this terminal has any. */
-__thread static char *_rl_term_ku;
-__thread static char *_rl_term_kd;
-__thread static char *_rl_term_kr;
-__thread static char *_rl_term_kl;
+static __thread char *_rl_term_ku;
+static __thread char *_rl_term_kd;
+static __thread char *_rl_term_kr;
+static __thread char *_rl_term_kl;
 
 /* How to initialize and reset the arrow keys, if this terminal has any. */
-__thread static char *_rl_term_ks;
-__thread static char *_rl_term_ke;
+static __thread char *_rl_term_ks;
+static __thread char *_rl_term_ke;
 
 /* The key sequences sent by the Home and End keys, if any. */
-__thread static char *_rl_term_kh;
-__thread static char *_rl_term_kH;
-__thread static char *_rl_term_at7;	/* @7 */
+static __thread char *_rl_term_kh;
+static __thread char *_rl_term_kH;
+static __thread char *_rl_term_at7;	/* @7 */
 
 /* Delete key */
-__thread static char *_rl_term_kD;
+static __thread char *_rl_term_kD;
 
 /* Insert key */
-__thread static char *_rl_term_kI;
+static __thread char *_rl_term_kI;
 
 /* Page up and page down keys */
-__thread static char *_rl_term_kP;
-__thread static char *_rl_term_kN;
+static __thread char *_rl_term_kP;
+static __thread char *_rl_term_kN;
 
 /* Cursor control */
-__thread static char *_rl_term_vs;	/* very visible */
-__thread static char *_rl_term_ve;	/* normal */
+static __thread char *_rl_term_vs;	/* very visible */
+static __thread char *_rl_term_ve;	/* normal */
 
 /* User-settable color sequences to begin and end the active region. Defaults
    are rl_term_so and rl_term_se on non-dumb terminals. */
@@ -421,7 +421,7 @@ struct _tc_string {
 
 /* This should be kept sorted, just in case we decide to change the
    search algorithm to something smarter. */
-__thread static struct _tc_string tc_strings[] =
+static __thread struct _tc_string tc_strings[] =
 {
   { "@7", 0 },
   { "DC", 0 },
@@ -466,7 +466,7 @@ __thread static struct _tc_string tc_strings[] =
 void
 aok_fix_tc_strings ()
 {
-  __thread static __thread int aok_done;
+  static __thread __thread int aok_done;
   int aok_i = 0;
 
   if (aok_done)
@@ -968,7 +968,7 @@ _rl_region_color_off (void)
 /*								    */
 /* **************************************************************** */
 
-__thread static int enabled_meta = 0;	/* flag indicating we enabled meta mode */
+static __thread int enabled_meta = 0;	/* flag indicating we enabled meta mode */
 
 void
 _rl_enable_meta_key (void)

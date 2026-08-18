@@ -102,11 +102,11 @@ do { \
 #endif /* !HAVE_POSIX_SIGNALS */
 
 /* Extern variables */
-__thread extern volatile sig_atomic_t sigwinch_received;
-__thread extern volatile sig_atomic_t sigterm_received;
+extern __thread volatile sig_atomic_t sigwinch_received;
+extern __thread volatile sig_atomic_t sigterm_received;
 
-__thread extern int interrupt_immediately;	/* no longer used */
-__thread extern int terminate_immediately;
+extern __thread int interrupt_immediately;	/* no longer used */
+extern __thread int terminate_immediately;
 
 /* Functions from sig.c. */
 extern sighandler termsig_sighandler PARAMS((int));

@@ -211,18 +211,18 @@ extern pid_t fork (), getpid (), getpgrp ();
 #endif /* !HAVE_UNISTD_H */
 
 /* Stuff from the jobs.c file. */
-__thread extern struct jobstats js;
+extern __thread struct jobstats js;
 
-__thread extern pid_t original_pgrp, shell_pgrp, pipeline_pgrp;
-__thread extern volatile pid_t last_made_pid, last_asynchronous_pid;
-__thread extern int asynchronous_notification;
+extern __thread pid_t original_pgrp, shell_pgrp, pipeline_pgrp;
+extern __thread volatile pid_t last_made_pid, last_asynchronous_pid;
+extern __thread int asynchronous_notification;
 
-__thread extern int already_making_children;
-__thread extern int running_in_background;
+extern __thread int already_making_children;
+extern __thread int running_in_background;
 
-__thread extern PROCESS *last_procsub_child;
+extern __thread PROCESS *last_procsub_child;
 
-__thread extern JOB **jobs;
+extern __thread JOB **jobs;
 
 extern void making_children PARAMS((void));
 extern void stop_making_children PARAMS((void));
@@ -320,6 +320,6 @@ extern void set_maxchild PARAMS((int));
 extern void debug_print_pgrps (void);
 #endif
 
-__thread extern int job_control;		/* set to 0 in nojobs.c */
+extern __thread int job_control;		/* set to 0 in nojobs.c */
 
 #endif /* _JOBS_H_ */

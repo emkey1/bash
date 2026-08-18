@@ -71,14 +71,14 @@ static char *hist_inittime (void);
 /* **************************************************************** */
 
 /* An array of HIST_ENTRY.  This is where we store the history. */
-__thread static HIST_ENTRY **the_history = (HIST_ENTRY **)NULL;
+static __thread HIST_ENTRY **the_history = (HIST_ENTRY **)NULL;
 
 /* Non-zero means that we have enforced a limit on the amount of
    history that we save. */
-__thread static int history_stifled;
+static __thread int history_stifled;
 
 /* The current number of slots allocated to the input_history. */
-__thread static int history_size;
+static __thread int history_size;
 
 /* If HISTORY_STIFLED is non-zero, then this is the maximum number of
    entries to remember. */

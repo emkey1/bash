@@ -59,16 +59,16 @@
 #define DEFAULT_MAX_KILLS 10
 
 /* The real variable to look at to find out when to flush kills. */
-__thread static int rl_max_kills =  DEFAULT_MAX_KILLS;
+static __thread int rl_max_kills =  DEFAULT_MAX_KILLS;
 
 /* Where to store killed text. */
-__thread static char **rl_kill_ring = (char **)NULL;
+static __thread char **rl_kill_ring = (char **)NULL;
 
 /* Where we are in the kill ring. */
-__thread static int rl_kill_index;
+static __thread int rl_kill_index;
 
 /* How many slots we have in the kill ring. */
-__thread static int rl_kill_ring_length;
+static __thread int rl_kill_ring_length;
 
 static int _rl_copy_to_kill_ring (char *, int);
 static int region_kill_internal (int);
@@ -667,11 +667,11 @@ rl_yank_nth_arg (int count, int key)
 int
 rl_yank_last_arg (int count, int key)
 {
-  __thread static int history_skip = 0;
-  __thread static int explicit_arg_p = 0;
-  __thread static int count_passed = 1;
-  __thread static int direction = 1;
-  __thread static int undo_needed = 0;
+  static __thread int history_skip = 0;
+  static __thread int explicit_arg_p = 0;
+  static __thread int count_passed = 1;
+  static __thread int direction = 1;
+  static __thread int undo_needed = 0;
   int retval;
 
   if (rl_last_func != rl_yank_last_arg)

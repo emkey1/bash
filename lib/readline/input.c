@@ -80,7 +80,7 @@ extern int errno;
 #endif
 
 #if defined (HAVE_PSELECT) || defined (HAVE_SELECT)
-__thread extern sigset_t _rl_orig_sigset;
+extern __thread sigset_t _rl_orig_sigset;
 #endif
 
 /* Non-null means it is a pointer to a function to run while waiting for
@@ -99,7 +99,7 @@ __thread rl_hook_func_t *rl_input_available_hook = (rl_hook_func_t *)NULL;
 
 __thread rl_getc_func_t *rl_getc_function = rl_getc;
 
-__thread static int _keyboard_input_timeout = 100000;		/* 0.1 seconds; it's in usec */
+static __thread int _keyboard_input_timeout = 100000;		/* 0.1 seconds; it's in usec */
 
 static int ibuffer_space (void);
 static int rl_get_char (int *);
@@ -163,8 +163,8 @@ static void reset_alarm (void);
    (timeout_duration) from when the timeout is set (timeout_point).
    That allows us to easily determine whether the timeout has occurred
    and compute the time remaining until it does. */
-__thread static struct timeval timeout_point;
-__thread static struct timeval timeout_duration;
+static __thread struct timeval timeout_point;
+static __thread struct timeval timeout_duration;
 
 /* **************************************************************** */
 /*								    */
@@ -172,9 +172,9 @@ __thread static struct timeval timeout_duration;
 /*								    */
 /* **************************************************************** */
 
-__thread static int pop_index, push_index;
-__thread static unsigned char ibuffer[512];
-__thread static int ibuffer_len = sizeof (ibuffer) - 1;
+static __thread int pop_index, push_index;
+static __thread unsigned char ibuffer[512];
+static __thread int ibuffer_len = sizeof (ibuffer) - 1;
 
 #define any_typein (push_index != pop_index)
 

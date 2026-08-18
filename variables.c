@@ -113,8 +113,8 @@
 extern char **environ;
 
 /* Variables used here and defined in other files. */
-__thread extern time_t shell_start_time;
-__thread extern struct timeval shellstart;
+extern __thread time_t shell_start_time;
+extern __thread struct timeval shellstart;
 
 /* The list of shell variables that the user has created at the global
    scope, or that came from the environment. */

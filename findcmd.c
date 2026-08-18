@@ -65,7 +65,7 @@ static char *get_next_path_element PARAMS((char *, int *));
    name that we are looking for while we are searching $PATH for a
    suitable one to execute.  If we cannot find a suitable executable
    file, then we use this one. */
-__thread static char *file_to_lose_on;
+static __thread char *file_to_lose_on;
 
 /* Non-zero if we should stat every command found in the hash table to
    make sure it still exists. */
@@ -79,7 +79,7 @@ __thread int dot_found_in_search = 0;
 
 /* Set up EXECIGNORE; a blacklist of patterns that executable files should not
    match. */
-__thread static struct ignorevar execignore =
+static __thread struct ignorevar execignore =
 {
   "EXECIGNORE",
   NULL,
@@ -423,9 +423,9 @@ user_command_matches (name, flags, state)
   int  path_index, name_len;
   char *path_list, *path_element, *match;
   struct stat dotinfo;
-  __thread static char **match_list = NULL;
-  __thread static int match_list_size = 0;
-  __thread static int match_index = 0;
+  static __thread char **match_list = NULL;
+  static __thread int match_list_size = 0;
+  static __thread int match_index = 0;
 
   if (state == 0)
     {

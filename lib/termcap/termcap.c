@@ -145,7 +145,7 @@ xrealloc (ptr, size)
 
 /* The pointer to the data made by tgetent is left here
    for tgetnum, tgetflag and tgetstr to find.  */
-__thread static char *term_entry;
+static __thread char *term_entry;
 
 static char *tgetst1 ();
 
@@ -206,7 +206,7 @@ tgetstr (cap, area)
    gives meaning of character following \, or a space if no special meaning.
    Eight characters per line within the string.  */
 
-__thread static char esctab[]
+static __thread char esctab[]
   = " \007\010  \033\014 \
       \012 \
   \015 \011 \013 \
@@ -300,7 +300,7 @@ __thread __private_extern__ char PC = '\0';
 /* Actual baud rate if positive;
    - baud rate / 100 if negative.  */
 
-__thread static int speeds[] =
+static __thread int speeds[] =
   {
 #ifdef VMS
     0, 50, 75, 110, 134, 150, -3, -6, -12, -18,

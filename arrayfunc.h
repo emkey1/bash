@@ -50,10 +50,10 @@ typedef struct element_state
 
 /* This variable means to not expand associative array subscripts more than
    once, when performing variable expansion. */
-__thread extern int assoc_expand_once;
+extern __thread int assoc_expand_once;
 
 /* The analog for indexed array subscripts */
-__thread extern int array_expand_once;
+extern __thread int array_expand_once;
 
 /* Flags for array_value_internal and callers array_value/get_array_value; also
    used by array_variable_name and array_variable_part. */

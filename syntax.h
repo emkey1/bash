@@ -65,8 +65,8 @@
 #define CBLANK		0x2000	/* whitespace (blank) character */
 
 /* Defines for use by the rest of the shell. */
-__thread extern int sh_syntaxtab[];
-__thread extern int sh_syntabsiz;
+extern __thread int sh_syntaxtab[];
+extern __thread int sh_syntabsiz;
 
 #define shellmeta(c)	(sh_syntaxtab[(unsigned char)(c)] & CSHMETA)
 #define shellbreak(c)	(sh_syntaxtab[(unsigned char)(c)] & CSHBRK)

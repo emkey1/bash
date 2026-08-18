@@ -23,7 +23,7 @@
 
 #define FILENAME_HASH_BUCKETS 256	/* must be power of two */
 
-__thread extern HASH_TABLE *hashed_filenames;
+extern __thread HASH_TABLE *hashed_filenames;
 
 typedef struct _pathdata {
   char *path;		/* The full pathname of the file. */

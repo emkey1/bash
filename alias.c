@@ -305,7 +305,7 @@ alias_expand_word (s)
 
 /* If this is 1, we are checking the next token read for alias expansion
    because it is the first word in a command. */
-__thread static int command_word;
+static __thread int command_word;
 
 /* This is for skipping quoted strings in alias expansions. */
 #define quote_char(c)  (((c) == '\'') || ((c) == '"'))

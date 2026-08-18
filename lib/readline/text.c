@@ -697,9 +697,9 @@ rl_arrow_keys (int count, int key)
 /* **************************************************************** */
 
 #ifdef HANDLE_MULTIBYTE
-__thread static char pending_bytes[MB_LEN_MAX];
-__thread static int pending_bytes_length = 0;
-__thread static mbstate_t ps = {0};
+static __thread char pending_bytes[MB_LEN_MAX];
+static __thread int pending_bytes_length = 0;
+static __thread mbstate_t ps = {0};
 #endif
 
 /* Insert the character C at the current location, moving point forward.
@@ -715,7 +715,7 @@ _rl_insert_char (int count, int c)
   char incoming[MB_LEN_MAX + 1];
   int incoming_length = 0;
   mbstate_t ps_back;
-  __thread static int stored_count = 0;
+  static __thread int stored_count = 0;
 #endif
 
   if (count <= 0)
@@ -1857,7 +1857,7 @@ rl_exchange_point_and_mark (int count, int key)
 /* Active mark support */
 
 /* Is the region active? */
-__thread static int mark_active = 0;
+static __thread int mark_active = 0;
 
 /* Does the current command want the mark to remain active when it completes? */
 __thread int _rl_keep_mark_active;

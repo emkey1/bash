@@ -97,8 +97,8 @@ __thread int _rl_intr_char = 0;
 __thread int _rl_quit_char = 0;
 __thread int _rl_susp_char = 0;
 
-__thread static int signals_set_flag;
-__thread static int sigwinch_set_flag;
+static __thread int signals_set_flag;
+static __thread int sigwinch_set_flag;
 
 #if defined (HAVE_POSIX_SIGNALS)
 __thread sigset_t _rl_orig_sigset;
@@ -110,12 +110,12 @@ __thread sigset_t _rl_orig_sigset;
 /*								    */
 /* **************************************************************** */
 
-__thread static sighandler_cxt old_int, old_term, old_hup, old_alrm, old_quit;
+static __thread sighandler_cxt old_int, old_term, old_hup, old_alrm, old_quit;
 #if defined (SIGTSTP)
-__thread static sighandler_cxt old_tstp, old_ttou, old_ttin;
+static __thread sighandler_cxt old_tstp, old_ttou, old_ttin;
 #endif
 #if defined (SIGWINCH)
-__thread static sighandler_cxt old_winch;
+static __thread sighandler_cxt old_winch;
 #endif
 
 __thread _rl_sigcleanup_func_t *_rl_sigcleanup;
@@ -410,8 +410,8 @@ rl_set_signals (void)
   sighandler_cxt dummy;
   SigHandler *oh;
 #if defined (HAVE_POSIX_SIGNALS)
-  __thread static int sigmask_set = 0;
-  __thread static sigset_t bset, oset;
+  static __thread int sigmask_set = 0;
+  static __thread sigset_t bset, oset;
 #endif
 
 #if defined (HAVE_POSIX_SIGNALS)
@@ -622,8 +622,8 @@ rl_check_signals (void)
 /* **************************************************************** */
 
 #if defined (HAVE_POSIX_SIGNALS)
-__thread static sigset_t sigint_set, sigint_oset;
-__thread static sigset_t sigwinch_set, sigwinch_oset;
+static __thread sigset_t sigint_set, sigint_oset;
+static __thread sigset_t sigwinch_set, sigwinch_oset;
 #else /* !HAVE_POSIX_SIGNALS */
 #  if defined (HAVE_BSD_SIGNALS)
 static int sigint_oldmask;
@@ -631,8 +631,8 @@ static int sigwinch_oldmask;
 #  endif /* HAVE_BSD_SIGNALS */
 #endif /* !HAVE_POSIX_SIGNALS */
 
-__thread static int sigint_blocked;
-__thread static int sigwinch_blocked;
+static __thread int sigint_blocked;
+static __thread int sigwinch_blocked;
 
 /* Cause SIGINT to not be delivered until the corresponding call to
    release_sigint(). */

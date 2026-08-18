@@ -49,8 +49,8 @@ typedef int QSFUNC ();
 extern int _rl_qsort_string_compare (char **, char **);
 
 __thread FUNMAP **funmap;
-__thread static int funmap_size;
-__thread static int funmap_entry;
+static __thread int funmap_size;
+static __thread int funmap_entry;
 
 /* After initializing the function map, this is the index of the first
    program specific function. */
@@ -226,7 +226,7 @@ rl_add_funmap_entry (const char *name, rl_command_func_t *function)
   return funmap_entry;
 }
 
-__thread static int funmap_initialized;
+static __thread int funmap_initialized;
 
 /* Make the funmap contain all of the default entries. */
 void

@@ -59,7 +59,7 @@ static int find_matching_open (char *, int, int);
    close parenthesis is inserted. */
 __thread int rl_blink_matching_paren = 0;
 
-__thread static int _paren_blink_usec = 500000;
+static __thread int _paren_blink_usec = 500000;
 
 /* Change emacs_standard_keymap to have bindings for paren matching when
    ON_OR_OFF is 1, change them back to self_insert when ON_OR_OFF == 0. */

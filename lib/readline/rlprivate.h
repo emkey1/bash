@@ -116,8 +116,8 @@ struct _rl_cmd {
   int key;
   rl_command_func_t *func;
 };
-__thread extern struct _rl_cmd _rl_pending_command;
-__thread extern struct _rl_cmd *_rl_command_to_execute;
+extern __thread struct _rl_cmd _rl_pending_command;
+extern __thread struct _rl_cmd *_rl_command_to_execute;
 
 /* Callback data for reading numeric arguments */
 #define NUM_SAWMINUS	0x01
@@ -193,26 +193,26 @@ typedef void _rl_sigcleanup_func_t (int, void *);
  *************************************************************************/
 
 /* complete.c */
-__thread extern int rl_complete_with_tilde_expansion;
+extern __thread int rl_complete_with_tilde_expansion;
 #if defined (VISIBLE_STATS)
-__thread extern int rl_visible_stats;
+extern __thread int rl_visible_stats;
 #endif /* VISIBLE_STATS */
 #if defined (COLOR_SUPPORT)
-__thread extern int _rl_colored_stats;
-__thread extern int _rl_colored_completion_prefix;
+extern __thread int _rl_colored_stats;
+extern __thread int _rl_colored_completion_prefix;
 #endif
 
 /* readline.c */
-__thread extern int rl_line_buffer_len;
-__thread extern int rl_arg_sign;
-__thread extern int rl_visible_prompt_length;
-__thread extern int rl_byte_oriented;
+extern __thread int rl_line_buffer_len;
+extern __thread int rl_arg_sign;
+extern __thread int rl_visible_prompt_length;
+extern __thread int rl_byte_oriented;
 
 /* display.c */
-__thread extern int rl_display_fixed;
+extern __thread int rl_display_fixed;
 
 /* parens.c */
-__thread extern int rl_blink_matching_paren;
+extern __thread int rl_blink_matching_paren;
 
 /*************************************************************************
  *									 *
@@ -382,7 +382,7 @@ extern void _rl_end_executing_keyseq (void);
 extern void _rl_add_executing_keyseq (int);
 extern void _rl_del_executing_keyseq (void);
 
-__thread extern rl_command_func_t *_rl_executing_func;
+extern __thread rl_command_func_t *_rl_executing_func;
 
 /* rltty.c */
 extern int _rl_disable_tty_signals (void);
@@ -495,139 +495,139 @@ extern const char * const _rl_possible_control_prefixes[];
 extern const char * const _rl_possible_meta_prefixes[];
 
 /* callback.c */
-__thread extern _rl_callback_func_t *_rl_callback_func;
-__thread extern _rl_callback_generic_arg *_rl_callback_data;
+extern __thread _rl_callback_func_t *_rl_callback_func;
+extern __thread _rl_callback_generic_arg *_rl_callback_data;
 
 /* complete.c */
-__thread extern int _rl_complete_show_all;
-__thread extern int _rl_complete_show_unmodified;
-__thread extern int _rl_complete_mark_directories;
-__thread extern int _rl_complete_mark_symlink_dirs;
-__thread extern int _rl_completion_prefix_display_length;
-__thread extern int _rl_completion_columns;
-__thread extern int _rl_print_completions_horizontally;
-__thread extern int _rl_completion_case_fold;
-__thread extern int _rl_completion_case_map;
-__thread extern int _rl_match_hidden_files;
-__thread extern int _rl_page_completions;
-__thread extern int _rl_skip_completed_text;
-__thread extern int _rl_menu_complete_prefix_first;
+extern __thread int _rl_complete_show_all;
+extern __thread int _rl_complete_show_unmodified;
+extern __thread int _rl_complete_mark_directories;
+extern __thread int _rl_complete_mark_symlink_dirs;
+extern __thread int _rl_completion_prefix_display_length;
+extern __thread int _rl_completion_columns;
+extern __thread int _rl_print_completions_horizontally;
+extern __thread int _rl_completion_case_fold;
+extern __thread int _rl_completion_case_map;
+extern __thread int _rl_match_hidden_files;
+extern __thread int _rl_page_completions;
+extern __thread int _rl_skip_completed_text;
+extern __thread int _rl_menu_complete_prefix_first;
 
 /* display.c */
-__thread extern int _rl_vis_botlin;
-__thread extern int _rl_last_c_pos;
-__thread extern int _rl_suppress_redisplay;
-__thread extern int _rl_want_redisplay;
+extern __thread int _rl_vis_botlin;
+extern __thread int _rl_last_c_pos;
+extern __thread int _rl_suppress_redisplay;
+extern __thread int _rl_want_redisplay;
 
-__thread extern char *_rl_emacs_mode_str;
-__thread extern int _rl_emacs_modestr_len;
-__thread extern char *_rl_vi_ins_mode_str;
-__thread extern int _rl_vi_ins_modestr_len;
-__thread extern char *_rl_vi_cmd_mode_str;
-__thread extern int _rl_vi_cmd_modestr_len;
+extern __thread char *_rl_emacs_mode_str;
+extern __thread int _rl_emacs_modestr_len;
+extern __thread char *_rl_vi_ins_mode_str;
+extern __thread int _rl_vi_ins_modestr_len;
+extern __thread char *_rl_vi_cmd_mode_str;
+extern __thread int _rl_vi_cmd_modestr_len;
 
 /* isearch.c */
-__thread extern char *_rl_isearch_terminators;
+extern __thread char *_rl_isearch_terminators;
 
-__thread extern _rl_search_cxt *_rl_iscxt;
+extern __thread _rl_search_cxt *_rl_iscxt;
 
 /* macro.c */
-__thread extern char *_rl_executing_macro;
+extern __thread char *_rl_executing_macro;
 
 /* misc.c */
-__thread extern int _rl_history_preserve_point;
-__thread extern int _rl_history_saved_point;
+extern __thread int _rl_history_preserve_point;
+extern __thread int _rl_history_saved_point;
 
-__thread extern _rl_arg_cxt _rl_argcxt;
+extern __thread _rl_arg_cxt _rl_argcxt;
 
 /* nls.c */
-__thread extern int _rl_utf8locale;
+extern __thread int _rl_utf8locale;
 
 /* readline.c */
-__thread extern int _rl_echoing_p;
-__thread extern int _rl_horizontal_scroll_mode;
-__thread extern int _rl_mark_modified_lines;
-__thread extern int _rl_bell_preference;
-__thread extern int _rl_meta_flag;
-__thread extern int _rl_convert_meta_chars_to_ascii;
-__thread extern int _rl_output_meta_chars;
-__thread extern int _rl_bind_stty_chars;
-__thread extern int _rl_revert_all_at_newline;
-__thread extern int _rl_echo_control_chars;
-__thread extern int _rl_show_mode_in_prompt;
-__thread extern int _rl_enable_bracketed_paste;
-__thread extern int _rl_enable_active_region;
-__thread extern char *_rl_active_region_start_color;
-__thread extern char *_rl_active_region_end_color;
-__thread extern char *_rl_comment_begin;
-__thread extern unsigned char _rl_parsing_conditionalized_out;
-__thread extern Keymap _rl_keymap;
-__thread extern FILE *_rl_in_stream;
-__thread extern FILE *_rl_out_stream;
-__thread extern int _rl_last_command_was_kill;
-__thread extern int _rl_eof_char;
-__thread extern procenv_t _rl_top_level;
-__thread extern _rl_keyseq_cxt *_rl_kscxt;
-__thread extern int _rl_keyseq_timeout;
+extern __thread int _rl_echoing_p;
+extern __thread int _rl_horizontal_scroll_mode;
+extern __thread int _rl_mark_modified_lines;
+extern __thread int _rl_bell_preference;
+extern __thread int _rl_meta_flag;
+extern __thread int _rl_convert_meta_chars_to_ascii;
+extern __thread int _rl_output_meta_chars;
+extern __thread int _rl_bind_stty_chars;
+extern __thread int _rl_revert_all_at_newline;
+extern __thread int _rl_echo_control_chars;
+extern __thread int _rl_show_mode_in_prompt;
+extern __thread int _rl_enable_bracketed_paste;
+extern __thread int _rl_enable_active_region;
+extern __thread char *_rl_active_region_start_color;
+extern __thread char *_rl_active_region_end_color;
+extern __thread char *_rl_comment_begin;
+extern __thread unsigned char _rl_parsing_conditionalized_out;
+extern __thread Keymap _rl_keymap;
+extern __thread FILE *_rl_in_stream;
+extern __thread FILE *_rl_out_stream;
+extern __thread int _rl_last_command_was_kill;
+extern __thread int _rl_eof_char;
+extern __thread procenv_t _rl_top_level;
+extern __thread _rl_keyseq_cxt *_rl_kscxt;
+extern __thread int _rl_keyseq_timeout;
 
-__thread extern int _rl_executing_keyseq_size;
+extern __thread int _rl_executing_keyseq_size;
 
-__thread extern rl_hook_func_t *_rl_internal_startup_hook;
+extern __thread rl_hook_func_t *_rl_internal_startup_hook;
 
 /* search.c */
-__thread extern _rl_search_cxt *_rl_nscxt;
-__thread extern int _rl_history_search_pos;
+extern __thread _rl_search_cxt *_rl_nscxt;
+extern __thread int _rl_history_search_pos;
 
 /* signals.c */
-__thread extern int volatile _rl_caught_signal;
+extern __thread int volatile _rl_caught_signal;
 
-__thread extern _rl_sigcleanup_func_t *_rl_sigcleanup;
-__thread extern void *_rl_sigcleanarg;
+extern __thread _rl_sigcleanup_func_t *_rl_sigcleanup;
+extern __thread void *_rl_sigcleanarg;
 
-__thread extern int _rl_echoctl;
+extern __thread int _rl_echoctl;
 
-__thread extern int _rl_intr_char;
-__thread extern int _rl_quit_char;
-__thread extern int _rl_susp_char;
+extern __thread int _rl_intr_char;
+extern __thread int _rl_quit_char;
+extern __thread int _rl_susp_char;
 
 /* terminal.c */
-__thread extern int _rl_enable_keypad;
-__thread extern int _rl_enable_meta;
-__thread extern char *_rl_term_clreol;
-__thread extern char *_rl_term_clrpag;
-__thread extern char *_rl_term_clrscroll;
-__thread extern char *_rl_term_im;
-__thread extern char *_rl_term_ic;
-__thread extern char *_rl_term_ei;
-__thread extern char *_rl_term_DC;
-__thread extern char *_rl_term_up;
-__thread extern char *_rl_term_dc;
-__thread extern char *_rl_term_cr;
-__thread extern char *_rl_term_IC;
-__thread extern char *_rl_term_forward_char;
-__thread extern int _rl_screenheight;
-__thread extern int _rl_screenwidth;
-__thread extern int _rl_screenchars;
-__thread extern int _rl_terminal_can_insert;
-__thread extern int _rl_term_autowrap;
+extern __thread int _rl_enable_keypad;
+extern __thread int _rl_enable_meta;
+extern __thread char *_rl_term_clreol;
+extern __thread char *_rl_term_clrpag;
+extern __thread char *_rl_term_clrscroll;
+extern __thread char *_rl_term_im;
+extern __thread char *_rl_term_ic;
+extern __thread char *_rl_term_ei;
+extern __thread char *_rl_term_DC;
+extern __thread char *_rl_term_up;
+extern __thread char *_rl_term_dc;
+extern __thread char *_rl_term_cr;
+extern __thread char *_rl_term_IC;
+extern __thread char *_rl_term_forward_char;
+extern __thread int _rl_screenheight;
+extern __thread int _rl_screenwidth;
+extern __thread int _rl_screenchars;
+extern __thread int _rl_terminal_can_insert;
+extern __thread int _rl_term_autowrap;
 
 /* text.c */
-__thread extern int _rl_optimize_typeahead;
-__thread extern int _rl_keep_mark_active;
+extern __thread int _rl_optimize_typeahead;
+extern __thread int _rl_keep_mark_active;
 
 /* undo.c */
-__thread extern int _rl_doing_an_undo;
-__thread extern int _rl_undo_group_level;
+extern __thread int _rl_doing_an_undo;
+extern __thread int _rl_undo_group_level;
 
 /* vi_mode.c */
-__thread extern int _rl_vi_last_command;
-__thread extern int _rl_vi_redoing;
-__thread extern _rl_vimotion_cxt *_rl_vimvcxt;
+extern __thread int _rl_vi_last_command;
+extern __thread int _rl_vi_redoing;
+extern __thread _rl_vimotion_cxt *_rl_vimvcxt;
 
 /* Use HS_HISTORY_VERSION as the sentinel to see if we've included history.h
    and so can use HIST_ENTRY */
 #if defined (HS_HISTORY_VERSION)
-__thread extern HIST_ENTRY *_rl_saved_line_for_history;
+extern __thread HIST_ENTRY *_rl_saved_line_for_history;
 #endif
 
 #endif /* _RL_PRIVATE_H_ */

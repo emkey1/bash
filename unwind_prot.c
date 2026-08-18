@@ -87,7 +87,7 @@ static void clear_unwind_protects_internal PARAMS((char *, char *));
 static inline void restore_variable PARAMS((SAVED_VAR *));
 static void unwind_protect_mem_internal PARAMS((char *, char *));
 
-__thread static UNWIND_ELT *unwind_protect_list = (UNWIND_ELT *)NULL;
+static __thread UNWIND_ELT *unwind_protect_list = (UNWIND_ELT *)NULL;
 
 /* Allocating from a cache of unwind-protect elements */
 #define UWCACHESIZE	128

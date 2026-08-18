@@ -72,7 +72,7 @@ extern int errno;
 /* An array of such flags, one for each signal, describing what the
    shell will do with a signal.  DEBUG_TRAP == NSIG; some code below
    assumes this. */
-__thread static int sigmodes[BASH_NSIG];
+static __thread int sigmodes[BASH_NSIG];
 
 static void free_trap_command (int);
 static void change_signal (int, char *);
@@ -89,10 +89,10 @@ static void trap_if_untrapped (int, char *);
 
 /* Variables used here but defined in other files. */
 
-__thread extern volatile int from_return_trap;
-__thread extern int waiting_for_child;
+extern __thread volatile int from_return_trap;
+extern __thread int waiting_for_child;
 
-__thread extern WORD_LIST *subst_assign_varlist;
+extern __thread WORD_LIST *subst_assign_varlist;
 
 /* The list of things to do originally, before we started trapping. */
 __thread SigHandler *original_signals[NSIG];
@@ -291,7 +291,7 @@ decode_signal (string, flags)
 }
 
 /* Non-zero when we catch a trapped signal. */
-__thread static int catch_flag;
+static __thread int catch_flag;
 
 void
 run_pending_traps ()

@@ -111,7 +111,7 @@ extern int errno;
 extern char **environ;	/* used if no third argument to main() */
 #endif
 
-__thread extern int gnu_error_format;
+extern __thread int gnu_error_format;
 
 /* Non-zero means that this shell has already been run; i.e. you should
    call shell_reinitialize () if you need to start afresh. */
@@ -200,27 +200,27 @@ int have_devfd = 0;
 #endif
 
 /* The name of the .(shell)rc file. */
-__thread static char *bashrc_file = DEFAULT_BASHRC;
+static __thread char *bashrc_file = DEFAULT_BASHRC;
 
 /* Non-zero means to act more like the Bourne shell on startup. */
-__thread static int act_like_sh;
+static __thread int act_like_sh;
 
 /* Non-zero if this shell is being run by `su'. */
-__thread static int su_shell;
+static __thread int su_shell;
 
 /* Non-zero if we have already expanded and sourced $ENV. */
-__thread static int sourced_env;
+static __thread int sourced_env;
 
 /* Is this shell running setuid? */
-__thread static int running_setuid;
+static __thread int running_setuid;
 
 /* Values for the long-winded argument names. */
-__thread static int debugging;			/* Do debugging things. */
-__thread static int no_rc;			/* Don't execute ~/.bashrc */
-__thread static int no_profile;			/* Don't execute .profile */
-__thread static int do_version;			/* Display interesting version info. */
-__thread static int make_login_shell;		/* Make this shell be a `-bash' shell. */
-__thread static int want_initial_help;		/* --help option */
+static __thread int debugging;			/* Do debugging things. */
+static __thread int no_rc;			/* Don't execute ~/.bashrc */
+static __thread int no_profile;			/* Don't execute .profile */
+static __thread int do_version;			/* Display interesting version info. */
+static __thread int make_login_shell;		/* Make this shell be a `-bash' shell. */
+static __thread int want_initial_help;		/* --help option */
 
 __thread int debugging_mode = 0;		/* In debugging mode with --debugger */
 #if defined (READLINE)
@@ -290,7 +290,7 @@ static __thread struct {
 void
 aok_fix_long_args ()
 {
-  __thread static __thread int aok_done;
+  static __thread __thread int aok_done;
   int aok_i = 0;
 
   if (aok_done)
@@ -373,12 +373,12 @@ __thread char *shell_script_filename; 	/* shell script */
 
 __thread int malloc_trace_at_exit = 0;
 
-__thread static int shell_reinitialized = 0;
+static __thread int shell_reinitialized = 0;
 
-__thread static FILE *default_input;
+static __thread FILE *default_input;
 
-__thread static STRING_INT_ALIST *shopt_alist;
-__thread static int shopt_ind = 0, shopt_len = 0;
+static __thread STRING_INT_ALIST *shopt_alist;
+static __thread int shopt_ind = 0, shopt_len = 0;
 
 static int parse_long_options PARAMS((char **, int, int));
 static int parse_shell_options PARAMS((char **, int, int));

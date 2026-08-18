@@ -59,16 +59,16 @@
 
 typedef int _hist_search_func_t (const char *, int);
 
-__thread static char error_pointer;
+static __thread char error_pointer;
 
-__thread static char *subst_lhs;
-__thread static char *subst_rhs;
-__thread static int subst_lhs_len;
-__thread static int subst_rhs_len;
+static __thread char *subst_lhs;
+static __thread char *subst_rhs;
+static __thread int subst_lhs_len;
+static __thread int subst_rhs_len;
 
 /* Characters that delimit history event specifications and separate event
    specifications from word designators.  Static for now */
-__thread static char *history_event_delimiter_chars = HISTORY_EVENT_DELIMITERS;
+static __thread char *history_event_delimiter_chars = HISTORY_EVENT_DELIMITERS;
 
 static char *get_history_word_specifier (char *, char *, int *);
 static int history_tokenize_word (const char *, int);
@@ -121,9 +121,9 @@ __thread int history_quoting_state = 0;
    use, and thus belongs in this library. */
 
 /* The last string searched for by a !?string? search. */
-__thread static char *search_string;
+static __thread char *search_string;
 /* The last string matched by a !?string? search. */
-__thread static char *search_match;
+static __thread char *search_match;
 
 /* Return the event specified at TEXT + OFFSET modifying OFFSET to
    point to after the event specifier.  Just a pointer to the history

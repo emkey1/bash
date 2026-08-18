@@ -82,8 +82,8 @@ typedef SHELL_VAR **SVFUNC ();
 extern char *strpbrk PARAMS((char *, char *));
 #endif
 
-__thread extern STRING_INT_ALIST word_token_alist[];
-__thread extern char *signal_names[];
+extern __thread STRING_INT_ALIST word_token_alist[];
+extern __thread char *signal_names[];
 
 #if defined (DEBUG)
 #if defined (PREFER_STDARG)
@@ -731,7 +731,7 @@ pcomp_filename_completion_function (text, state)
      const char *text;
      int state;
 {
-  __thread static char *dfn;	/* dequoted filename */
+  static __thread char *dfn;	/* dequoted filename */
   int iscompgen, iscompleting;
 
   if (state == 0)

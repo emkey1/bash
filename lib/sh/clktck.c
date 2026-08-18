@@ -46,7 +46,7 @@
 long
 get_clk_tck ()
 {
-  __thread static long retval = 0;
+  static __thread long retval = 0;
 
   if (retval != 0)
     return (retval);

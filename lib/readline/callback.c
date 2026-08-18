@@ -76,7 +76,7 @@ __thread int rl_persistent_signal_handlers = 0;
    readline, so readline doesn't `steal' signals from the application.  */
 
 __thread rl_vcpfunc_t *rl_linefunc;		/* user callback function */
-__thread static int in_handler;		/* terminal_prepped and signals set? */
+static __thread int in_handler;		/* terminal_prepped and signals set? */
 
 /* Make sure the terminal is set up, initialize readline, and prompt. */
 static void
@@ -128,7 +128,7 @@ rl_callback_read_char (void)
 {
   char *line;
   int eof, jcode;
-  __thread static procenv_t olevel;
+  static __thread procenv_t olevel;
 
   if (rl_linefunc == NULL)
     {

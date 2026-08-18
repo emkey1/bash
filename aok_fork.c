@@ -52,7 +52,7 @@
 #include "subst.h"
 #include "jobs.h"
 #include "redir.h"
-__thread extern REDIRECT *redirection_undo_list;
+extern __thread REDIRECT *redirection_undo_list;
 #include "flags.h"
 #include "trap.h"
 #include "alias.h"

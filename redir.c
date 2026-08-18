@@ -90,8 +90,8 @@ extern int errno;
 __thread int expanding_redir;
 __thread int varassign_redir_autoclose = 0;
 
-__thread extern REDIRECT *redirection_undo_list;
-__thread extern REDIRECT *exec_redirection_undo_list;
+extern __thread REDIRECT *redirection_undo_list;
+extern __thread REDIRECT *exec_redirection_undo_list;
 
 /* Static functions defined and used in this file. */
 static void add_exec_redirect PARAMS((REDIRECT *));
@@ -115,11 +115,11 @@ static int redir_varvalue PARAMS((REDIRECT *));
 
 /* Spare redirector used when translating [N]>&WORD[-] or [N]<&WORD[-] to
    a new redirection and when creating the redirection undo list. */
-__thread static REDIRECTEE rd;
+static __thread REDIRECTEE rd;
 
 /* Set to errno when a here document cannot be created for some reason.
    Used to print a reasonable error message. */
-__thread static int heredoc_errno;
+static __thread int heredoc_errno;
 
 #define REDIRECTION_ERROR(r, e, fd) \
 do { \
@@ -586,7 +586,7 @@ use_tempfile:
 
 /* A list of pattern/value pairs for filenames that the redirection
    code handles specially. */
-__thread static STRING_INT_ALIST _redir_special_filenames[] = {
+static __thread STRING_INT_ALIST _redir_special_filenames[] = {
 #if !defined (HAVE_DEV_FD)
   { "/dev/fd/[0-9]*", RF_DEVFD },
 #endif

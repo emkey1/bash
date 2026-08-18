@@ -55,7 +55,7 @@ extern int errno;
 extern int executing_line_number PARAMS((void));
 
 #if defined (JOB_CONTROL)
-__thread extern pid_t shell_pgrp;
+extern __thread pid_t shell_pgrp;
 extern int give_terminal_to PARAMS((pid_t, int));
 #endif /* JOB_CONTROL */
 

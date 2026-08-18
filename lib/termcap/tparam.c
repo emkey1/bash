@@ -126,7 +126,7 @@ tparam (string, outstring, len, arg0, arg1, arg2, arg3)
 __thread __private_extern__ char *BC;
 __thread __private_extern__ char *UP;
 
-__thread static char tgoto_buf[50];
+static __thread char tgoto_buf[50];
 
 __private_extern__
 char *

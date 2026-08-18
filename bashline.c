@@ -233,12 +233,12 @@ static int find_cmd_end PARAMS((int));
 static char *find_cmd_name PARAMS((int, int *, int *));
 static char *prog_complete_return PARAMS((const char *, int));
 
-__thread static char **prog_complete_matches;
+static __thread char **prog_complete_matches;
 #endif
 
-__thread extern int no_symbolic_links;
-__thread extern STRING_INT_ALIST word_token_alist[];
-__thread extern sh_timer *read_timeout;
+extern __thread int no_symbolic_links;
+extern __thread STRING_INT_ALIST word_token_alist[];
+extern __thread sh_timer *read_timeout;
 
 /* SPECIFIC_COMPLETION_FUNCTIONS specifies that we have individual
    completion functions which indicate what type of completion should be
@@ -317,20 +317,20 @@ __thread int dircomplete_expand_relpath = 0;
    the set of characters that will be quoted. */
 __thread int complete_fullquote = 1;
 
-__thread static char *bash_completer_word_break_characters = " \t\n\"'@><=;|&(:";
-__thread static char *bash_nohostname_word_break_characters = " \t\n\"'><=;|&(:";
+static __thread char *bash_completer_word_break_characters = " \t\n\"'@><=;|&(:";
+static __thread char *bash_nohostname_word_break_characters = " \t\n\"'><=;|&(:";
 /* )) */
 
 static __thread const char *default_filename_quote_characters = " \t\n\\\"'@<>=;|&()#$`?*[!:{~";	/*}*/
-__thread static char *custom_filename_quote_characters = 0;
-__thread static char filename_bstab[256];
+static __thread char *custom_filename_quote_characters = 0;
+static __thread char filename_bstab[256];
 
-__thread static rl_hook_func_t *old_rl_startup_hook = (rl_hook_func_t *)NULL;
+static __thread rl_hook_func_t *old_rl_startup_hook = (rl_hook_func_t *)NULL;
 
-__thread static int dot_in_path = 0;
+static __thread int dot_in_path = 0;
 
 /* Set to non-zero when dabbrev-expand is running */
-__thread static int dabbrev_expand_active = 0;
+static __thread int dabbrev_expand_active = 0;
 
 /* What kind of quoting is performed by bash_quote_filename:
 	COMPLETE_DQUOTE = double-quoting the filename
@@ -340,12 +340,12 @@ __thread static int dabbrev_expand_active = 0;
 #define COMPLETE_DQUOTE  1
 #define COMPLETE_SQUOTE  2
 #define COMPLETE_BSQUOTE 3
-__thread static int completion_quoting_style = COMPLETE_BSQUOTE;
+static __thread int completion_quoting_style = COMPLETE_BSQUOTE;
 
 /* Flag values for the final argument to bash_default_completion */
 #define DEFCOMP_CMDPOS		1
 
-__thread static rl_command_func_t *vi_tab_binding = rl_complete;
+static __thread rl_command_func_t *vi_tab_binding = rl_complete;
 
 /* Change the readline VI-mode keymaps into or out of Posix.2 compliance.
    Called when the shell is put into or out of `posix' mode. */
@@ -353,7 +353,7 @@ void
 posix_readline_initialize (on_or_off)
      int on_or_off;
 {
-  __thread static char kseq[2] = { CTRL ('I'), 0 };		/* TAB */
+  static __thread char kseq[2] = { CTRL ('I'), 0 };		/* TAB */
 
   if (on_or_off)
     rl_variable_bind ("comment-begin", "#");
@@ -701,7 +701,7 @@ bashline_reset ()
 }
 
 /* Contains the line to push into readline. */
-__thread static char *push_to_readline = (char *)NULL;
+static __thread char *push_to_readline = (char *)NULL;
 
 /* Push the contents of push_to_readline into the
    readline buffer. */
@@ -758,13 +758,13 @@ display_shell_version (count, c)
 
 /* THIS SHOULD BE A STRINGLIST. */
 /* The kept list of hostnames. */
-__thread static char **hostname_list = (char **)NULL;
+static __thread char **hostname_list = (char **)NULL;
 
 /* The physical size of the above list. */
-__thread static int hostname_list_size;
+static __thread int hostname_list_size;
 
 /* The number of hostnames in the above list. */
-__thread static int hostname_list_length;
+static __thread int hostname_list_length;
 
 /* Whether or not HOSTNAME_LIST has been initialized. */
 __thread int hostname_list_initialized = 0;
@@ -1532,7 +1532,7 @@ prog_complete_return (text, matchnum)
      const char *text;
      int matchnum;
 {
-  __thread static int ind;
+  static __thread int ind;
 
   if (matchnum == 0)
     ind = 0;
@@ -1974,20 +1974,20 @@ command_word_completion_function (hint_text, state)
      const char *hint_text;
      int state;
 {
-  __thread static char *hint = (char *)NULL;
-  __thread static char *path = (char *)NULL;
-  __thread static char *val = (char *)NULL;
-  __thread static char *filename_hint = (char *)NULL;
-  __thread static char *fnhint = (char *)NULL;
-  __thread static char *dequoted_hint = (char *)NULL;
-  __thread static char *directory_part = (char *)NULL;
-  __thread static char **glob_matches = (char **)NULL;
-  __thread static int path_index, hint_len, istate, igncase;
-  __thread static int mapping_over, local_index, searching_path, hint_is_dir;
-  __thread static int old_glob_ignore_case, globpat;
-  __thread static SHELL_VAR **varlist = (SHELL_VAR **)NULL;
+  static __thread char *hint = (char *)NULL;
+  static __thread char *path = (char *)NULL;
+  static __thread char *val = (char *)NULL;
+  static __thread char *filename_hint = (char *)NULL;
+  static __thread char *fnhint = (char *)NULL;
+  static __thread char *dequoted_hint = (char *)NULL;
+  static __thread char *directory_part = (char *)NULL;
+  static __thread char **glob_matches = (char **)NULL;
+  static __thread int path_index, hint_len, istate, igncase;
+  static __thread int mapping_over, local_index, searching_path, hint_is_dir;
+  static __thread int old_glob_ignore_case, globpat;
+  static __thread SHELL_VAR **varlist = (SHELL_VAR **)NULL;
 #if defined (ALIAS)
-  __thread static alias_t **alias_list = (alias_t **)NULL;
+  static __thread alias_t **alias_list = (alias_t **)NULL;
 #endif /* ALIAS */
   char *temp, *cval;
 
@@ -2409,10 +2409,10 @@ command_subst_completion_function (text, state)
      const char *text;
      int state;
 {
-  __thread static char **matches = (char **)NULL;
+  static __thread char **matches = (char **)NULL;
   static __thread const char *orig_start;
-  __thread static char *filename_text = (char *)NULL;
-  __thread static int cmd_index, start_len;
+  static __thread char *filename_text = (char *)NULL;
+  static __thread int cmd_index, start_len;
   char *value;
 
   if (state == 0)
@@ -2492,10 +2492,10 @@ variable_completion_function (text, state)
      const char *text;
      int state;
 {
-  __thread static char **varlist = (char **)NULL;
-  __thread static int varlist_index;
-  __thread static char *varname = (char *)NULL;
-  __thread static int first_char, first_char_loc;
+  static __thread char **varlist = (char **)NULL;
+  static __thread int varlist_index;
+  static __thread char *varname = (char *)NULL;
+  static __thread int first_char, first_char_loc;
 
   if (!state)
     {
@@ -2552,9 +2552,9 @@ hostname_completion_function (text, state)
      const char *text;
      int state;
 {
-  __thread static char **list = (char **)NULL;
-  __thread static int list_index = 0;
-  __thread static int first_char, first_char_loc;
+  static __thread char **list = (char **)NULL;
+  static __thread int list_index = 0;
+  static __thread int first_char, first_char_loc;
 
   /* If we don't have any state, make some. */
   if (state == 0)
@@ -2598,9 +2598,9 @@ bash_servicename_completion_function (text, state)
 #if defined (__WIN32__) || defined (__OPENNT) || !defined (HAVE_GETSERVENT)
   return ((char *)NULL);
 #else
-  __thread static char *sname = (char *)NULL;
-  __thread static struct servent *srvent;
-  __thread static int snamelen;
+  static __thread char *sname = (char *)NULL;
+  static __thread struct servent *srvent;
+  static __thread int snamelen;
   char *value;
   char **alist, *aentry;
   int afound;
@@ -2656,9 +2656,9 @@ bash_groupname_completion_function (text, state)
 #if defined (__WIN32__) || defined (__OPENNT) || !defined (HAVE_GRP_H)
   return ((char *)NULL);
 #else
-  __thread static char *gname = (char *)NULL;
-  __thread static struct group *grent;
-  __thread static int gnamelen;
+  static __thread char *gname = (char *)NULL;
+  static __thread struct group *grent;
+  static __thread int gnamelen;
   char *value;
 
   if (state == 0)
@@ -2979,7 +2979,7 @@ shell_expand_line (count, ignore)
    function, not for completion lists (M-?) and not on "other"
    completion types, such as hostnames or commands. */
 
-__thread static struct ignorevar fignore =
+static __thread struct ignorevar fignore =
 {
   "FIGNORE",
   (struct ign *)0,
@@ -3597,9 +3597,9 @@ bash_directory_completion_hook (dirname)
   return (return_value);
 }
 
-__thread static char **history_completion_array = (char **)NULL;
-__thread static int harry_size;
-__thread static int harry_len;
+static __thread char **history_completion_array = (char **)NULL;
+static __thread int harry_size;
+static __thread int harry_len;
 
 static void
 build_history_completion_array ()
@@ -3652,7 +3652,7 @@ history_completion_generator (hint_text, state)
      const char *hint_text;
      int state;
 {
-  __thread static int local_index, len;
+  static __thread int local_index, len;
   static __thread const char *text;
 
   /* If this is the first call to the generator, then initialize the
@@ -3886,16 +3886,16 @@ completion_glob_pattern (string)
   return (glob_pattern_p (string) == 1);
 }
 
-__thread static char *globtext;
-__thread static char *globorig;
+static __thread char *globtext;
+static __thread char *globorig;
 
 static char *
 glob_complete_word (text, state)
      const char *text;
      int state;
 {
-  __thread static char **matches = (char **)NULL;
-  __thread static int ind;
+  static __thread char **matches = (char **)NULL;
+  static __thread int ind;
   int glen;
   char *ret, *ttext;
 
@@ -4380,10 +4380,10 @@ bash_quote_filename (s, rtype, qcp)
 /* Support for binding readline key sequences to Unix commands. Each editing
    mode has a separate Unix command keymap. */
 
-__thread static Keymap emacs_std_cmd_xmap;
+static __thread Keymap emacs_std_cmd_xmap;
 #if defined (VI_MODE)
-__thread static Keymap vi_insert_cmd_xmap;
-__thread static Keymap vi_movement_cmd_xmap;
+static __thread Keymap vi_insert_cmd_xmap;
+static __thread Keymap vi_movement_cmd_xmap;
 #endif
 
 #ifdef _MINIX

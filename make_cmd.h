@@ -23,7 +23,7 @@
 
 #include "stdc.h"
 
-__thread extern int here_doc_first_line;
+extern __thread int here_doc_first_line;
 
 extern void cmd_init PARAMS((void));
 

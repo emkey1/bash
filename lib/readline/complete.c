@@ -413,13 +413,13 @@ __thread int rl_sort_completion_matches = 1;
 /* Variables local to this file. */
 
 /* Local variable states what happened during the last completion attempt. */
-__thread static int completion_changed_buffer;
-__thread static int last_completion_failed = 0;
+static __thread int completion_changed_buffer;
+static __thread int last_completion_failed = 0;
 
 /* The result of the query to the user about displaying completion matches */
-__thread static int completion_y_or_n;
+static __thread int completion_y_or_n;
 
-__thread static int _rl_complete_display_matches_interrupt = 0;
+static __thread int _rl_complete_display_matches_interrupt = 0;
 
 /*************************************/
 /*				     */
@@ -2268,9 +2268,9 @@ rl_username_completion_function (const char *text, int state)
 #if defined (__WIN32__) || defined (__OPENNT)
   return (char *)NULL;
 #else /* !__WIN32__ && !__OPENNT) */
-  __thread static char *username = (char *)NULL;
-  __thread static struct passwd *entry;
-  __thread static int namelen, first_char, first_char_loc;
+  static __thread char *username = (char *)NULL;
+  static __thread struct passwd *entry;
+  static __thread int namelen, first_char, first_char_loc;
   char *value;
 
   if (state == 0)
@@ -2455,11 +2455,11 @@ complete_fncmp (const char *convfn, int convlen, const char *filename, int filen
 char *
 rl_filename_completion_function (const char *text, int state)
 {
-  __thread static DIR *directory = (DIR *)NULL;
-  __thread static char *filename = (char *)NULL;
-  __thread static char *dirname = (char *)NULL;
-  __thread static char *users_dirname = (char *)NULL;
-  __thread static int filename_len;
+  static __thread DIR *directory = (DIR *)NULL;
+  static __thread char *filename = (char *)NULL;
+  static __thread char *dirname = (char *)NULL;
+  static __thread char *users_dirname = (char *)NULL;
+  static __thread int filename_len;
   char *temp, *dentry, *convfn;
   int dirlen, dentlen, convlen;
   int tilde_dirname;
@@ -2686,13 +2686,13 @@ rl_old_menu_complete (int count, int invoking_key)
   rl_compentry_func_t *our_func;
   int matching_filenames, found_quote;
 
-  __thread static char *orig_text;
-  __thread static char **matches = (char **)0;
-  __thread static int match_list_index = 0;
-  __thread static int match_list_size = 0;
-  __thread static int orig_start, orig_end;
-  __thread static char quote_char;
-  __thread static int delimiter;
+  static __thread char *orig_text;
+  static __thread char **matches = (char **)0;
+  static __thread int match_list_index = 0;
+  static __thread int match_list_size = 0;
+  static __thread int orig_start, orig_end;
+  static __thread char quote_char;
+  static __thread int delimiter;
 
   /* The first time through, we generate the list of matches and set things
      up to insert them. */
@@ -2817,15 +2817,15 @@ rl_menu_complete (int count, int ignore)
   rl_compentry_func_t *our_func;
   int matching_filenames, found_quote;
 
-  __thread static char *orig_text;
-  __thread static char **matches = (char **)0;
-  __thread static int match_list_index = 0;
-  __thread static int match_list_size = 0;
-  __thread static int nontrivial_lcd = 0;
-  __thread static int full_completion = 0;	/* set to 1 if menu completion should reinitialize on next call */
-  __thread static int orig_start, orig_end;
-  __thread static char quote_char;
-  __thread static int delimiter, cstate;
+  static __thread char *orig_text;
+  static __thread char **matches = (char **)0;
+  static __thread int match_list_index = 0;
+  static __thread int match_list_size = 0;
+  static __thread int nontrivial_lcd = 0;
+  static __thread int full_completion = 0;	/* set to 1 if menu completion should reinitialize on next call */
+  static __thread int orig_start, orig_end;
+  static __thread char quote_char;
+  static __thread int delimiter, cstate;
 
   /* The first time through, we generate the list of matches and set things
      up to insert them. */

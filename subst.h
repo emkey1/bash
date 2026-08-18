@@ -330,23 +330,23 @@ extern WORD_LIST *split_at_delims PARAMS((char *, int, const char *, int, int, i
 #endif
 
 /* Variables used to keep track of the characters in IFS. */
-__thread extern SHELL_VAR *ifs_var;
-__thread extern char *ifs_value;
-__thread extern unsigned char ifs_cmap[];
-__thread extern int ifs_is_set, ifs_is_null;
+extern __thread SHELL_VAR *ifs_var;
+extern __thread char *ifs_value;
+extern __thread unsigned char ifs_cmap[];
+extern __thread int ifs_is_set, ifs_is_null;
 
 #if defined (HANDLE_MULTIBYTE)
-__thread extern unsigned char ifs_firstc[];
-__thread extern size_t ifs_firstc_len;
+extern __thread unsigned char ifs_firstc[];
+extern __thread size_t ifs_firstc_len;
 #else
 extern unsigned char ifs_firstc;
 #endif
 
-__thread extern int assigning_in_environment;
-__thread extern int expanding_redir;
-__thread extern int inherit_errexit;
+extern __thread int assigning_in_environment;
+extern __thread int expanding_redir;
+extern __thread int inherit_errexit;
 
-__thread extern pid_t last_command_subst_pid;
+extern __thread pid_t last_command_subst_pid;
 
 /* Evaluates to 1 if C is a character in $IFS. */
 #define isifs(c)	(ifs_cmap[(unsigned char)(c)] != 0)

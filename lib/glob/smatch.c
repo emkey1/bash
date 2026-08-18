@@ -103,8 +103,8 @@ charcmp (c1, c2, forcecoll)
      int c1, c2;
      int forcecoll;
 {
-  __thread static char s1[2] = { ' ', '\0' };
-  __thread static char s2[2] = { ' ', '\0' };
+  static __thread char s1[2] = { ' ', '\0' };
+  static __thread char s2[2] = { ' ', '\0' };
   int ret;
 
   /* Eight bits only.  Period. */
@@ -391,8 +391,8 @@ charcmp_wc (c1, c2, forcecoll)
      wint_t c1, c2;
      int forcecoll;
 {
-  __thread static wchar_t s1[2] = { L' ', L'\0' };
-  __thread static wchar_t s2[2] = { L' ', L'\0' };
+  static __thread wchar_t s1[2] = { L' ', L'\0' };
+  static __thread wchar_t s2[2] = { L' ', L'\0' };
   int r;
 
   if (c1 == c2)

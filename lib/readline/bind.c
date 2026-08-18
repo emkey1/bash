@@ -98,10 +98,10 @@ static int substring_member_of_array (const char *, const char * const *);
 static int _rl_get_keymap_by_name (const char *);
 static int _rl_get_keymap_by_map (Keymap);
 
-__thread static int currently_reading_init_file;
+static __thread int currently_reading_init_file;
 
 /* used only in this file */
-__thread static int _rl_prefer_visible_bell = 1;
+static __thread int _rl_prefer_visible_bell = 1;
 
 #define OP_EQ	1
 #define OP_NE	2
@@ -684,7 +684,7 @@ _rl_escchar (int c)
 char *
 rl_untranslate_keyseq (int seq)
 {
-  __thread static char kseq[16];
+  static __thread char kseq[16];
   int i, c;
 
   i = 0;
@@ -960,12 +960,12 @@ rl_trim_arg_from_keyseq	(const char *keyseq, size_t len, Keymap map)
 }
   
 /* The last key bindings file read. */
-__thread static char *last_readline_init_file = (char *)NULL;
+static __thread char *last_readline_init_file = (char *)NULL;
 
 /* The file we're currently reading key bindings from. */
 static __thread const char *current_readline_init_file;
-__thread static int current_readline_init_include_level;
-__thread static int current_readline_init_lineno;
+static __thread int current_readline_init_include_level;
+static __thread int current_readline_init_lineno;
 
 /* Read FILENAME into a locally-allocated buffer and return the buffer.
    The size of the buffer is returned in *SIZEP.  Returns NULL if any
@@ -1245,9 +1245,9 @@ static int parser_include (char *);
 const char *rl_readline_name = "other";
 
 /* Stack of previous values of parsing_conditionalized_out. */
-__thread static unsigned char *if_stack = (unsigned char *)NULL;
-__thread static int if_stack_depth;
-__thread static int if_stack_size;
+static __thread unsigned char *if_stack = (unsigned char *)NULL;
+static __thread int if_stack_depth;
+static __thread int if_stack_size;
 
 /* Push _rl_parsing_conditionalized_out, and set parser state based
    on ARGS. */
@@ -1934,7 +1934,7 @@ static __thread struct {
 void
 aok_fix_boolean_varlist ()
 {
-  __thread static __thread int aok_done;
+  static __thread __thread int aok_done;
   int aok_i = 0;
 
   if (aok_done)
@@ -2377,7 +2377,7 @@ sv_isrchterm (const char *value)
   return 0;
 }
 
-__thread extern char *_rl_emacs_mode_str;
+extern __thread char *_rl_emacs_mode_str;
 
 static int
 sv_emacs_modestr (const char *value)
@@ -2521,7 +2521,7 @@ static struct name_and_keymap builtin_keymap_names[] = {
 /* -1 for NULL entry */
 #define NUM_BUILTIN_KEYMAPS (sizeof (builtin_keymap_names) / sizeof (builtin_keymap_names[0]) - 1)
 
-__thread static struct name_and_keymap *keymap_names = builtin_keymap_names;
+static __thread struct name_and_keymap *keymap_names = builtin_keymap_names;
 
 static int
 _rl_get_keymap_by_name (const char *name)
@@ -3040,7 +3040,7 @@ rl_dump_macros (int count, int key)
 static char *
 _rl_get_string_variable_value (const char *name)
 {
-  __thread static char numbuf[32];
+  static __thread char numbuf[32];
   char *ret;
 
   if (_rl_stricmp (name, "bell-style") == 0)

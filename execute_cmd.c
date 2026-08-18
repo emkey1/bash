@@ -107,11 +107,11 @@ extern int errno;
 #  include <mbstr.h>		/* mbschr */
 #endif
 
-__thread extern int command_string_index;
-__thread extern char *the_printed_command;
-__thread extern time_t shell_start_time;
+extern __thread int command_string_index;
+extern __thread char *the_printed_command;
+extern __thread time_t shell_start_time;
 #if defined (HAVE_GETTIMEOFDAY)
-__thread extern struct timeval shellstart;
+extern __thread struct timeval shellstart;
 #endif
 #if 0
 extern char *glob_argv_flags;
@@ -263,19 +263,19 @@ __thread int executing_command_builtin = 0;
 
 __thread struct stat SB;		/* used for debugging */
 
-__thread static int special_builtin_failed;
+static __thread int special_builtin_failed;
 
-__thread static COMMAND *currently_executing_command;
+static __thread COMMAND *currently_executing_command;
 
 /* The line number that the currently executing function starts on. */
-__thread static int function_line_number;
+static __thread int function_line_number;
 
 /* XXX - set to 1 if we're running the DEBUG trap and we want to show the line
    number containing the function name.  Used by executing_line_number to
    report the correct line number.  Kind of a hack. */
-__thread static int showing_function_line;
+static __thread int showing_function_line;
 
-__thread static int connection_count;
+static __thread int connection_count;
 
 /* $LINENO ($BASH_LINENO) for use by an ERR trap.  Global so parse_and_execute
    can save and restore it. */
@@ -3319,7 +3319,7 @@ execute_arith_for_command (arith_for_command)
 #endif
 
 #if defined (SELECT_COMMAND)
-__thread static int LINES, COLS, tabsize;
+static __thread int LINES, COLS, tabsize;
 
 #define RP_SPACE ") "
 #define RP_SPACE_LEN 2
@@ -3997,7 +3997,7 @@ execute_arith_command (arith_command)
 
 #if defined (COND_COMMAND)
 
-__thread static char * const nullstr = "";
+static __thread char * const nullstr = "";
 
 /* XXX - can COND ever be NULL when this is called? */
 static int

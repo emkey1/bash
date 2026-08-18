@@ -39,7 +39,7 @@
 #include "variables.h"
 #include "externs.h"
 
-__thread extern int glob_ignore_case, match_ignore_case;
+extern __thread int glob_ignore_case, match_ignore_case;
 
 #if defined (ARRAY_VARS)
 extern SHELL_VAR *builtin_find_indexed_array (char *, int);

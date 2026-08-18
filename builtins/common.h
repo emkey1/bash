@@ -122,7 +122,7 @@ extern int get_exitstat PARAMS((WORD_LIST *));
 extern int read_octal PARAMS((char *));
 
 /* Keeps track of the current working directory. */
-__thread extern char *the_current_working_directory;
+extern __thread char *the_current_working_directory;
 extern char *get_working_directory PARAMS((char *));
 extern void set_working_directory PARAMS((char *));
 
@@ -229,8 +229,8 @@ extern int source_file PARAMS((const char *, int));
 extern int fc_execute_file PARAMS((const char *));
 
 /* variables from common.c */
-__thread extern sh_builtin_func_t *this_shell_builtin;
-__thread extern sh_builtin_func_t *last_shell_builtin;
+extern __thread sh_builtin_func_t *this_shell_builtin;
+extern __thread sh_builtin_func_t *last_shell_builtin;
 
 extern SHELL_VAR *builtin_bind_variable PARAMS((char *, char *, int));
 extern SHELL_VAR *builtin_bind_var_to_int PARAMS((char *, intmax_t, int));
@@ -240,36 +240,36 @@ extern SHELL_VAR *builtin_find_indexed_array PARAMS((char *, int));
 extern int builtin_arrayref_flags PARAMS((WORD_DESC *, int));
 
 /* variables from evalfile.c */
-__thread extern int sourcelevel;
+extern __thread int sourcelevel;
 
 /* variables from evalstring.c */
-__thread extern int parse_and_execute_level;
+extern __thread int parse_and_execute_level;
 
 /* variables from break.def/continue.def */
-__thread extern int breaking;
-__thread extern int continuing;
-__thread extern int loop_level;
+extern __thread int breaking;
+extern __thread int continuing;
+extern __thread int loop_level;
 
 /* variables from shift.def */
-__thread extern int print_shift_error;
+extern __thread int print_shift_error;
 
 /* variables from shopt.def */
 #if defined (ARRAY_VARS)
-__thread extern int expand_once_flag;
+extern __thread int expand_once_flag;
 #endif
 
 #if defined (EXTENDED_GLOB)
-__thread extern int extglob_flag;
+extern __thread int extglob_flag;
 #endif
 
-__thread extern int expaliases_flag;
+extern __thread int expaliases_flag;
 
 /* variables from source.def */
-__thread extern int source_searches_cwd;
-__thread extern int source_uses_path;
+extern __thread int source_searches_cwd;
+extern __thread int source_uses_path;
 
 /* variables from wait.def */
-__thread extern int wait_intr_flag;
+extern __thread int wait_intr_flag;
 
 /* common code to set flags for valid_array_reference and builtin_bind_variable */
 #if defined (ARRAY_VARS)

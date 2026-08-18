@@ -687,8 +687,8 @@ rl_fetch_history (int count, int c)
    editing command. */
 
 /* This could stand to be global to the readline library */
-__thread static rl_hook_func_t *_rl_saved_internal_startup_hook = 0;
-__thread static int saved_history_logical_offset = -1;
+static __thread rl_hook_func_t *_rl_saved_internal_startup_hook = 0;
+static __thread int saved_history_logical_offset = -1;
 
 #define HISTORY_FULL() (history_is_stifled () && history_length >= history_max_entries)
 

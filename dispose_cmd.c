@@ -29,7 +29,7 @@
 #include "bashansi.h"
 #include "shell.h"
 
-__thread extern sh_obj_cache_t wdcache, wlcache;
+extern __thread sh_obj_cache_t wdcache, wlcache;
 
 /* Dispose of the command structure passed. */
 void

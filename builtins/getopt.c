@@ -54,7 +54,7 @@ __thread char *sh_optarg = 0;
 __thread int sh_optind = 0;
 
 /* Index of the current argument. */
-__thread static int sh_curopt;
+static __thread int sh_curopt;
 
 /* The next char to be scanned in the option-element
    in which the last option character we returned was found.
@@ -63,8 +63,8 @@ __thread static int sh_curopt;
    If this is zero, or a null string, it means resume the scan
    by advancing to the next ARGV-element.  */
 
-__thread static char *nextchar;
-__thread static int sh_charindex;
+static __thread char *nextchar;
+static __thread int sh_charindex;
 
 /* Callers store zero here to inhibit the error message
    for unrecognized options.  */

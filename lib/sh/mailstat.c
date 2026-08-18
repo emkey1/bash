@@ -56,7 +56,7 @@ mailstat(path, st)
      const char *path;
      struct stat *st;
 {
-  __thread static struct stat st_new_last, st_ret_last;
+  static __thread struct stat st_new_last, st_ret_last;
   struct stat st_ret, st_tmp;
   DIR *dd;
   struct dirent *fn;

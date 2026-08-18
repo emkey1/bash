@@ -53,8 +53,8 @@
 extern int printf PARAMS((const char *, ...));	/* Yuck.  Double yuck. */
 #endif
 
-__thread static int indentation;
-__thread static int indentation_amount = 4;
+static __thread int indentation;
+static __thread int indentation_amount = 4;
 
 #if defined (PREFER_STDARG)
 typedef void PFUNC PARAMS((const char *, ...));
@@ -125,20 +125,20 @@ __thread FILE *xtrace_fp = 0;
   } while (0)
 
 /* Non-zero means the stuff being printed is inside of a function def. */
-__thread static int inside_function_def;
-__thread static int skip_this_indent;
-__thread static int was_heredoc;
-__thread static int printing_connection;
-__thread static int printing_comsub;
-__thread static REDIRECT *deferred_heredocs;
+static __thread int inside_function_def;
+static __thread int skip_this_indent;
+static __thread int was_heredoc;
+static __thread int printing_connection;
+static __thread int printing_comsub;
+static __thread REDIRECT *deferred_heredocs;
 
 /* The depth of the group commands that we are currently printing.  This
    includes the group command that is a function body. */
-__thread static int group_command_nesting;
+static __thread int group_command_nesting;
 
 /* A buffer to indicate the indirection level (PS4) when set -x is enabled. */
-__thread static char *indirection_string = 0;
-__thread static int indirection_stringsiz = 0;
+static __thread char *indirection_string = 0;
+static __thread int indirection_stringsiz = 0;
 
 /* Print COMMAND (a command tree) on standard output. */
 void
@@ -1491,8 +1491,8 @@ newline (string)
     cprintf ("%s", string);
 }
 
-__thread static char *indentation_string;
-__thread static int indentation_size;
+static __thread char *indentation_string;
+static __thread int indentation_size;
 
 static void
 indent (amount)

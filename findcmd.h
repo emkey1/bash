@@ -39,9 +39,9 @@ extern char *search_for_command PARAMS((const char *, int));
 extern char *user_command_matches PARAMS((const char *, int, int));
 extern void setup_exec_ignore PARAMS((char *));
 
-__thread extern int dot_found_in_search;
+extern __thread int dot_found_in_search;
 
 /* variables managed via shopt */
-__thread extern int check_hashed_filenames;
+extern __thread int check_hashed_filenames;
 
 #endif /* _FINDCMD_H_ */

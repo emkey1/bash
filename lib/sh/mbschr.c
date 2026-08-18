@@ -27,8 +27,8 @@
 #include "bashansi.h"
 #include "shmbutil.h"
 
-__thread extern int locale_mb_cur_max;
-__thread extern int locale_utf8locale;
+extern __thread int locale_mb_cur_max;
+extern __thread int locale_utf8locale;
 
 #undef mbschr
 

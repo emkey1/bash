@@ -58,7 +58,7 @@
 static int utf8locale (char *);
 
 #define RL_DEFAULT_LOCALE "C"
-__thread static char *_rl_current_locale = 0;
+static __thread char *_rl_current_locale = 0;
 
 #if !defined (HAVE_SETLOCALE)    
 /* A list of legal values for the LANG or LC_CTYPE environment variables.

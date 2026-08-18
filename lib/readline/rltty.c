@@ -67,9 +67,9 @@ static void set_winsize (int);
 #define TPX_BRACKPASTE	0x02
 #define TPX_METAKEY	0x04
 
-__thread static int terminal_prepped;
+static __thread int terminal_prepped;
 
-__thread static _RL_TTY_CHARS _rl_tty_chars, _rl_last_tty_chars;
+static __thread _RL_TTY_CHARS _rl_tty_chars, _rl_last_tty_chars;
 
 /* If non-zero, means that this process has called tcflow(fd, TCOOFF)
    and output is suspended. */
@@ -330,7 +330,7 @@ prepare_terminal_settings (int meta_flag, TIOTYPE oldtio, TIOTYPE *tiop)
 #  define SETATTR(tty, tiop)	(ioctl (tty, TCSETAW, tiop))
 #endif /* !TERMIOS_TTY_DRIVER */
 
-__thread static TIOTYPE otio;
+static __thread TIOTYPE otio;
 
 static void save_tty_chars (TIOTYPE *);
 static int _get_tty_settings (int, TIOTYPE *);
@@ -951,8 +951,8 @@ _rl_restore_tty_signals (void)
 }
 #else
 
-__thread static TIOTYPE sigstty, nosigstty;
-__thread static int tty_sigs_disabled = 0;
+static __thread TIOTYPE sigstty, nosigstty;
+static __thread int tty_sigs_disabled = 0;
 
 int
 _rl_disable_tty_signals (void)

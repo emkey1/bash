@@ -41,7 +41,7 @@ extern int errno;
 #  define ZBUFSIZ 4096
 #endif
 
-__thread extern int executing_builtin;
+extern __thread int executing_builtin;
 
 extern void check_signals_and_traps (void);
 extern void check_signals (void);
@@ -125,8 +125,8 @@ zreadintr (fd, buf, len)
    in read(2).  This does some local buffering to avoid many one-character
    calls to read(2), like those the `read' builtin performs. */
 
-__thread static char lbuf[ZBUFSIZ];
-__thread static size_t lind, lused;
+static __thread char lbuf[ZBUFSIZ];
+static __thread size_t lind, lused;
 
 ssize_t
 zreadc (fd, cp)

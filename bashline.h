@@ -23,17 +23,17 @@
 
 #include "stdc.h"
 
-__thread extern int bash_readline_initialized;
-__thread extern int hostname_list_initialized;
+extern __thread int bash_readline_initialized;
+extern __thread int hostname_list_initialized;
 
 /* these are controlled via shopt */
-__thread extern int perform_hostname_completion;
-__thread extern int no_empty_command_completion;
-__thread extern int force_fignore;
-__thread extern int dircomplete_spelling;
-__thread extern int dircomplete_expand;
-__thread extern int dircomplete_expand_relpath;
-__thread extern int complete_fullquote;
+extern __thread int perform_hostname_completion;
+extern __thread int no_empty_command_completion;
+extern __thread int force_fignore;
+extern __thread int dircomplete_spelling;
+extern __thread int dircomplete_expand;
+extern __thread int dircomplete_expand_relpath;
+extern __thread int complete_fullquote;
 
 extern void posix_readline_initialize PARAMS((int));
 extern void reset_completer_word_break_chars PARAMS((void));

@@ -49,22 +49,22 @@ __thread int locale_shiftstates = 0;
 
 __thread int singlequote_translations = 0;	/* single-quote output of $"..." */
 
-__thread extern int dump_translatable_strings, dump_po_strings;
+extern __thread int dump_translatable_strings, dump_po_strings;
 
 /* The current locale when the program begins */
-__thread static char *default_locale;
+static __thread char *default_locale;
 
 /* The current domain for textdomain(3). */
-__thread static char *default_domain;
-__thread static char *default_dir;
+static __thread char *default_domain;
+static __thread char *default_dir;
 
 /* tracks the value of LC_ALL; used to override values for other locale
    categories */
-__thread static char *lc_all;
+static __thread char *lc_all;
 
 /* tracks the value of LC_ALL; used to provide defaults for locale
    categories */
-__thread static char *lang;
+static __thread char *lang;
 
 /* Called to reset all of the locale variables to their appropriate values
    if (and only if) LC_ALL has not been assigned a value. */

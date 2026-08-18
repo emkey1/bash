@@ -16,7 +16,7 @@
    along with Bash.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-__thread extern int interrupt_state, terminating_signal;
+extern __thread int interrupt_state, terminating_signal;
 
 struct STRUCT
 {

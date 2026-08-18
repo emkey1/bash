@@ -55,10 +55,10 @@ extern const char *locale_charset PARAMS((void));
 extern char *get_locale_var PARAMS((char *));
 #endif
 
-__thread extern int locale_utf8locale;
+extern __thread int locale_utf8locale;
 
-__thread static int u32init = 0;
-__thread static int utf8locale = 0;
+static __thread int u32init = 0;
+static __thread int utf8locale = 0;
 #if defined (HAVE_ICONV)
 static iconv_t localconv;
 #endif

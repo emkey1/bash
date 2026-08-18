@@ -69,10 +69,10 @@ static void _rl_isearch_fini (_rl_search_cxt *);
 /* static char *prev_line_found; */
 
 /* Last search string and its length. */
-__thread static char *last_isearch_string;
-__thread static int last_isearch_string_len;
+static __thread char *last_isearch_string;
+static __thread int last_isearch_string_len;
 
-__thread static char * const default_isearch_terminators = "\033\012";
+static __thread char * const default_isearch_terminators = "\033\012";
 
 _rl_search_cxt *
 _rl_scxt_alloc (int type, int flags)

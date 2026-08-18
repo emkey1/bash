@@ -30,7 +30,7 @@
 
 #include "bashintl.h"
 
-__thread extern char *shell_name;
+extern __thread char *shell_name;
 
 /* Defines from version.h */
 const char * const dist_version = DISTVERSION;
@@ -59,7 +59,7 @@ extern void show_shell_version PARAMS((int));
 char *
 shell_version_string ()
 {
-  __thread static char tt[32] = { '\0' };
+  static __thread char tt[32] = { '\0' };
 
   if (tt[0] == '\0')
     {

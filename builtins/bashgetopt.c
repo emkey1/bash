@@ -36,14 +36,14 @@
 #define ISOPT(s)	(((*(s) == '-') || (plus && *(s) == '+')) && (s)[1])
 #define NOTOPT(s)	(((*(s) != '-') && (!plus || *(s) != '+')) || (s)[1] == '\0')
 			
-__thread static int	sp;
+static __thread int	sp;
 
 __thread char    *list_optarg;
 __thread int	list_optflags;
 __thread int	list_optopt;
 __thread int	list_opttype;
 
-__thread static WORD_LIST *lhead = (WORD_LIST *)NULL;
+static __thread WORD_LIST *lhead = (WORD_LIST *)NULL;
 __thread WORD_LIST	*lcurrent = (WORD_LIST *)NULL;
 __thread WORD_LIST	*loptend;	/* Points to the first non-option argument in the list */
 
@@ -55,7 +55,7 @@ char		*opts;
 	register int c;
 	register char *cp;
 	int	plus;	/* nonzero means to handle +option */
-	__thread static char errstr[3] = { '-', '\0', '\0' };
+	static __thread char errstr[3] = { '-', '\0', '\0' };
 
 	plus = *opts == '+';
 	if (plus)

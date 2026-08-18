@@ -210,7 +210,7 @@ __thread struct flags_alist shell_flags[] = {
 void
 aok_fix_shell_flags ()
 {
-  __thread static __thread int aok_done;
+  static __thread __thread int aok_done;
   int aok_i = 0;
 
   if (aok_done)

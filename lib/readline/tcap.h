@@ -41,7 +41,7 @@
 #  undef PC
 #endif
 
-__thread extern char PC;
+extern __thread char PC;
 extern char *UP, *BC;
 
 extern short ospeed;

@@ -90,7 +90,7 @@ extern char *sh_makepath PARAMS((const char *, const char *, int));
 extern int signal_is_pending PARAMS((int));
 extern void run_pending_traps PARAMS((void));
 
-__thread extern int extended_glob;
+extern __thread int extended_glob;
 
 /* Global variable which controls whether or not * matches .*.
    Non-zero means don't match .*.  */
@@ -108,7 +108,7 @@ __thread int glob_always_skip_dot_and_dotdot = 1;
 /* Global variable to return to signify an error in globbing. */
 __thread char *glob_error_return;
 
-__thread static struct globval finddirs_error_return;
+static __thread struct globval finddirs_error_return;
 
 /* Some forward declarations. */
 static int skipname PARAMS((char *, char *, int));

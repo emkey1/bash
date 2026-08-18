@@ -193,13 +193,13 @@ __thread int fail_glob_expansion;
 __thread int patsub_replacement = 1;
 
 /* Extern functions and variables from different files. */
-__thread extern struct fd_bitmap *current_fds_to_close;
-__thread extern int wordexp_only;
-__thread extern int singlequote_translations;
-__thread extern int extended_quote;
+extern __thread struct fd_bitmap *current_fds_to_close;
+extern __thread int wordexp_only;
+extern __thread int singlequote_translations;
+extern __thread int extended_quote;
 
 #if defined (JOB_CONTROL) && defined (PROCESS_SUBSTITUTION)
-__thread extern PROCESS *last_procsub_child;
+extern __thread PROCESS *last_procsub_child;
 #endif
 
 #if !defined (HAVE_WCSDUP) && defined (HANDLE_MULTIBYTE)
@@ -215,24 +215,24 @@ char *glob_argv_flags;
 static int glob_argv_flags_size;
 #endif
 
-__thread static WORD_LIST *cached_quoted_dollar_at = 0;
+static __thread WORD_LIST *cached_quoted_dollar_at = 0;
 
 /* Distinguished error values to return from expansion functions */
-__thread static WORD_LIST expand_word_error, expand_word_fatal;
-__thread static WORD_DESC expand_wdesc_error, expand_wdesc_fatal;
-__thread static char expand_param_error, expand_param_fatal, expand_param_unset;
-__thread static char extract_string_error, extract_string_fatal;
+static __thread WORD_LIST expand_word_error, expand_word_fatal;
+static __thread WORD_DESC expand_wdesc_error, expand_wdesc_fatal;
+static __thread char expand_param_error, expand_param_fatal, expand_param_unset;
+static __thread char extract_string_error, extract_string_fatal;
 
 /* Set by expand_word_unsplit and several of the expand_string_XXX functions;
    used to inhibit splitting and re-joining $* on $IFS, primarily when doing
    assignment statements.  The idea is that if we're in a context where this
    is set, we're not going to be performing word splitting, so we use the same
    rules to expand $* as we would if it appeared within double quotes. */
-__thread static int expand_no_split_dollar_star = 0;
+static __thread int expand_no_split_dollar_star = 0;
 
 /* A WORD_LIST of words to be expanded by expand_word_list_internal,
    without any leading variable assignments. */
-__thread static WORD_LIST *garglist = (WORD_LIST *)NULL;
+static __thread WORD_LIST *garglist = (WORD_LIST *)NULL;
 
 static char *quoted_substring PARAMS((char *, int, int));
 static int quoted_strlen PARAMS((char *));
@@ -1800,7 +1800,7 @@ extract_heredoc_dolbrace_string (string, sindex, quoted, flags)
 }
 
 #define PARAMEXPNEST_MAX	32	// for now
-__thread static int dbstate[PARAMEXPNEST_MAX];
+static __thread int dbstate[PARAMEXPNEST_MAX];
 
 /* Extract a parameter expansion expression within ${ and } from STRING.
    Obey the Posix.2 rules for finding the ending `}': count braces while
@@ -6227,9 +6227,9 @@ make_named_pipe ()
 /* dev_fd_list[I] value of -1 means the process has been reaped and file
    descriptor I needs to be closed. Value of 0 means the slot is unused. */
 
-__thread static pid_t *dev_fd_list = (pid_t *)NULL;
-__thread static int nfds;
-__thread static int totfds;	/* The highest possible number of open files. */
+static __thread pid_t *dev_fd_list = (pid_t *)NULL;
+static __thread int nfds;
+static __thread int totfds;	/* The highest possible number of open files. */
 
 void
 clear_fifo (i)
@@ -10841,7 +10841,7 @@ return0:
 
 #if defined (ARRAY_VARS)
 /* Characters that need to be backslash-quoted after expanding array subscripts */
-__thread static char abstab[256] = { '\1' };
+static __thread char abstab[256] = { '\1' };
 
 /* Run an array subscript through the appropriate word expansions. */
 char *

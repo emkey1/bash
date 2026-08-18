@@ -58,13 +58,13 @@
   (signal_is_trapped (s) && signal_is_ignored (s) == 0) ? trap_list[s] \
 							: (char *)NULL
 
-__thread extern char *trap_list[];
+extern __thread char *trap_list[];
 
-__thread extern int trapped_signal_received;
-__thread extern int wait_signal_received;
-__thread extern int running_trap;
-__thread extern int trap_saved_exit_value;
-__thread extern int suppress_debug_trap_verbose;
+extern __thread int trapped_signal_received;
+extern __thread int wait_signal_received;
+extern __thread int running_trap;
+extern __thread int trap_saved_exit_value;
+extern __thread int suppress_debug_trap_verbose;
 
 /* Externally-visible functions declared in trap.c. */
 extern void initialize_traps PARAMS((void));

@@ -166,13 +166,13 @@ extern int killpg PARAMS((pid_t, int));
 typedef int sh_job_map_func_t PARAMS((JOB *, int, int, int));
 
 /* Variables used here but defined in other files. */
-__thread extern WORD_LIST *subst_assign_varlist;
+extern __thread WORD_LIST *subst_assign_varlist;
 
-__thread extern SigHandler **original_signals;
+extern __thread SigHandler **original_signals;
 
 extern void set_original_signal PARAMS((int, SigHandler *));
 
-__thread static struct jobstats zerojs = { -1L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NO_JOB, NO_JOB, 0, 0 };
+static __thread struct jobstats zerojs = { -1L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NO_JOB, NO_JOB, 0, 0 };
 __thread struct jobstats js = { -1L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NO_JOB, NO_JOB, 0, 0 };
 
 __thread ps_index_t pidstat_table[PIDSTAT_TABLE_SZ];
@@ -309,14 +309,14 @@ static ps_index_t bgp_getindex PARAMS((void));
 static void bgp_resize PARAMS((void));	/* XXX */
 
 #if defined (ARRAY_VARS)
-__thread static int *pstatuses;		/* list of pipeline statuses */
-__thread static int statsize;
+static __thread int *pstatuses;		/* list of pipeline statuses */
+static __thread int statsize;
 #endif
 
 /* Used to synchronize between wait_for and other functions and the SIGCHLD
    signal handler. */
-__thread static int sigchld;
-__thread static int queue_sigchld;
+static __thread int sigchld;
+static __thread int queue_sigchld;
 
 #define QUEUE_SIGCHLD(os)	(os) = sigchld, queue_sigchld++
 
@@ -333,20 +333,20 @@ __thread static int queue_sigchld;
 	    } \
 	} while (0)
 
-__thread static SigHandler *old_tstp, *old_ttou, *old_ttin;
-__thread static SigHandler *old_cont = (SigHandler *)SIG_DFL;
+static __thread SigHandler *old_tstp, *old_ttou, *old_ttin;
+static __thread SigHandler *old_cont = (SigHandler *)SIG_DFL;
 
 /* A place to temporarily save the current pipeline. */
-__thread static struct pipeline_saver *saved_pipeline;
-__thread static int saved_already_making_children;
+static __thread struct pipeline_saver *saved_pipeline;
+static __thread int saved_already_making_children;
 
 /* Set this to non-zero whenever you don't want the jobs list to change at
    all: no jobs deleted and no status change notifications.  This is used,
    for example, when executing SIGCHLD traps, which may run arbitrary
    commands. */
-__thread static int jobs_list_frozen;
+static __thread int jobs_list_frozen;
 
-__thread static char retcode_name_buffer[64];
+static __thread char retcode_name_buffer[64];
 
 #if !defined (_POSIX_VERSION)
 
@@ -384,7 +384,7 @@ static char *
 current_working_directory ()
 {
   char *dir;
-  __thread static char d[PATH_MAX];
+  static __thread char d[PATH_MAX];
 
   dir = get_string_value ("PWD");
 
@@ -1863,7 +1863,7 @@ printable_job_status (j, p, format)
      PROCESS *p;
      int format;
 {
-  __thread static char *temp;
+  static __thread char *temp;
   int es;
 
   temp = _("Done");
@@ -2528,7 +2528,7 @@ default_tty_job_signals ()
 void
 get_original_tty_job_signals ()
 {
-  __thread static int fetched = 0;
+  static __thread int fetched = 0;
 
   if (fetched == 0)
     {
@@ -2552,7 +2552,7 @@ get_original_tty_job_signals ()
    state kept in here.  When a job ends normally, we set the state in here
    to the state of the tty. */
 
-__thread static TTYSTRUCT shell_tty_info;
+static __thread TTYSTRUCT shell_tty_info;
 
 #if defined (NEW_TTY_DRIVER)
 static struct tchars shell_tchars;
@@ -2855,10 +2855,10 @@ wait_for_background_pids (ps)
 
 /* Make OLD_SIGINT_HANDLER the SIGINT signal handler. */
 #define INVALID_SIGNAL_HANDLER (SigHandler *)wait_for_background_pids
-__thread static SigHandler *old_sigint_handler = INVALID_SIGNAL_HANDLER;
+static __thread SigHandler *old_sigint_handler = INVALID_SIGNAL_HANDLER;
 
-__thread static int wait_sigint_received;
-__thread static int child_caught_sigint;
+static __thread int wait_sigint_received;
+static __thread int child_caught_sigint;
 
 __thread int waiting_for_child;
 
@@ -3688,7 +3688,7 @@ start_job (job, foreground)
   int already_running;
   sigset_t set, oset;
   char *wd, *s;
-  __thread static TTYSTRUCT save_stty;
+  static __thread TTYSTRUCT save_stty;
 
   BLOCK_CHILD (set, oset);
 
@@ -3915,7 +3915,7 @@ waitchld (wpid, block)
   int ind;
 
   int call_set_current, last_stopped_job, job, children_exited, waitpid_flags;
-  __thread static int wcontinued = WCONTINUED;	/* run-time fix for glibc problem */
+  static __thread int wcontinued = WCONTINUED;	/* run-time fix for glibc problem */
 
   call_set_current = children_exited = 0;
   last_stopped_job = NO_JOB;
@@ -5182,7 +5182,7 @@ void
 set_maxchild (nchild)
      int nchild;
 {
-  __thread static int lmaxchild = -1;
+  static __thread int lmaxchild = -1;
 
   /* Initialize once. */
   if (lmaxchild < 0)

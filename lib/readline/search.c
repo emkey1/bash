@@ -55,17 +55,17 @@
 
 __thread _rl_search_cxt *_rl_nscxt = 0;
 
-__thread static char *noninc_search_string = (char *) NULL;
-__thread static int noninc_history_pos;
+static __thread char *noninc_search_string = (char *) NULL;
+static __thread int noninc_history_pos;
 
-__thread static char *prev_line_found = (char *) NULL;
+static __thread char *prev_line_found = (char *) NULL;
 
-__thread static int _rl_history_search_len;
+static __thread int _rl_history_search_len;
 /*static*/ __thread int _rl_history_search_pos;
-__thread static int _rl_history_search_flags;
+static __thread int _rl_history_search_flags;
 
-__thread static char *history_search_string;
-__thread static int history_string_size;
+static __thread char *history_search_string;
+static __thread int history_string_size;
 
 static void make_history_line_current (HIST_ENTRY *);
 static int noninc_search_from_pos (char *, int, int, int, int *);

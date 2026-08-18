@@ -39,29 +39,29 @@
 #  endif /* !HISTEXPAND_DEFAULT */
 #endif
 
-__thread extern int remember_on_history;
-__thread extern int enable_history_list;		/* value for `set -o history' */
-__thread extern int literal_history;		/* controlled by `shopt lithist' */
-__thread extern int force_append_history;
-__thread extern int history_lines_this_session;
-__thread extern int history_lines_in_file;
-__thread extern int history_expansion;
-__thread extern int history_control;
-__thread extern int command_oriented_history;
-__thread extern int current_command_first_line_saved;
-__thread extern int current_command_first_line_comment;
-__thread extern int hist_last_line_added;
-__thread extern int hist_last_line_pushed;
+extern __thread int remember_on_history;
+extern __thread int enable_history_list;		/* value for `set -o history' */
+extern __thread int literal_history;		/* controlled by `shopt lithist' */
+extern __thread int force_append_history;
+extern __thread int history_lines_this_session;
+extern __thread int history_lines_in_file;
+extern __thread int history_expansion;
+extern __thread int history_control;
+extern __thread int command_oriented_history;
+extern __thread int current_command_first_line_saved;
+extern __thread int current_command_first_line_comment;
+extern __thread int hist_last_line_added;
+extern __thread int hist_last_line_pushed;
 
-__thread extern int dont_save_function_defs;
+extern __thread int dont_save_function_defs;
 
 #  if defined (READLINE)
-__thread extern int hist_verify;
+extern __thread int hist_verify;
 #  endif
 
 #  if defined (BANG_HISTORY)
-__thread extern int history_expansion_inhibited;
-__thread extern int double_quotes_inhibit_history_expansion;
+extern __thread int history_expansion_inhibited;
+extern __thread int double_quotes_inhibit_history_expansion;
 #  endif /* BANG_HISTORY */
 
 extern void bash_initialize_history PARAMS((void));

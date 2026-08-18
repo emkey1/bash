@@ -474,7 +474,7 @@ if (n != posparam_count)
 #endif
 }
 
-__thread static int changed_dollar_vars;
+static __thread int changed_dollar_vars;
 
 /* Have the dollar variables been reset to new values since we last
    checked? */

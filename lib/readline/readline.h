@@ -62,7 +62,7 @@ typedef struct undo_list {
 } UNDO_LIST;
 
 /* The current undo list for RL_LINE_BUFFER. */
-__thread extern UNDO_LIST *rl_undo_list;
+extern __thread UNDO_LIST *rl_undo_list;
 
 /* The data structure for mapping textual names to code addresses. */
 typedef struct _funmap {
@@ -70,7 +70,7 @@ typedef struct _funmap {
   rl_command_func_t *function;
 } FUNMAP;
 
-__thread extern FUNMAP **funmap;
+extern __thread FUNMAP **funmap;
 
 /* **************************************************************** */
 /*								    */
@@ -520,21 +520,21 @@ extern char *filename_completion_function (const char *, int);
 
 /* The version of this incarnation of the readline library. */
 extern const char *rl_library_version;		/* e.g., "4.2" */
-__thread extern int rl_readline_version;			/* e.g., 0x0402 */
+extern __thread int rl_readline_version;			/* e.g., 0x0402 */
 
 /* True if this is real GNU readline. */
-__thread extern int rl_gnu_readline_p;
+extern __thread int rl_gnu_readline_p;
 
 /* Flags word encapsulating the current readline state. */
-__thread extern unsigned long rl_readline_state;
+extern __thread unsigned long rl_readline_state;
 
 /* Says which editing mode readline is currently using.  1 means emacs mode;
    0 means vi mode. */
-__thread extern int rl_editing_mode;
+extern __thread int rl_editing_mode;
 
 /* Insert or overwrite mode for emacs mode.  1 means insert mode; 0 means
    overwrite mode.  Reset to insert mode on each input line. */
-__thread extern int rl_insert_mode;
+extern __thread int rl_insert_mode;
 
 /* The name of the calling program.  You should initialize this to
    whatever was in argv[0].  It is used when parsing conditionals. */
@@ -542,142 +542,142 @@ extern const char *rl_readline_name;
 
 /* The prompt readline uses.  This is set from the argument to
    readline (), and should not be assigned to directly. */
-__thread extern char *rl_prompt;
+extern __thread char *rl_prompt;
 
 /* The prompt string that is actually displayed by rl_redisplay.  Public so
    applications can more easily supply their own redisplay functions. */
-__thread extern char *rl_display_prompt;
+extern __thread char *rl_display_prompt;
 
 /* The line buffer that is in use. */
-__thread extern char *rl_line_buffer;
+extern __thread char *rl_line_buffer;
 
 /* The location of point, and end. */
-__thread extern int rl_point;
-__thread extern int rl_end;
+extern __thread int rl_point;
+extern __thread int rl_end;
 
 /* The mark, or saved cursor position. */
-__thread extern int rl_mark;
+extern __thread int rl_mark;
 
 /* Flag to indicate that readline has finished with the current input
    line and should return it. */
-__thread extern int rl_done;
+extern __thread int rl_done;
 
 /* Flag to indicate that readline has read an EOF character or read has
    returned 0 or error, and is returning a NULL line as a result. */
-__thread extern int rl_eof_found;
+extern __thread int rl_eof_found;
 
 /* If set to a character value, that will be the next keystroke read. */
-__thread extern int rl_pending_input;
+extern __thread int rl_pending_input;
 
 /* Non-zero if we called this function from _rl_dispatch().  It's present
    so functions can find out whether they were called from a key binding
    or directly from an application. */
-__thread extern int rl_dispatching;
+extern __thread int rl_dispatching;
 
 /* Non-zero if the user typed a numeric argument before executing the
    current function. */
-__thread extern int rl_explicit_arg;
+extern __thread int rl_explicit_arg;
 
 /* The current value of the numeric argument specified by the user. */
-__thread extern int rl_numeric_arg;
+extern __thread int rl_numeric_arg;
 
 /* The address of the last command function Readline executed. */
-__thread extern rl_command_func_t *rl_last_func;
+extern __thread rl_command_func_t *rl_last_func;
 
 /* The name of the terminal to use. */
-__thread extern const char *rl_terminal_name;
+extern __thread const char *rl_terminal_name;
 
 /* The input and output streams. */
-__thread extern FILE *rl_instream;
-__thread extern FILE *rl_outstream;
+extern __thread FILE *rl_instream;
+extern __thread FILE *rl_outstream;
 
 /* If non-zero, Readline gives values of LINES and COLUMNS from the environment
    greater precedence than values fetched from the kernel when computing the
    screen dimensions. */
-__thread extern int rl_prefer_env_winsize;
+extern __thread int rl_prefer_env_winsize;
 
 /* If non-zero, then this is the address of a function to call just
    before readline_internal () prints the first prompt. */
-__thread extern rl_hook_func_t *rl_startup_hook;
+extern __thread rl_hook_func_t *rl_startup_hook;
 
 /* If non-zero, this is the address of a function to call just before
    readline_internal_setup () returns and readline_internal starts
    reading input characters. */
-__thread extern rl_hook_func_t *rl_pre_input_hook;
+extern __thread rl_hook_func_t *rl_pre_input_hook;
       
 /* The address of a function to call periodically while Readline is
    awaiting character input, or NULL, for no event handling. */
-__thread extern rl_hook_func_t *rl_event_hook;
+extern __thread rl_hook_func_t *rl_event_hook;
 
 /* The address of a function to call if a read is interrupted by a signal. */
-__thread extern rl_hook_func_t *rl_signal_event_hook;
+extern __thread rl_hook_func_t *rl_signal_event_hook;
 
-__thread extern rl_hook_func_t *rl_timeout_event_hook;
+extern __thread rl_hook_func_t *rl_timeout_event_hook;
 
 /* The address of a function to call if Readline needs to know whether or not
    there is data available from the current input source. */
-__thread extern rl_hook_func_t *rl_input_available_hook;
+extern __thread rl_hook_func_t *rl_input_available_hook;
 
 /* The address of the function to call to fetch a character from the current
    Readline input stream */
-__thread extern rl_getc_func_t *rl_getc_function;
+extern __thread rl_getc_func_t *rl_getc_function;
 
-__thread extern rl_voidfunc_t *rl_redisplay_function;
+extern __thread rl_voidfunc_t *rl_redisplay_function;
 
-__thread extern rl_vintfunc_t *rl_prep_term_function;
-__thread extern rl_voidfunc_t *rl_deprep_term_function;
+extern __thread rl_vintfunc_t *rl_prep_term_function;
+extern __thread rl_voidfunc_t *rl_deprep_term_function;
 
 /* Dispatch variables. */
-__thread extern Keymap rl_executing_keymap;
-__thread extern Keymap rl_binding_keymap;
+extern __thread Keymap rl_executing_keymap;
+extern __thread Keymap rl_binding_keymap;
 
-__thread extern int rl_executing_key;
-__thread extern char *rl_executing_keyseq;
-__thread extern int rl_key_sequence_length;
+extern __thread int rl_executing_key;
+extern __thread char *rl_executing_keyseq;
+extern __thread int rl_key_sequence_length;
 
 /* Display variables. */
 /* If non-zero, readline will erase the entire line, including any prompt,
    if the only thing typed on an otherwise-blank line is something bound to
    rl_newline. */
-__thread extern int rl_erase_empty_line;
+extern __thread int rl_erase_empty_line;
 
 /* If non-zero, the application has already printed the prompt (rl_prompt)
    before calling readline, so readline should not output it the first time
    redisplay is done. */
-__thread extern int rl_already_prompted;
+extern __thread int rl_already_prompted;
 
 /* A non-zero value means to read only this many characters rather than
    up to a character bound to accept-line. */
-__thread extern int rl_num_chars_to_read;
+extern __thread int rl_num_chars_to_read;
 
 /* The text of a currently-executing keyboard macro. */
-__thread extern char *rl_executing_macro;
+extern __thread char *rl_executing_macro;
 
 /* Variables to control readline signal handling. */
 /* If non-zero, readline will install its own signal handlers for
    SIGINT, SIGTERM, SIGQUIT, SIGALRM, SIGTSTP, SIGTTIN, and SIGTTOU. */
-__thread extern int rl_catch_signals;
+extern __thread int rl_catch_signals;
 
 /* If non-zero, readline will install a signal handler for SIGWINCH
    that also attempts to call any calling application's SIGWINCH signal
    handler.  Note that the terminal is not cleaned up before the
    application's signal handler is called; use rl_cleanup_after_signal()
    to do that. */
-__thread extern int rl_catch_sigwinch;
+extern __thread int rl_catch_sigwinch;
 
 /* If non-zero, the readline SIGWINCH handler will modify LINES and
    COLUMNS in the environment. */
-__thread extern int rl_change_environment;
+extern __thread int rl_change_environment;
 
 /* Completion variables. */
 /* Pointer to the generator function for completion_matches ().
    NULL means to use rl_filename_completion_function (), the default
    filename completer. */
-__thread extern rl_compentry_func_t *rl_completion_entry_function;
+extern __thread rl_compentry_func_t *rl_completion_entry_function;
 
 /* Optional generator for menu completion.  Default is
    rl_completion_entry_function (rl_filename_completion_function). */
-__thread extern rl_compentry_func_t *rl_menu_completion_entry_function;
+extern __thread rl_compentry_func_t *rl_menu_completion_entry_function;
 
 /* If rl_ignore_some_completions_function is non-NULL it is the address
    of a function to call after all of the possible matches have been
@@ -685,7 +685,7 @@ __thread extern rl_compentry_func_t *rl_menu_completion_entry_function;
    The function is called with one argument; a NULL terminated array
    of (char *).  If your function removes any of the elements, they
    must be free()'ed. */
-__thread extern rl_compignore_func_t *rl_ignore_some_completions_function;
+extern __thread rl_compignore_func_t *rl_ignore_some_completions_function;
 
 /* Pointer to alternative function to create matches.
    Function is called with TEXT, START, and END.
@@ -694,39 +694,39 @@ __thread extern rl_compignore_func_t *rl_ignore_some_completions_function;
    If this function exists and returns NULL then call the value of
    rl_completion_entry_function to try to match, otherwise use the
    array of strings returned. */
-__thread extern rl_completion_func_t *rl_attempted_completion_function;
+extern __thread rl_completion_func_t *rl_attempted_completion_function;
 
 /* The basic list of characters that signal a break between words for the
    completer routine.  The initial contents of this variable is what
    breaks words in the shell, i.e. "n\"\\'`@$>". */
-__thread extern const char *rl_basic_word_break_characters;
+extern __thread const char *rl_basic_word_break_characters;
 
 /* The list of characters that signal a break between words for
    rl_complete_internal.  The default list is the contents of
    rl_basic_word_break_characters.  */
-__thread extern const char *rl_completer_word_break_characters;
+extern __thread const char *rl_completer_word_break_characters;
 
 /* Hook function to allow an application to set the completion word
    break characters before readline breaks up the line.  Allows
    position-dependent word break characters. */
-__thread extern rl_cpvfunc_t *rl_completion_word_break_hook;
+extern __thread rl_cpvfunc_t *rl_completion_word_break_hook;
 
 /* List of characters which can be used to quote a substring of the line.
    Completion occurs on the entire substring, and within the substring   
    rl_completer_word_break_characters are treated as any other character,
    unless they also appear within this list. */
-__thread extern const char *rl_completer_quote_characters;
+extern __thread const char *rl_completer_quote_characters;
 
 /* List of quote characters which cause a word break. */
-__thread extern const char *rl_basic_quote_characters;
+extern __thread const char *rl_basic_quote_characters;
 
 /* List of characters that need to be quoted in filenames by the completer. */
-__thread extern const char *rl_filename_quote_characters;
+extern __thread const char *rl_filename_quote_characters;
 
 /* List of characters that are word break characters, but should be left
    in TEXT when it is passed to the completion function.  The shell uses
    this to help determine what kind of completing to do. */
-__thread extern const char *rl_special_prefixes;
+extern __thread const char *rl_special_prefixes;
 
 /* If non-zero, then this is the address of a function to call when
    completing on a directory name.  The function is called with
@@ -737,7 +737,7 @@ __thread extern const char *rl_special_prefixes;
    the directory name pointer passed as an argument.  If the directory
    completion hook returns 0, it should not modify the directory name
    pointer passed as an argument. */
-__thread extern rl_icppfunc_t *rl_directory_completion_hook;
+extern __thread rl_icppfunc_t *rl_directory_completion_hook;
 
 /* If non-zero, this is the address of a function to call when completing
    a directory name.  This function takes the address of the directory name
@@ -750,14 +750,14 @@ __thread extern rl_icppfunc_t *rl_directory_completion_hook;
 
    I'm not happy with how this works yet, so it's undocumented.  I'm trying
    it in bash to see how well it goes. */
-__thread extern rl_icppfunc_t *rl_directory_rewrite_hook;
+extern __thread rl_icppfunc_t *rl_directory_rewrite_hook;
 
 /* If non-zero, this is the address of a function for the completer to call
    before deciding which character to append to a completed name.  It should
    modify the directory name passed as an argument if appropriate, and return
    non-zero if it modifies the name.  This should not worry about dequoting
    the filename; that has already happened by the time it gets here. */
-__thread extern rl_icppfunc_t *rl_filename_stat_hook;
+extern __thread rl_icppfunc_t *rl_filename_stat_hook;
 
 /* If non-zero, this is the address of a function to call when reading
    directory entries from the filesystem for completion and comparing
@@ -768,7 +768,7 @@ __thread extern rl_icppfunc_t *rl_filename_stat_hook;
    keyboard.  The returned value is what is added to the list of
    matches.  The second argument is the length of the filename to be
    converted. */
-__thread extern rl_dequote_func_t *rl_filename_rewrite_hook;
+extern __thread rl_dequote_func_t *rl_filename_rewrite_hook;
 
 /* Backwards compatibility with previous versions of readline. */
 #define rl_symbolic_link_hook rl_directory_completion_hook
@@ -780,76 +780,76 @@ __thread extern rl_dequote_func_t *rl_filename_rewrite_hook;
    where MATCHES is the array of strings that matched, NUM_MATCHES is the
    number of strings in that array, and MAX_LENGTH is the length of the
    longest string in that array. */
-__thread extern rl_compdisp_func_t *rl_completion_display_matches_hook;
+extern __thread rl_compdisp_func_t *rl_completion_display_matches_hook;
 
 /* Non-zero means that the results of the matches are to be treated
    as filenames.  This is ALWAYS zero on entry, and can only be changed
    within a completion entry finder function. */
-__thread extern int rl_filename_completion_desired;
+extern __thread int rl_filename_completion_desired;
 
 /* Non-zero means that the results of the matches are to be quoted using
    double quotes (or an application-specific quoting mechanism) if the
    filename contains any characters in rl_word_break_chars.  This is
    ALWAYS non-zero on entry, and can only be changed within a completion
    entry finder function. */
-__thread extern int rl_filename_quoting_desired;
+extern __thread int rl_filename_quoting_desired;
 
 /* Set to a function to quote a filename in an application-specific fashion.
    Called with the text to quote, the type of match found (single or multiple)
    and a pointer to the quoting character to be used, which the function can
    reset if desired. */
-__thread extern rl_quote_func_t *rl_filename_quoting_function;
+extern __thread rl_quote_func_t *rl_filename_quoting_function;
 
 /* Function to call to remove quoting characters from a filename.  Called
    before completion is attempted, so the embedded quotes do not interfere
    with matching names in the file system. */
-__thread extern rl_dequote_func_t *rl_filename_dequoting_function;
+extern __thread rl_dequote_func_t *rl_filename_dequoting_function;
 
 /* Function to call to decide whether or not a word break character is
    quoted.  If a character is quoted, it does not break words for the
    completer. */
-__thread extern rl_linebuf_func_t *rl_char_is_quoted_p;
+extern __thread rl_linebuf_func_t *rl_char_is_quoted_p;
 
 /* Non-zero means to suppress normal filename completion after the
    user-specified completion function has been called. */
-__thread extern int rl_attempted_completion_over;
+extern __thread int rl_attempted_completion_over;
 
 /* Set to a character describing the type of completion being attempted by
    rl_complete_internal; available for use by application completion
    functions. */
-__thread extern int rl_completion_type;
+extern __thread int rl_completion_type;
 
 /* Set to the last key used to invoke one of the completion functions */
-__thread extern int rl_completion_invoking_key;
+extern __thread int rl_completion_invoking_key;
 
 /* Up to this many items will be displayed in response to a
    possible-completions call.  After that, we ask the user if she
    is sure she wants to see them all.  The default value is 100. */
-__thread extern int rl_completion_query_items;
+extern __thread int rl_completion_query_items;
 
 /* Character appended to completed words when at the end of the line.  The
    default is a space.  Nothing is added if this is '\0'. */
-__thread extern int rl_completion_append_character;
+extern __thread int rl_completion_append_character;
 
 /* If set to non-zero by an application completion function,
    rl_completion_append_character will not be appended. */
-__thread extern int rl_completion_suppress_append;
+extern __thread int rl_completion_suppress_append;
 
 /* Set to any quote character readline thinks it finds before any application
    completion function is called. */
-__thread extern int rl_completion_quote_character;
+extern __thread int rl_completion_quote_character;
 
 /* Set to a non-zero value if readline found quoting anywhere in the word to
    be completed; set before any application completion function is called. */
-__thread extern int rl_completion_found_quote;
+extern __thread int rl_completion_found_quote;
 
 /* If non-zero, the completion functions don't append any closing quote.
    This is set to 0 by rl_complete_internal and may be changed by an
    application-specific completion function. */
-__thread extern int rl_completion_suppress_quote;
+extern __thread int rl_completion_suppress_quote;
 
 /* If non-zero, readline will sort the completion matches.  On by default. */
-__thread extern int rl_sort_completion_matches;
+extern __thread int rl_sort_completion_matches;
 
 /* If non-zero, a slash will be appended to completed filenames that are
    symbolic links to directory names, subject to the value of the
@@ -860,14 +860,14 @@ __thread extern int rl_sort_completion_matches;
    rl_complete_internal before any application-specific completion
    function is called, so without that function doing anything, the user's
    preferences are honored. */
-__thread extern int rl_completion_mark_symlink_dirs;
+extern __thread int rl_completion_mark_symlink_dirs;
 
 /* If non-zero, then disallow duplicates in the matches. */
-__thread extern int rl_ignore_completion_duplicates;
+extern __thread int rl_ignore_completion_duplicates;
 
 /* If this is non-zero, completion is (temporarily) inhibited, and the
    completion character will be inserted as any other. */
-__thread extern int rl_inhibit_completion;
+extern __thread int rl_inhibit_completion;
 
 /* Applications can set this to non-zero to have readline's signal handlers
    installed during the entire duration of reading a complete line, as in
@@ -875,7 +875,7 @@ __thread extern int rl_inhibit_completion;
    readline receiving signals and not handling them until it's called again
    via rl_callback_read_char, thereby stealing them from the application.
    By default, signal handlers are only active while readline is active. */   
-__thread extern int rl_persistent_signal_handlers;
+extern __thread int rl_persistent_signal_handlers;
 
 /* Input error; can be returned by (*rl_getc_function) if readline is reading
    a top-level command (RL_ISSTATE (RL_STATE_READCMD)). */

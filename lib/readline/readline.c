@@ -142,7 +142,7 @@ __thread int rl_explicit_arg = 0;
 __thread int rl_arg_sign = 1;
 
 /* Non-zero means we have been called at least once before. */
-__thread static int rl_initialized;
+static __thread int rl_initialized;
 
 #if 0
 /* If non-zero, this program is running in an EMACS buffer. */
@@ -211,7 +211,7 @@ __thread rl_hook_func_t *_rl_internal_startup_hook = (rl_hook_func_t *)NULL;
 __thread rl_hook_func_t *rl_pre_input_hook = (rl_hook_func_t *)NULL;
 
 /* What we use internally.  You should always refer to RL_LINE_BUFFER. */
-__thread static char *the_line;
+static __thread char *the_line;
 
 /* The character that can generate an EOF.  Really read from
    the terminal driver... just defaulted here. */
@@ -564,7 +564,7 @@ readline_internal_char (void)
 readline_internal_charloop (void)
 #endif
 {
-  __thread static int lastc, eof_found;
+  static __thread int lastc, eof_found;
   int c, code, lk, r;
 
   lastc = EOF;

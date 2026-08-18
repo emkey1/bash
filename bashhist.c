@@ -57,7 +57,7 @@
 
 #if defined (READLINE)
 #  include "bashline.h"
-__thread extern int rl_done, rl_dispatching;	/* should really include readline.h */
+extern __thread int rl_done, rl_dispatching;	/* should really include readline.h */
 #endif
 
 #ifndef HISTSIZE_DEFAULT
@@ -73,7 +73,7 @@ static int check_history_control PARAMS((char *));
 static void hc_erasedups PARAMS((char *));
 static void really_add_history PARAMS((char *));
 
-__thread static struct ignorevar histignore =
+static __thread struct ignorevar histignore =
 {
   "HISTIGNORE",
   (struct ign *)0,

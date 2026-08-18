@@ -98,12 +98,12 @@ struct line_state
 
 /* The line display buffers.  One is the line currently displayed on
    the screen.  The other is the line about to be displayed. */
-__thread static struct line_state line_state_array[2];
+static __thread struct line_state line_state_array[2];
 /* iSH-AOK: line_state_array is thread-local now, so its address is not a
    compile-time constant. aok_fix_line_state below points these at it, once per
    thread, before readline runs. */
-__thread static struct line_state *line_state_visible;
-__thread static struct line_state *line_state_invisible;
+static __thread struct line_state *line_state_visible;
+static __thread struct line_state *line_state_invisible;
 
 void
 aok_fix_line_state ()
@@ -111,7 +111,7 @@ aok_fix_line_state ()
   line_state_visible = &line_state_array[0];
   line_state_invisible = &line_state_array[1];
 }
-__thread static int line_structures_initialized = 0;
+static __thread int line_structures_initialized = 0;
 
 /* Backwards-compatible names. */
 #define inv_lbreaks	(line_state_invisible->lbreaks)
@@ -214,104 +214,104 @@ __thread int _rl_last_v_pos = 0;
   on screen minus 1. */
 __thread int _rl_vis_botlin = 0;
 
-__thread static int _rl_quick_redisplay = 0;
+static __thread int _rl_quick_redisplay = 0;
 
 /* This is a hint update_line gives to rl_redisplay that it has adjusted the
    value of _rl_last_c_pos *and* taken the presence of any invisible chars in
    the prompt into account.  rl_redisplay notes this and does not do the
    adjustment itself. */
-__thread static int cpos_adjusted;
+static __thread int cpos_adjusted;
 
 /* The index into the line buffer corresponding to the cursor position */
-__thread static int cpos_buffer_position;
+static __thread int cpos_buffer_position;
 
 /* A flag to note when we're displaying the first line of the prompt */
-__thread static int displaying_prompt_first_line;
+static __thread int displaying_prompt_first_line;
 /* The number of multibyte characters in the prompt, if any */
-__thread static int prompt_multibyte_chars;
+static __thread int prompt_multibyte_chars;
 
-__thread static int _rl_inv_botlin = 0;
+static __thread int _rl_inv_botlin = 0;
 
 /* Variables used only in this file. */
 /* The last left edge of text that was displayed.  This is used when
    doing horizontal scrolling.  It shifts in thirds of a screenwidth. */
-__thread static int last_lmargin;
+static __thread int last_lmargin;
 
 /* A buffer for `modeline' messages. */
-__thread static char *msg_buf = 0;
-__thread static int msg_bufsiz = 0;
+static __thread char *msg_buf = 0;
+static __thread int msg_bufsiz = 0;
 
 /* Non-zero forces the redisplay even if we thought it was unnecessary. */
-__thread static int forced_display;
+static __thread int forced_display;
 
 /* Default and initial buffer size.  Can grow. */
-__thread static int line_size  = 0;
+static __thread int line_size  = 0;
 
 /* Set to a non-zero value if horizontal scrolling has been enabled
    automatically because the terminal was resized to height 1. */
-__thread static int horizontal_scrolling_autoset = 0;	/* explicit initialization */
+static __thread int horizontal_scrolling_autoset = 0;	/* explicit initialization */
 
 /* Variables to keep track of the expanded prompt string, which may
    include invisible characters. */
 
-__thread static char *local_prompt, *local_prompt_prefix;
-__thread static int local_prompt_len;
-__thread static int prompt_prefix_length;
+static __thread char *local_prompt, *local_prompt_prefix;
+static __thread int local_prompt_len;
+static __thread int prompt_prefix_length;
 /* Number of chars in the buffer that contribute to visible chars on the screen.
    This might be different from the number of physical chars in the presence
    of multibyte characters */
-__thread static int prompt_visible_length;
+static __thread int prompt_visible_length;
 
 /* The number of invisible characters in the line currently being
    displayed on the screen. */
-__thread static int visible_wrap_offset;
+static __thread int visible_wrap_offset;
 
 /* The number of invisible characters in the prompt string.  Static so it
    can be shared between rl_redisplay and update_line */
-__thread static int wrap_offset;
+static __thread int wrap_offset;
 
 /* The index of the last invisible character in the prompt string. */
-__thread static int prompt_last_invisible;
+static __thread int prompt_last_invisible;
 
 /* The length (buffer offset) of the first line of the last (possibly
    multi-line) buffer displayed on the screen. */
-__thread static int visible_first_line_len;
+static __thread int visible_first_line_len;
 
 /* Number of invisible characters on the first physical line of the prompt.
    Only valid when the number of physical characters in the prompt exceeds
    (or is equal to) _rl_screenwidth. */
-__thread static int prompt_invis_chars_first_line;
+static __thread int prompt_invis_chars_first_line;
 
-__thread static int prompt_last_screen_line;
+static __thread int prompt_last_screen_line;
 
-__thread static int prompt_physical_chars;
+static __thread int prompt_physical_chars;
 
 /* An array of indexes into the prompt string where we will break physical
    screen lines.  It's easier to compute in expand_prompt and use later in
    rl_redisplay instead of having rl_redisplay try to guess about invisible
    characters in the prompt or use heuristics about where they are. */
-__thread static int *local_prompt_newlines;
+static __thread int *local_prompt_newlines;
 
 /* set to a non-zero value by rl_redisplay if we are marking modified history
    lines and the current line is so marked. */
-__thread static int modmark;
+static __thread int modmark;
 
-__thread static int line_totbytes;
+static __thread int line_totbytes;
 
 /* Variables to save and restore prompt and display information. */
 
 /* These are getting numerous enough that it's time to create a struct. */
 
-__thread static char *saved_local_prompt;
-__thread static char *saved_local_prefix;
-__thread static int *saved_local_prompt_newlines;
+static __thread char *saved_local_prompt;
+static __thread char *saved_local_prefix;
+static __thread int *saved_local_prompt_newlines;
 
-__thread static int saved_last_invisible;
-__thread static int saved_visible_length;
-__thread static int saved_prefix_length;
-__thread static int saved_local_length;
-__thread static int saved_invis_chars_first_line;
-__thread static int saved_physical_chars;
+static __thread int saved_last_invisible;
+static __thread int saved_visible_length;
+static __thread int saved_prefix_length;
+static __thread int saved_local_length;
+static __thread int saved_invis_chars_first_line;
+static __thread int saved_physical_chars;
 
 /* Return a string indicating the editing mode, for use in the prompt. */
 
@@ -2963,7 +2963,7 @@ rl_character_len (int c, int pos)
 }
 /* How to print things in the "echo-area".  The prompt is treated as a
    mini-modeline. */
-__thread static int msg_saved_prompt = 0;
+static __thread int msg_saved_prompt = 0;
 
 #if defined (USE_VARARGS)
 int

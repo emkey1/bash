@@ -436,7 +436,7 @@ shell_glob_filename (pathname, qflags)
 
 /* Stuff for GLOBIGNORE. */
 
-__thread static struct ignorevar globignore =
+static __thread struct ignorevar globignore =
 {
   "GLOBIGNORE",
   (struct ign *)0,

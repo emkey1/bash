@@ -53,8 +53,8 @@ extern char *strchrnul PARAMS((const char *, int));
 /* On some locales (ex. ja_JP.sjis), mbsrtowc doesn't convert 0x5c to U<0x5c>.
    So, this function is made for converting 0x5c to U<0x5c>. */
 
-__thread static mbstate_t local_state;
-__thread static int local_state_use = 0;
+static __thread mbstate_t local_state;
+static __thread int local_state_use = 0;
 
 size_t
 xmbsrtowcs (dest, src, len, pstate)

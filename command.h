@@ -385,8 +385,8 @@ typedef struct coproc_com {
   COMMAND *command;
 } COPROC_COM;
 
-__thread extern COMMAND *global_command;
-__thread extern Coproc sh_coproc;
+extern __thread COMMAND *global_command;
+extern __thread Coproc sh_coproc;
 
 /* Possible command errors */
 #define CMDERR_DEFAULT	0

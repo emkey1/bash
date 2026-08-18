@@ -41,7 +41,7 @@
 #include "pathnames.h"
 #include "externs.h"
 
-__thread extern int EOF_Reached;
+extern __thread int EOF_Reached;
 
 #define NO_PIPE -1
 #define REDIRECT_BOTH -2
@@ -88,47 +88,47 @@ __thread extern int EOF_Reached;
 #define MATCH_EXPREP	0x100	/* for pattern substitution, expand replacement */
 
 /* Some needed external declarations. */
-__thread extern char **shell_environment;
-__thread extern WORD_LIST *rest_of_args;
+extern __thread char **shell_environment;
+extern __thread WORD_LIST *rest_of_args;
 
 /* Generalized global variables. */
-__thread extern char *command_execution_string;
+extern __thread char *command_execution_string;
 
-__thread extern int debugging_mode;
-__thread extern int executing, login_shell;
-__thread extern int interactive, interactive_shell;
-__thread extern int startup_state;
-__thread extern int reading_shell_script;
-__thread extern int shell_initialized;
-__thread extern int bash_argv_initialized;
-__thread extern int subshell_environment;
-__thread extern int current_command_number;
-__thread extern int indirection_level;
-__thread extern int shell_compatibility_level;
-__thread extern int running_under_emacs;
+extern __thread int debugging_mode;
+extern __thread int executing, login_shell;
+extern __thread int interactive, interactive_shell;
+extern __thread int startup_state;
+extern __thread int reading_shell_script;
+extern __thread int shell_initialized;
+extern __thread int bash_argv_initialized;
+extern __thread int subshell_environment;
+extern __thread int current_command_number;
+extern __thread int indirection_level;
+extern __thread int shell_compatibility_level;
+extern __thread int running_under_emacs;
 
-__thread extern int posixly_correct;
-__thread extern int no_line_editing;
+extern __thread int posixly_correct;
+extern __thread int no_line_editing;
 
-__thread extern char *shell_name;
-__thread extern char *current_host_name;
+extern __thread char *shell_name;
+extern __thread char *current_host_name;
 
-__thread extern int subshell_argc;
-__thread extern char **subshell_argv;
-__thread extern char **subshell_envp;
+extern __thread int subshell_argc;
+extern __thread char **subshell_argv;
+extern __thread char **subshell_envp;
 
 /* variables managed using shopt */
-__thread extern int hup_on_exit;
-__thread extern int check_jobs_at_exit;
-__thread extern int autocd;
-__thread extern int check_window_size;
+extern __thread int hup_on_exit;
+extern __thread int check_jobs_at_exit;
+extern __thread int autocd;
+extern __thread int check_window_size;
 
 /* from version.c */
 extern int build_version, patch_level;
 extern char *dist_version, *release_status;
 
-__thread extern int locale_mb_cur_max;
-__thread extern int locale_utf8locale;
+extern __thread int locale_mb_cur_max;
+extern __thread int locale_utf8locale;
 
 /* Structure to pass around that holds a bitmap of file descriptors
    to close, and the size of that structure.  Used in execute_cmd.c. */
@@ -151,7 +151,7 @@ struct user_info {
   char *home_dir;
 };
 
-__thread extern struct user_info current_user;
+extern __thread struct user_info current_user;
 
 /* Force gcc to not clobber X on a longjmp().  Old versions of gcc mangle
    this badly. */

@@ -90,7 +90,7 @@ __thread int interrupt_immediately = 0;
 __thread int terminate_immediately = 0;
 
 #if defined (SIGWINCH)
-__thread static SigHandler *old_winch = (SigHandler *)SIG_DFL;
+static __thread SigHandler *old_winch = (SigHandler *)SIG_DFL;
 #endif
 
 static void initialize_shell_signals PARAMS((void));
@@ -123,7 +123,7 @@ struct termsig {
 /* The list of signals that would terminate the shell if not caught.
    We catch them, but just so that we can write the history file,
    and so forth. */
-__thread static struct termsig terminating_signals[] = {
+static __thread struct termsig terminating_signals[] = {
 #ifdef SIGHUP
 {  SIGHUP, NULL_HANDLER, 0 },
 #endif
@@ -220,7 +220,7 @@ __thread static struct termsig terminating_signals[] = {
 #define XSAFLAGS(x) (terminating_signals[x].orig_flags)
 #define XCOREDUMP(x) (terminating_signals[x].core_dump)
 
-__thread static int termsigs_initialized = 0;
+static __thread int termsigs_initialized = 0;
 
 /* Initialize signals that will terminate the shell to do some
    unwind protection.  For non-interactive shells, we only call
@@ -487,7 +487,7 @@ restore_sigmask ()
 #endif
 }
 
-__thread static int handling_termsig = 0;
+static __thread int handling_termsig = 0;
 
 #if defined (AOK_NATIVE_FORK)
 /* iSH-AOK: the signal latches, which are the cheapest of these to get wrong
@@ -503,10 +503,10 @@ __thread static int handling_termsig = 0;
 void
 aok_reinit_signals ()
 {
-  __thread extern int wait_signal_received;
-  __thread extern int wait_intr_flag;
+  extern __thread int wait_signal_received;
+  extern __thread int wait_intr_flag;
 
-  __thread extern int running_trap;
+  extern __thread int running_trap;
 
   /* A shell that exited from inside a trap handler leaves this set, and the
      next shell then believes it is already running one: run_pending_traps

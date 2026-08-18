@@ -52,15 +52,15 @@ extern int errno;
 #define random() rand()
 #endif
 
-__thread extern pid_t dollar_dollar_pid;
+extern __thread pid_t dollar_dollar_pid;
 
 static char *get_sys_tmpdir PARAMS((void));
 static char *get_tmpdir PARAMS((int));
 
-__thread static char *sys_tmpdir = (char *)NULL;
-__thread static int ntmpfiles;
-__thread static int tmpnamelen = -1;
-__thread static unsigned long filenum = 1L;
+static __thread char *sys_tmpdir = (char *)NULL;
+static __thread int ntmpfiles;
+static __thread int tmpnamelen = -1;
+static __thread unsigned long filenum = 1L;
 
 static char *
 get_sys_tmpdir ()
@@ -119,7 +119,7 @@ sh_seedrand ()
 {
 #if HAVE_RANDOM
   int d;
-  __thread static int seeded = 0;
+  static __thread int seeded = 0;
   if (seeded == 0)
     {
       struct timeval tv;
@@ -139,7 +139,7 @@ sh_mktmpname (nameroot, flags)
   char *filename, *tdir, *lroot;
   struct stat sb;
   int r, tdlen;
-  __thread static int seeded = 0;
+  static __thread int seeded = 0;
 
   filename = (char *)xmalloc (PATH_MAX + 1);
   tdir = get_tmpdir (flags);

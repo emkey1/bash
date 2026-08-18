@@ -30,8 +30,8 @@
 #  define LBUF_BUFSIZE	BUFSIZ
 #endif
 
-__thread static char *stdoutbuf = 0;
-__thread static char *stderrbuf = 0;
+static __thread char *stdoutbuf = 0;
+static __thread char *stderrbuf = 0;
 
 /* Cause STREAM to buffer lines as opposed to characters or blocks. */
 int

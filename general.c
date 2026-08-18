@@ -104,7 +104,7 @@ static __thread struct {
 void
 aok_fix_posix_vars ()
 {
-  __thread static __thread int aok_done;
+  static __thread __thread int aok_done;
   int aok_i = 0;
 
   if (aok_done)
@@ -125,7 +125,7 @@ aok_fix_posix_vars ()
 }
 
 
-__thread static char *saved_posix_vars = 0;
+static __thread char *saved_posix_vars = 0;
 
 void
 posix_initialize (on)
@@ -923,7 +923,7 @@ full_pathname (file)
 
 /* A slightly related function.  Get the prettiest name of this
    directory possible. */
-__thread static char tdir[PATH_MAX];
+static __thread char tdir[PATH_MAX];
 
 /* Return a pretty pathname.  If the first part of the pathname is
    the same as $HOME, then replace that with `~'.  */
@@ -1091,10 +1091,10 @@ extract_colon_unit (string, p_index)
 extern char *get_dirstack_from_string PARAMS((char *));
 #endif
 
-__thread static char **bash_tilde_prefixes;
-__thread static char **bash_tilde_prefixes2;
-__thread static char **bash_tilde_suffixes;
-__thread static char **bash_tilde_suffixes2;
+static __thread char **bash_tilde_prefixes;
+static __thread char **bash_tilde_prefixes2;
+static __thread char **bash_tilde_suffixes;
+static __thread char **bash_tilde_suffixes2;
 
 /* If tilde_expand hasn't been able to expand the text, perhaps it
    is a special shell expansion.  This function is installed as the
@@ -1127,7 +1127,7 @@ bash_special_tilde_expansions (text)
 void
 tilde_initialize ()
 {
-  __thread static int times_called = 0;
+  static __thread int times_called = 0;
 
   /* Tell the tilde expander that we want a crack first. */
   tilde_expansion_preexpansion_hook = bash_special_tilde_expansions;
@@ -1259,17 +1259,17 @@ bash_tilde_expand (s, assign_p)
 /*								    */
 /* **************************************************************** */
 
-__thread static int ngroups, maxgroups;
+static __thread int ngroups, maxgroups;
 
 /* get_group_list and get_group_array cached these in function statics. They are
    at file scope so that iSH-AOK's aok_reinit_groups (at the end of this file)
    can drop them along with group_array; nothing else changes, since a function
    static and a file static have the same lifetime and both are private here. */
-__thread static char **group_vector = (char **)NULL;
-__thread static int *group_iarray = (int *)NULL;
+static __thread char **group_vector = (char **)NULL;
+static __thread int *group_iarray = (int *)NULL;
 
 /* The set of groups that this user is a member of. */
-__thread static GETGROUPS_T *group_array = (GETGROUPS_T *)NULL;
+static __thread GETGROUPS_T *group_array = (GETGROUPS_T *)NULL;
 
 #if !defined (NOGROUP)
 #  define NOGROUP (gid_t) -1

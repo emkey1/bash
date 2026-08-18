@@ -203,7 +203,7 @@ _rl_print_color_indicator (const char *f)
     colored_filetype = C_ORPHAN;	/* dangling symlink */
   else if(stat_ok != 0)
     {
-      __thread static enum indicator_no filetype_indicator[] = FILETYPE_INDICATORS;
+      static __thread enum indicator_no filetype_indicator[] = FILETYPE_INDICATORS;
       colored_filetype = filetype_indicator[normal]; //f->filetype];
     }
   else
