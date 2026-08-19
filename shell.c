@@ -311,7 +311,7 @@ aok_fix_long_args ()
 #endif
   long_args[aok_i].int_value = &want_initial_help;
   aok_i++;
-  long_args[aok_i].int_value = &bashrc_file;
+  long_args[aok_i].char_value = &bashrc_file;
   aok_i++;
   long_args[aok_i].int_value = &make_login_shell;
   aok_i++;
@@ -329,7 +329,7 @@ aok_fix_long_args ()
   long_args[aok_i].int_value = &protected_mode;
   aok_i++;
 #endif
-  long_args[aok_i].int_value = &bashrc_file;
+  long_args[aok_i].char_value = &bashrc_file;
   aok_i++;
 #if defined (RESTRICTED_SHELL)
   long_args[aok_i].int_value = &restricted;
