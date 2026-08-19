@@ -102,7 +102,14 @@ static __thread char *term_string_buffer = (char *)NULL;
 
 static __thread int tcap_initialized;
 
-#if !defined (__linux__) && !defined (NCURSES_VERSION)
+/* iSH-AOK: upstream also excludes __linux__ here, because on Linux these three
+ * traditionally come from libtinfo/ncurses. This build links neither: tgetent
+ * and friends route to the shim's terminfo reader (kernel/native_termcap.c,
+ * deps/bash-shim/termcap.h), on every platform. So on Linux nothing defined
+ * them and the link failed on PC, BC and UP -- the one place where following
+ * upstream's guard was wrong for us. NCURSES_VERSION is kept: if anything ever
+ * does pull ncurses in, its definitions win and ours must not collide. */
+#if !defined (NCURSES_VERSION)
 #  if defined (__EMX__) || defined (NEED_EXTERN_PC)
 extern 
 #  endif /* __EMX__ || NEED_EXTERN_PC */
