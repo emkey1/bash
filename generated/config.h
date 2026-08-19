@@ -425,7 +425,11 @@
 
 #define HAVE_STRUCT_DIRENT_D_FILENO 1
 
-#define HAVE_STRUCT_DIRENT_D_NAMLEN 1
+/* AOK: BSD/Darwin only. glibc's struct dirent has no d_namlen, and posixdir.h
+ * falls back to strlen(d->d_name) when this is unset, which is correct there. */
+#if !defined(__linux__)
+# define HAVE_STRUCT_DIRENT_D_NAMLEN 1
+#endif
 
 #define TIOCSTAT_IN_SYS_IOCTL 1
 
@@ -629,8 +633,17 @@
 #define FNMATCH_EQUIV_FALLBACK 1
 
 /* Define if you have the fpurge/__fpurge function.  */
-#define HAVE_FPURGE 1
-/* #undef HAVE___FPURGE */
+/* AOK: Darwin has fpurge; glibc has __fpurge in <stdio_ext.h> instead.
+ * lib/sh/fpurge.c (already in the build) supplies fpurge from __fpurge when
+ * HAVE_FPURGE is unset -- it renames its own to _bash_fpurge otherwise -- so
+ * the pair below is what picks the right one per platform. execute_cmd.c calls
+ * fpurge() unconditionally, which is why the Linux build stopped without it. */
+#if defined(__linux__)
+# define HAVE___FPURGE 1
+#else
+# define HAVE_FPURGE 1
+#endif
+/* HAVE___FPURGE is decided beside HAVE_FPURGE above. */
 #define HAVE_DECL_FPURGE 1
 
 /* Define if you have the getaddrinfo function. */
