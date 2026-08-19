@@ -644,7 +644,15 @@
 # define HAVE_FPURGE 1
 #endif
 /* HAVE___FPURGE is decided beside HAVE_FPURGE above. */
-#define HAVE_DECL_FPURGE 1
+/* AOK: Darwin's <stdio.h> declares fpurge; glibc's does not. externs.h only
+ * emits its own declaration when this is 0, and execute_cmd.c (which defines
+ * NEED_FPURGE_DECL) calls fpurge() -- so on Linux the call had no declaration
+ * at all. Decided by platform, beside the HAVE_FPURGE/HAVE___FPURGE pair. */
+#if defined(__linux__)
+# define HAVE_DECL_FPURGE 0
+#else
+# define HAVE_DECL_FPURGE 1
+#endif
 
 /* Define if you have the getaddrinfo function. */
 #define HAVE_GETADDRINFO 1
