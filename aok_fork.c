@@ -184,6 +184,18 @@ extern __thread REDIRECT *redirection_undo_list;
        never unbound it, does not name our parent and is ignored. */
 #define AOK_DOLLAR_VAR "AOK_BASH_DOLLAR"
 
+/* The re-launch state script travels in this variable rather than in argv.
+   See aok_relaunch_env for why: argv[2] lands in /proc/PID/cmdline, which is
+   world-readable, and the script names every exported variable and its value.
+
+   The bootstrap that argv[2] carries instead. `eval` rather than sourcing a
+   file: there is no file, and bash parses and executes an eval'd string one
+   command at a time exactly as it does a -c string -- which this serialiser
+   depends on, since it emits `shopt -s extglob` before the extglob patterns
+   that must already be parseable when they are read. */
+#define AOK_STATE_VAR "AOK_BASH_STATE"
+#define AOK_STATE_BOOTSTRAP "eval \"$" AOK_STATE_VAR "\""
+
 /* ------------------------------------------------------------ a growing buffer */
 
 typedef struct { char *s; size_t len, cap; } aok_buf;
@@ -642,6 +654,14 @@ aok_serialize_state ()
      command it was started for has run, and nounset would turn a variable the
      child has not been given yet into a fatal error partway through being given
      it. */
+  /* The state variable erases itself, and it has to happen HERE rather than
+     after the eval in the bootstrap: a subshell's own commands are appended to
+     this script, so anything the bootstrap does after `eval` runs after the
+     user's code has already seen the variable. `eval "$AOK_BASH_STATE"`
+     expands the variable before the unset runs, so the script survives losing
+     the thing it came in. */
+  if (aok_buf_str (&buf, "unset " AOK_STATE_VAR "\n") < 0)
+    goto fail;
   if (aok_buf_str (&buf, "set +e\n") < 0)
     goto fail;
   if (aok_buf_str (&buf, "set +u\n") < 0)
@@ -817,10 +837,11 @@ aok_build_script (command)
    outlive the posix_spawn call either way: the shim packs argv and envp into
    flat buffers before the child starts. */
 static char **
-aok_relaunch_env ()
+aok_relaunch_env (script)
+     const char *script;
 {
   char **src, **vec;
-  char *entry;
+  char *entry, *state_entry;
   size_t n, i, j;
   char buf[sizeof (AOK_DOLLAR_VAR) + 2 * INT_STRLEN_BOUND (long) + 4];
 
@@ -828,9 +849,35 @@ aok_relaunch_env ()
   for (n = 0; src && src[n]; n++)
     ;
 
-  vec = (char **) malloc ((n + 2) * sizeof (char *));
+  /* +3: AOK_DOLLAR_VAR, AOK_BASH_STATE, and the NULL. */
+  vec = (char **) malloc ((n + 3) * sizeof (char *));
   if (vec == 0)
     return (char **) 0;
+
+  /* The state script travels in the ENVIRONMENT, not in argv.
+
+     It used to be argv[2] of `bash -c <script>`, and the script contains a
+     `declare -x NAME='value'` line for every exported variable -- so a
+     re-launched shell published its entire environment in
+     /proc/PID/cmdline, which is mode 0444. Linux keeps a process's
+     environment in /proc/PID/environ at 0400, owner-only, and a subshell's
+     environment never appears in its cmdline at all. On a multi-user guest
+     that meant one user's exported secrets were readable by every other user
+     with a plain `ps`.
+
+     Moving it here does not make the data secret -- it is the child's own
+     environment either way -- it puts it behind the permission Linux puts it
+     behind. As a bonus `ps` becomes readable again. */
+  state_entry = (char *) 0;
+  if (script)
+    {
+      size_t len = strlen (script);
+      state_entry = (char *) malloc (sizeof (AOK_STATE_VAR) + 1 + len);
+      if (state_entry == 0)
+	{ free (vec); return (char **) 0; }
+      memcpy (state_entry, AOK_STATE_VAR "=", sizeof (AOK_STATE_VAR));
+      memcpy (state_entry + sizeof (AOK_STATE_VAR), script, len + 1);
+    }
 
   /* $$ and the pid of the task doing the spawning, which the child checks
      against its own getppid(). */
@@ -850,9 +897,17 @@ aok_relaunch_env ()
       if (src[i] && strncmp (src[i], AOK_DOLLAR_VAR "=",
 			     sizeof (AOK_DOLLAR_VAR)) == 0)
 	continue;
+      /* A stale state from our own launch must not reach the child: it would
+	 be a snapshot of a shell one generation too old, and the bootstrap
+	 evaluates whatever it finds. */
+      if (src[i] && strncmp (src[i], AOK_STATE_VAR "=",
+			     sizeof (AOK_STATE_VAR)) == 0)
+	continue;
       vec[j++] = src[i];
     }
   vec[j++] = entry;
+  if (state_entry)
+    vec[j++] = state_entry;
   vec[j] = (char *) 0;
   return vec;
 }
@@ -1010,7 +1065,7 @@ aok_run_in_subshell (command, status_out)
 
   argv[0] = "bash";
   argv[1] = "-c";
-  argv[2] = script;
+  argv[2] = (char *) AOK_STATE_BOOTSTRAP;
   /* $0. `bash -c script name` names the child, and a subshell keeps the
      parent's $0 -- without this every re-launch would report itself as "bash"
      in an error message or a usage string. The positional parameters do NOT
@@ -1050,7 +1105,7 @@ aok_run_in_subshell (command, status_out)
   old_chld = signal (SIGCHLD, SIG_DFL);
   chld_blocked = (old_chld != SIG_ERR);
 
-  envp = aok_relaunch_env ();
+  envp = aok_relaunch_env (script);
   err = aok_spawn_relaunch (&pid, &fa, (void **) 0, argv, envp);
   aok_relaunch_env_free (envp);
   posix_spawn_file_actions_destroy (&fa);
@@ -1284,7 +1339,7 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
 
   argv[0] = "bash";
   argv[1] = "-c";
-  argv[2] = script;
+  argv[2] = (char *) AOK_STATE_BOOTSTRAP;
   /* $0. `bash -c script name` names the child, and a subshell keeps the
      parent's $0 -- without this every re-launch would report itself as "bash"
      in an error message or a usage string. The positional parameters do NOT
@@ -1293,7 +1348,7 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
   argv[3] = dollar_vars[0] ? dollar_vars[0] : "bash";
   argv[4] = (char *) 0;
   aok_spawn_attr (&attr);
-  envp = aok_relaunch_env ();
+  envp = aok_relaunch_env (script);
   err = aok_spawn_relaunch (&pid, &fa, attr ? (void **) &attr : (void **) 0,
 			    argv, envp);
   aok_relaunch_env_free (envp);
