@@ -164,7 +164,7 @@ static int execute_while_command PARAMS((WHILE_COM *));
 static int execute_until_command PARAMS((WHILE_COM *));
 static int execute_while_or_until PARAMS((WHILE_COM *, int));
 static int execute_if_command PARAMS((IF_COM *));
-static int execute_null_command PARAMS((REDIRECT *, int, int, int));
+static int execute_null_command PARAMS((REDIRECT *, int, int, int, struct fd_bitmap *));
 static void fix_assignment_words PARAMS((WORD_LIST *));
 static void fix_arrayref_words PARAMS((WORD_LIST *));
 static int execute_simple_command PARAMS((SIMPLE_COM *, int, int, int, struct fd_bitmap *));
@@ -4217,13 +4217,17 @@ bind_lastarg (arg)
    to be run asynchronously.  This handles all the side effects that are
    supposed to take place. */
 static int
-execute_null_command (redirects, pipe_in, pipe_out, async)
+execute_null_command (redirects, pipe_in, pipe_out, async, fds_to_close)
      REDIRECT *redirects;
      int pipe_in, pipe_out, async;
+     struct fd_bitmap *fds_to_close;
 {
   int r;
   int forcefork, fork_flags;
   REDIRECT *rd;
+#if defined (AOK_NATIVE_FORK)
+  char *aok_text;
+#endif
 
   for (forcefork = 0, rd = redirects; rd; rd = rd->next)
     {
@@ -4242,22 +4246,94 @@ execute_null_command (redirects, pipe_in, pipe_out, async)
 	 somewhere the parent shell will not see them -- `{fd}>file` with no
 	 command being the case that gets here, since bash reaches this fork
 	 only when a redirection would otherwise touch the shell's own state.
-	 The re-launch runs the printed command, and a fresh shell applying the
-	 same redirections and exiting is precisely what the fork was for; the
-	 descriptor variable is bound in that shell and discarded with it, as it
-	 would have been.
 
-	 the_printed_command_except_trap is the same text every other converted
-	 site uses. It can be null when nothing was printed, and `:` is the null
-	 command's own name for itself, so the spawn still has something to
-	 run and the redirections still happen. */
-      aok_fork_cmdtext = the_printed_command_except_trap
-			   ? the_printed_command_except_trap : ":";
+	 What the child is handed is the redirections with `:' in front of
+	 them, and the `:' is the whole point. It cannot be the printed command
+	 this site started out passing, for the same reason `( ... )' at the
+	 subshell site cannot be passed down verbatim: the condition that sends
+	 a command here is a property of its TEXT, not of the pipes it was
+	 given, so a child re-parsing `{v}>file' finds forcefork set all over
+	 again and re-launches a child of its own. Measured before the fix,
+	 a bare `{v}>/tmp/x' cost 6141 nested shells, "shell level (1000) too
+	 high" six times over, a spawn failure at the bottom, exit 254 -- and
+	 no /tmp/x, because not one of those shells ever reached the
+	 redirection. A command word stops it dead: with words to run, the
+	 child never enters execute_null_command at all. It applies the
+	 redirections around a builtin that does nothing and exits, which is
+	 what the fork was for. The descriptor variable is bound in that shell
+	 and discarded with it, as it would have been.
+
+	 Printed as a synthetic simple command rather than by pasting `: ' onto
+	 the text, because a here-document's BODY is printed after the whole
+	 command -- `{v}<<EOF' prints as three lines -- so there is no position
+	 in the finished string where the word can be inserted. Handing the
+	 word to the printer puts it where it belongs and lets bash lay out the
+	 rest. The word is written `\:' so that an `alias :=...' carried down
+	 in the state cannot rewrite it -- a quoted word is not alias-expanded,
+	 and this one is ours rather than the user's.
+
+	 Nothing else about the command crosses. Assignments were performed by
+	 expand_words, in this shell, before we were called. The COMMAND's own
+	 flags are deliberately left at 0 rather than borrowed as the subshell
+	 site borrows them: `time' and `!' belong to the caller here, which
+	 applies them to the status this returns, so a child that printed them
+	 too would time its own re-launch and invert an already-inverted
+	 status.
+
+	 Copied out at once: make_command_string returns bash's single static
+	 print buffer. Same reason the subshell site does. */
+      {
+	WORD_DESC aok_wd;
+	WORD_LIST aok_wl;
+	SIMPLE_COM aok_sc;
+	COMMAND aok_cmd;
+
+	aok_wd.word = "\\:";
+	aok_wd.flags = 0;
+	aok_wl.next = (WORD_LIST *)NULL;
+	aok_wl.word = &aok_wd;
+
+	aok_sc.flags = 0;
+	aok_sc.line = line_number;
+	aok_sc.words = &aok_wl;
+	aok_sc.redirects = redirects;
+
+	aok_cmd.type = cm_simple;
+	aok_cmd.flags = 0;
+	aok_cmd.line = line_number;
+	aok_cmd.redirects = (REDIRECT *)NULL;
+	aok_cmd.value.Simple = &aok_sc;
+
+	aok_text = savestring (make_command_string (&aok_cmd));
+      }
+      aok_fork_cmdtext = aok_text;
       aok_fork_pipe_in = pipe_in;
       aok_fork_pipe_out = pipe_out;
+      /* The descriptors a forked child would have thrown away. This bitmap is
+	 EMPTY every time it reaches here, and that is a property of the native
+	 build rather than of bash: the only thing that ever sets a bit is
+	 execute_pipeline, which hands the bitmap out with pipe_out != NO_PIPE,
+	 and every route from there back to a NO_PIPE simple command runs
+	 through a fork whose child branch this build does not have --
+	 execute_simple_command's `already_forked', and execute_in_subshell,
+	 which is now reachable only from a child branch and so not at all.
+	 Instrumented across pipelines, functions, groups, loops, lastpipe and
+	 nested subshells, the count here was 0 in every case while the same
+	 probe at execute_simple_command counted 1.
+
+	 The call stays because the invariant is not this site's to keep. It
+	 costs a walk of an empty bitmap, it is what the other five converted
+	 sites do, and if a future change does route a live pipe descriptor
+	 here the symptom would be a reader that never sees EOF -- see the
+	 comment above aok_fork_close_bitmap. */
+      aok_fork_nclose = 0;
+      aok_fork_close_bitmap (fds_to_close);
 #endif
       if (make_child ((char *)NULL, fork_flags) == 0)
 	{
+#if defined (AOK_NATIVE_FORK)
+	  FREE (aok_text);
+#endif
 	  /* Cancel traps, in trap.c. */
 	  restore_original_signals ();		/* XXX */
 
@@ -4282,6 +4358,11 @@ execute_null_command (redirects, pipe_in, pipe_out, async)
 	}
       else
 	{
+#if defined (AOK_NATIVE_FORK)
+	  /* The spawn has happened and make_child's aok_fork_clear has already
+	     dropped the pointer, so this is the last reference. */
+	  FREE (aok_text);
+#endif
 	  close_pipes (pipe_in, pipe_out);
 #if defined (PROCESS_SUBSTITUTION) && defined (HAVE_DEV_FD)
 	  if (pipe_out == NO_PIPE)
@@ -4678,7 +4759,7 @@ execute_simple_command (simple_command, pipe_in, pipe_out, async, fds_to_close)
       this_command_name = 0;
       result = execute_null_command (simple_command->redirects,
 				     pipe_in, pipe_out,
-				     already_forked ? 0 : async);
+				     already_forked ? 0 : async, fds_to_close);
       if (already_forked)
 	sh_exit (result);
       else
