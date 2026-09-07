@@ -32,6 +32,7 @@
 #include "../bashtypes.h"
 #include "posixstat.h"
 #include <signal.h>
+#include <pthread.h>	/* iSH-AOK: pthread_once, below */
 
 #include <errno.h>
 
@@ -957,11 +958,50 @@ shell_builtin_compare (sbp1, sbp2)
 
 /* Sort the table of shell builtins so that the binary search will work
    in find_shell_builtin. */
-void
-initialize_shell_builtins ()
+static void
+sort_shell_builtins ()
 {
   qsort (shell_builtins, num_shell_builtins, sizeof (struct builtin),
     (QSFUNC *)shell_builtin_compare);
+}
+
+/* iSH-AOK: ONCE per process, not once per shell.
+
+   Every native bash is a thread in one app process, and they share this table
+   on purpose -- it is the set bash was compiled with, so it is identical in
+   every shell, and tools/bash-tls-fix-externs.py lists shell_builtins in ALLOW
+   for that reason. Sharing the table is right. Re-sorting it once per shell,
+   which is what upstream's main() does at shell.c's initialize_shell_builtins
+   call, is not: qsort permutes IN PLACE, so two shells starting at the same
+   moment interleave their swaps.
+
+   The result is not merely an unordered array, which the next sort would put
+   right. Entries are DUPLICATED and LOST, and what comes out is still in
+   order, so nothing downstream can notice. Measured on a table of this one's
+   size, eight threads sorting concurrently lose 178 of 180 entries every time.
+   builtin_address_internal then binary-searches a table that no longer
+   contains `declare' or `exec', reports them as not found -- or finds the
+   wrong builtin, since the surviving duplicates are still sorted -- and the
+   damage lasts for the life of the app, because no later sort can restore an
+   entry that has been overwritten.
+
+   Seen in the wild as a login MOTD whose $( ) substitutions came back empty or
+   wrong, and reproduced here as `declare: command not found' from every
+   re-launched subshell in an app process, with the emulated bash clean under
+   the same load.
+
+   Once is not merely an optimisation, it is the whole fix: the table's
+   contents are fixed at compile time, so every shell would sort it into the
+   same order anyway, and nothing else ever writes it (`enable' sets flags, it
+   does not reorder). pthread_once rather than a plain flag because the second
+   shell has to WAIT for the first one's sort instead of skipping it and
+   searching an array that is halfway through being permuted. */
+void
+initialize_shell_builtins ()
+{
+  static pthread_once_t builtins_sorted = PTHREAD_ONCE_INIT;
+
+  pthread_once (&builtins_sorted, sort_shell_builtins);
 }
 
 #if !defined (HELP_BUILTIN)
