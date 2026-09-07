@@ -585,23 +585,73 @@ aok_emit_aliases (buf)
        substitution, rather than running the parent's handler there.
      - ignored signals stay ignored, because SIG_IGN survives exec and a child
        that reset one to default would die where the parent would not.
-     - DEBUG, ERR and RETURN are not in that loop at all: they are inherited and
-       ARMED, which is what `set -E` and `set -T` are for.
+     - DEBUG, ERR and RETURN are not in that loop, but they are not inherited
+       armed either. The tail of the same function is explicit:
 
-   So what crosses is the ignored ones and the three special traps, and nothing
-   else. Emitting the lot -- which is what this did first -- meant the EXIT trap
-   fired once per subshell and once per command substitution: a script whose
-   `trap ... EXIT` cleaned up after itself did it ten times, interleaved into
-   the middle of its own output.
+	   if (function_trace_mode == 0)
+	     { sigmodes[DEBUG_TRAP] &= ~SIG_TRAPPED;
+	       sigmodes[RETURN_TRAP] &= ~SIG_TRAPPED; }
+	   if (error_trace_mode == 0)
+	     sigmodes[ERROR_TRAP] &= ~SIG_TRAPPED;
+
+       So DEBUG and RETURN cross ARMED only under `set -T`, and ERR only under
+       `set -E`. Without those the child keeps the trap STRING and nothing
+       else: `trap -p DEBUG` in a subshell lists it, and it never runs.
+
+       This was read the other way round when the file was written -- "they are
+       inherited and ARMED, which is what set -E and set -T are for" -- and the
+       consequence was that every re-launched subshell, command substitution and
+       pipeline element ran DEBUG and ERR traps that a forked one does not run
+       at all. Measured against the guest's own bash: `trap 'echo T' DEBUG;
+       ( : )` fires nothing in a forked subshell and fired here every time.
+
+   So what crosses unconditionally is the ignored ones, the three special traps
+   cross only under the option that arms them in a child, and nothing else
+   crosses at all. Emitting the lot -- which is what this did first -- meant the
+   EXIT trap fired once per subshell and once per command substitution: a script
+   whose `trap ... EXIT` cleaned up after itself did it ten times, interleaved
+   into the middle of its own output.
 
    The one thing not reproduced is `trap -p` inside a child listing the strings
-   of traps that are not armed there. Making that visible would mean setting a
-   trap in the child and then disarming it, and a child that exits early -- the
-   normal case for `( exit 1 )` -- would never reach the disarming. A listing
-   that under-reports is the cheaper mistake by a wide margin. */
+   of traps that are not armed there -- which, per the rule above, is now the
+   ordinary case for DEBUG, ERR and RETURN and not just for signals. Making it
+   visible would mean setting a trap in the child and then disarming it, and a
+   child that exits early -- the normal case for `( exit 1 )` -- would never
+   reach the disarming. A listing that under-reports is the cheaper mistake by
+   a wide margin; a trap that RUNS where bash runs none is the expensive one,
+   and that is the one this stopped doing.
+
+   WANT selects which half to write, and the two halves go in DIFFERENT PLACES
+   in the state script -- which is the whole reason this takes an argument.
+
+   An ignored signal is a disposition: emitting `trap '' SIGPIPE` changes what
+   a later signal does and nothing else, so it can go anywhere. The three
+   special traps are not dispositions, they are code that runs BEFORE (DEBUG),
+   ON FAILURE OF (ERR) and ON RETURN FROM (RETURN) every command that follows
+   them -- and what follows them, if they are emitted here in the middle, is
+   the whole rest of the state script.
+
+   That was the bug. `trap 'echo T' DEBUG; ( : )` fired the DEBUG trap 78 times
+   in a re-launched subshell where a forked one fires it once: 77 of them were
+   this script's own `declare -x`, `shopt` and function definitions, tripping a
+   trap that the script had itself just armed three lines earlier. A forked
+   child runs none of that, so the count is a pure artefact of the re-launch,
+   and it is a constant -- which makes every DEBUG-trap-based tool (bashdb, a
+   `trap ... DEBUG` profiler, a script that counts commands) read garbage
+   inside every subshell, command substitution and pipeline element. The ERR
+   trap had the same shape, one fire out of nowhere per subshell.
+
+   So the special three are emitted LAST, by a second call from
+   aok_serialize_state, and the state that has to survive them is arranged
+   around that: see the tail of aok_serialize_state for the one command that
+   still has to come after them and what it costs. */
+#define AOK_TRAPS_IGNORED 0	/* dispositions: `trap '' SIGX' */
+#define AOK_TRAPS_SPECIAL 1	/* code: DEBUG, ERR, RETURN */
+
 static int
-aok_emit_traps (buf)
+aok_emit_traps (buf, want)
      aok_buf *buf;
+     int want;
 {
   int sig;
 
@@ -618,12 +668,24 @@ aok_emit_traps (buf)
 
       special = (sig == DEBUG_TRAP || sig == ERROR_TRAP || sig == RETURN_TRAP);
 
+      if (special != (want == AOK_TRAPS_SPECIAL))
+	continue;		/* the other call writes this one */
+
       if (special == 0 && (body == (char *) IGNORE_SIG || signal_is_hard_ignored (sig)))
 	body = "";		/* stays ignored across the spawn */
       else if (special == 0)
 	continue;		/* reset in the child, string and all */
       else if (body == (char *) DEFAULT_SIG || body == (char *) IGNORE_SIG)
 	continue;		/* no special trap set */
+      /* Armed in a child only under the option that says so -- see above. The
+	 flags are read here rather than trusted from the state script's own
+	 `set -o' lines because this is the PARENT's setting at the moment of
+	 the spawn, which is exactly what reset_or_restore_signal_handlers
+	 consults in a fork. */
+      else if ((sig == DEBUG_TRAP || sig == RETURN_TRAP) && function_trace_mode == 0)
+	continue;
+      else if (sig == ERROR_TRAP && error_trace_mode == 0)
+	continue;
 
       name = signal_name (sig);
       if (name == 0 || STREQN (name, "SIGJUNK", 7) || STREQN (name, "unknown", 7))
@@ -639,7 +701,30 @@ aok_emit_traps (buf)
 }
 
 /* The shell state a subshell would have inherited, as a script that recreates
-   it. Returns a malloc'd string, or 0. */
+   it. Returns a malloc'd string, or 0.
+
+   WHERE THIS STILL DIVERGES FROM A FORK, on the trap side, measured against the
+   guest's own bash. Both are `set -T' only -- with functrace off no DEBUG or
+   RETURN trap crosses at all (see aok_emit_traps), so neither is reachable in a
+   default shell, and tests/manual/native_bash_fork_state.sh asserts exact
+   agreement for that case.
+
+     - A re-launch from execute_simple_command -- a pipeline element, an async
+       simple command -- fires the DEBUG trap TWICE. execute_simple_command runs
+       the trap and THEN calls make_child, so the parent has already announced
+       the command; the child is handed it as text, re-parses it, and announces
+       it again. A forked child does not, because it starts past the parse. This
+       is the re-launch's defining property rather than an oversight in the
+       state: the child re-parses, and the DEBUG trap is a parse-time-shaped
+       observation. Measured: `set -T; trap 'echo T' DEBUG; : | cat' fires 5
+       times here and 3 in a fork.
+     - The `(exit N) && :' status restore at the end of this function fires it
+       once more, when $? was nonzero. See the comment there.
+
+   Closing either one means the child skipping a counted number of DEBUG fires
+   on a signal from the parent, which is a new cross-process protocol whose
+   failure mode is SWALLOWING a real fire -- worse, for a debugger, than an
+   extra one. It has not been built. */
 char *
 aok_serialize_state ()
 {
@@ -730,7 +815,9 @@ aok_serialize_state ()
 
   if (aok_emit_positional (&buf) < 0)
     goto fail;
-  if (aok_emit_traps (&buf) < 0)
+  /* Dispositions only. The three special traps are code and are emitted at the
+     very end, once there is nothing left for them to fire on. */
+  if (aok_emit_traps (&buf, AOK_TRAPS_IGNORED) < 0)
     goto fail;
 
   /* And now the real options, including whatever extglob actually was. */
@@ -750,13 +837,53 @@ aok_serialize_state ()
   if (aok_buf_str (&buf, "unset __aok_stderr\n") < 0)
     goto fail;
 
-  /* $? last of all, since every line above sets it. `(exit N)` is how a shell
-     script says this, and it is emitted only when there is something to say --
-     the child's $? is already 0 from the state itself. */
+  /* DEBUG, ERR and RETURN, and they are LAST because they are code rather than
+     state: every line above this point is a command, and a trap armed before
+     them fires on all of them. See aok_emit_traps for the 78-against-1 DEBUG
+     count that came of arming them in the middle.
+
+     After the stderr restore, not before it, so that a `trap` the child
+     rejects says so. Anything this script gets wrong about the traps means
+     they did not cross, which is the class of error the state deliberately
+     leaves visible -- only the readonly redeclarations are silenced, because
+     only they are expected. */
+  if (aok_emit_traps (&buf, AOK_TRAPS_SPECIAL) < 0)
+    goto fail;
+
+  /* $? last of all, since every line above sets it -- including, now, the trap
+     lines, which is why it cannot move above them.
+
+     `&& :` is not decoration. `(exit N)` on its own is a command that FAILS,
+     and by this point in the script the child has been given both halves of
+     what reacts to a failing command:
+
+       - `set -e` is three lines up, so `(exit 1)` exited the child then and
+	 there, with the command it was spawned to run never parsed. Measured
+	 before this: `set -e; false && true; ( echo hi )` printed nothing at
+	 all under native bash and `hi` under a forked one -- the subshell died
+	 in its own prologue and took the parent down with it under the same
+	 `set -e`. That is silent data loss, not a cosmetic divergence.
+       - an ERR trap is one line up, and fired here once per subshell.
+
+     A command on the left of `&&` is exempt from both -- bash's rule is "part
+     of any command executed in a && or || list except the command following
+     the final && or ||" -- and a failing left operand short-circuits, so `:`
+     never runs and the list's status is still N. Verified against the guest's
+     own bash: `set -E; trap 'echo E' ERR; (exit 5) && :` prints nothing and
+     leaves $? at 5.
+
+     What is left is one DEBUG-trap fire, for this command, and only when the
+     parent's $? was nonzero AND `set -T' is on (without -T no DEBUG trap
+     crosses at all, so there is nothing to fire). It is not removable in shell:
+     the status has to be set by a command, the traps have to be armed before it
+     or they cannot survive it -- `trap' returns 0 and would overwrite $? -- and
+     every command fires an armed DEBUG trap. One is the floor, it was 77, and
+     both conditions have to hold to reach it. See the divergence note at the
+     top of aok_serialize_state for the other -T-only residual. */
   if (last_command_exit_value != 0)
     {
-      char status[INT_STRLEN_BOUND (int) + 8];
-      sprintf (status, "(exit %d)\n", last_command_exit_value);
+      char status[INT_STRLEN_BOUND (int) + 16];
+      sprintf (status, "(exit %d) && :\n", last_command_exit_value);
       if (aok_buf_str (&buf, status) < 0)
 	goto fail;
     }
