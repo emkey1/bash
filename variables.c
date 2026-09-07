@@ -562,6 +562,13 @@ initialize_shell_variables (env, privmode)
     if (inherited > 0)
       dollar_dollar_pid = inherited;
   }
+
+  /* And the state and `$?' the same parent handed down, for the same reason
+     this is here: the environment has just become a variable table, and taking
+     the carriers out of it now is what stops them reaching a BASH_ENV startup
+     file, an external command, or this shell's own state script when it
+     re-launches. They are applied much later; see aok_apply_relaunch_state. */
+  aok_capture_relaunch_state ();
 #endif
 
   /* Now make our own defaults in case the vars that we think are

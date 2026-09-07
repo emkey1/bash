@@ -57,6 +57,7 @@ extern __thread REDIRECT *redirection_undo_list;
 #include "trap.h"
 #include "alias.h"
 #include "typemax.h"
+#include "builtins/common.h"
 #include "aok_fork.h"
 
 /* sh_single_quote, ansic_quote, ansic_shouldquote and named_function_string
@@ -188,13 +189,76 @@ extern __thread REDIRECT *redirection_undo_list;
    See aok_relaunch_env for why: argv[2] lands in /proc/PID/cmdline, which is
    world-readable, and the script names every exported variable and its value.
 
-   The bootstrap that argv[2] carries instead. `eval` rather than sourcing a
-   file: there is no file, and bash parses and executes an eval'd string one
-   command at a time exactly as it does a -c string -- which this serialiser
-   depends on, since it emits `shopt -s extglob` before the extglob patterns
-   that must already be parseable when they are read. */
+   OUR OWN BASH EXECUTES IT IN C, from aok_apply_relaunch_state, at the one
+   point in startup that is after everything a fresh shell does for itself and
+   before the -c command runs. That point had to be made to exist -- the state
+   and the command used to be concatenated into a single -c string, which left
+   nowhere for C to stand between them -- and $? is what it is for; see
+   AOK_STATUS_VAR below.
+
+   AOK_STATE_BOOTSTRAP is the form a STOCK bash gets instead. aok_spawn_relaunch
+   falls back to the guest's own /bin/bash if /AOK/native/bash cannot be
+   spawned, and a stock bash knows nothing about any of this, so that form still
+   carries the state and the command as one self-contained -c script. `eval`
+   rather than sourcing a file: there is no file, and bash parses and executes
+   an eval'd string one command at a time exactly as it does a -c string --
+   which this serialiser depends on, since it emits `shopt -s extglob` before
+   the extglob patterns that must already be parseable when they are read. The
+   C path keeps that property by going through parse_and_execute, which is the
+   machinery `eval` is itself built out of.
+
+   WHAT argv[2] CARRIES NOW is the command, which widens what `ps` shows about a
+   subshell and is deliberate. It is bash's printed form of the command, BEFORE
+   expansion -- `x=$SECRET` prints as `x=$SECRET` -- so it is the shell source a
+   `bash -c` has always published about itself, not the values that made the
+   state worth moving out of argv in the first place. The state is what a
+   `declare -x` line per exported variable made unpublishable; the command is
+   what `ps` should have been showing all along, and it reads better than
+   `eval "$AOK_BASH_STATE"` did. tests/manual/native_bash_fork_state.sh asserts
+   both halves -- that the values are not there, and that the command is. */
 #define AOK_STATE_VAR "AOK_BASH_STATE"
 #define AOK_STATE_BOOTSTRAP "eval \"$" AOK_STATE_VAR "\""
+
+/* ------------------------------------------------------------ $? across a re-launch
+
+   `$?` at the moment of the fork is part of what a forked subshell inherits,
+   and scripts read it: `false; ( echo rc=$? )` prints 1.
+
+   It used to cross as the last line of the state script, `(exit N) && :`, and
+   that line cost two things.
+
+     - `(exit N)` is a cm_subshell, so under fork-by-re-launch RESTORING THE
+       STATUS SPAWNED A SECOND NATIVE BASH. Measured on devuan-arm64, 20
+       iterations, warm and idle: `true; ( : )` ran in ~40ms and `false; ( : )`
+       in 72ms. A failing command before a subshell nearly doubled what the
+       subshell cost, and that is a very common shape.
+     - Under `set -T` it fired the DEBUG trap once more than a fork does. The
+       traps are armed on the line above it and have to be -- `trap` returns 0
+       and would overwrite the very status being restored -- so the restore
+       tripped the trap it had just armed.
+
+   Neither was fixable in shell, and that is worth saying plainly because it
+   was tried: nothing in the language sets `$?` to an arbitrary value without
+   being a command, every command fires an armed DEBUG trap, and the status has
+   to be set after the traps or the traps overwrite it. One extra shell and one
+   extra fire were the floor for any answer written in shell.
+
+   So the status crosses in the environment, like `$$` above, and is applied by
+   an assignment to last_command_exit_value in C -- which is exactly what a fork
+   does, since a fork copies the variable. No command, no subshell, no trap
+   fire, and nothing for `set -e` to react to.
+
+   Same shape and same validation as AOK_DOLLAR_VAR: `<status>/<spawner pid>`,
+   and the spawner has to be our own getppid(). The check does more work here
+   than it does for `$$`, because it is also THE GATE ON AOK_STATE_VAR. The
+   state is now executed by C rather than by a bootstrap we put in argv, so
+   something has to say "this state was handed to me, by my parent, for this
+   shell" -- otherwise a stale AOK_BASH_STATE that reached an unrelated bash
+   would simply be run. This variable being present and naming our parent is
+   that statement, and it is emitted ONLY on the native path: the /bin/bash
+   fallback form does not set it, so a state carried in the shell form can never
+   be picked up by the C path as well. */
+#define AOK_STATUS_VAR "AOK_BASH_STATUS"
 
 /* ------------------------------------------------------------ a growing buffer */
 
@@ -642,9 +706,22 @@ aok_emit_aliases (buf)
    trap had the same shape, one fire out of nowhere per subshell.
 
    So the special three are emitted LAST, by a second call from
-   aok_serialize_state, and the state that has to survive them is arranged
-   around that: see the tail of aok_serialize_state for the one command that
-   still has to come after them and what it costs. */
+   aok_serialize_state, and nothing follows them. `$?` used to, and had to,
+   because a status can only be set by a command; it travels in the environment
+   now and is applied in C, which is what left the trap lines free to be the end
+   of the script. See AOK_STATUS_VAR.
+
+   AND AMONG THEMSELVES THEY ARE ORDERED, DEBUG LAST. `trap` is a command like
+   any other, so the second special trap line fires the first one if the first
+   one was DEBUG -- which is the same bug as the 77 above, one line wide, and it
+   is reachable exactly when two of the three cross. Emitting them by signal
+   number put DEBUG first (DEBUG_TRAP, then ERROR_TRAP, then RETURN_TRAP), so
+   `set -TE` was the shape that showed it: measured, `set -TE; trap "echo T"
+   DEBUG; trap "echo E" ERR; false; ( : )` fired T one more time than a fork,
+   and `set -T` with a RETURN trap did the same. Nothing fires on the DEBUG line
+   itself -- ERR wants a failing command and `trap` returns 0, RETURN wants a
+   function to return from -- so putting DEBUG at the end costs nothing and
+   there is no order that closes it the other way round. */
 #define AOK_TRAPS_IGNORED 0	/* dispositions: `trap '' SIGX' */
 #define AOK_TRAPS_SPECIAL 1	/* code: DEBUG, ERR, RETURN */
 
@@ -653,12 +730,17 @@ aok_emit_traps (buf, want)
      aok_buf *buf;
      int want;
 {
-  int sig;
+  const int special_order[3] = { RETURN_TRAP, ERROR_TRAP, DEBUG_TRAP };
+  int sig, i, nsig;
 
-  for (sig = 0; sig < BASH_NSIG; sig++)
+  nsig = (want == AOK_TRAPS_SPECIAL) ? 3 : BASH_NSIG;
+
+  for (i = 0; i < nsig; i++)
     {
       char *name, *body;
       int special;
+
+      sig = (want == AOK_TRAPS_SPECIAL) ? special_order[i] : i;
 
       /* DEFAULT_SIG and IMPOSSIBLE_TRAP_HANDLER are sentinel POINTERS stored in
 	 trap_list, not strings, and must never reach the quoter. */
@@ -718,13 +800,15 @@ aok_emit_traps (buf, want)
        state: the child re-parses, and the DEBUG trap is a parse-time-shaped
        observation. Measured: `set -T; trap 'echo T' DEBUG; : | cat' fires 5
        times here and 3 in a fork.
-     - The `(exit N) && :' status restore at the end of this function fires it
-       once more, when $? was nonzero. See the comment there.
+   That is now the ONLY one. The other was the `(exit N) && :' this function
+   used to end with, which fired the trap once more whenever $? was nonzero;
+   the status crosses in the environment now and is applied in C, so there is
+   no command to fire on. See AOK_STATUS_VAR.
 
-   Closing either one means the child skipping a counted number of DEBUG fires
-   on a signal from the parent, which is a new cross-process protocol whose
-   failure mode is SWALLOWING a real fire -- worse, for a debugger, than an
-   extra one. It has not been built. */
+   Closing the one that is left means the child skipping a counted number of
+   DEBUG fires on a signal from the parent, which is a new cross-process
+   protocol whose failure mode is SWALLOWING a real fire -- worse, for a
+   debugger, than an extra one. It has not been built. */
 char *
 aok_serialize_state ()
 {
@@ -739,14 +823,11 @@ aok_serialize_state ()
      command it was started for has run, and nounset would turn a variable the
      child has not been given yet into a fatal error partway through being given
      it. */
-  /* The state variable erases itself, and it has to happen HERE rather than
-     after the eval in the bootstrap: a subshell's own commands are appended to
-     this script, so anything the bootstrap does after `eval` runs after the
-     user's code has already seen the variable. `eval "$AOK_BASH_STATE"`
-     expands the variable before the unset runs, so the script survives losing
-     the thing it came in. */
-  if (aok_buf_str (&buf, "unset " AOK_STATE_VAR "\n") < 0)
-    goto fail;
+  /* No `unset AOK_BASH_STATE' here. Our own bash never binds the carrier in
+     the first place -- aok_capture_relaunch_state reads it out of the
+     environment and unbinds it before the shell runs anything at all -- and the
+     stock-bash form needs the unset as its own FIRST line rather than as part
+     of this string, which is where aok_fallback_script puts it. */
   if (aok_buf_str (&buf, "set +e\n") < 0)
     goto fail;
   if (aok_buf_str (&buf, "set +u\n") < 0)
@@ -850,43 +931,10 @@ aok_serialize_state ()
   if (aok_emit_traps (&buf, AOK_TRAPS_SPECIAL) < 0)
     goto fail;
 
-  /* $? last of all, since every line above sets it -- including, now, the trap
-     lines, which is why it cannot move above them.
-
-     `&& :` is not decoration. `(exit N)` on its own is a command that FAILS,
-     and by this point in the script the child has been given both halves of
-     what reacts to a failing command:
-
-       - `set -e` is three lines up, so `(exit 1)` exited the child then and
-	 there, with the command it was spawned to run never parsed. Measured
-	 before this: `set -e; false && true; ( echo hi )` printed nothing at
-	 all under native bash and `hi` under a forked one -- the subshell died
-	 in its own prologue and took the parent down with it under the same
-	 `set -e`. That is silent data loss, not a cosmetic divergence.
-       - an ERR trap is one line up, and fired here once per subshell.
-
-     A command on the left of `&&` is exempt from both -- bash's rule is "part
-     of any command executed in a && or || list except the command following
-     the final && or ||" -- and a failing left operand short-circuits, so `:`
-     never runs and the list's status is still N. Verified against the guest's
-     own bash: `set -E; trap 'echo E' ERR; (exit 5) && :` prints nothing and
-     leaves $? at 5.
-
-     What is left is one DEBUG-trap fire, for this command, and only when the
-     parent's $? was nonzero AND `set -T' is on (without -T no DEBUG trap
-     crosses at all, so there is nothing to fire). It is not removable in shell:
-     the status has to be set by a command, the traps have to be armed before it
-     or they cannot survive it -- `trap' returns 0 and would overwrite $? -- and
-     every command fires an armed DEBUG trap. One is the floor, it was 77, and
-     both conditions have to hold to reach it. See the divergence note at the
-     top of aok_serialize_state for the other -T-only residual. */
-  if (last_command_exit_value != 0)
-    {
-      char status[INT_STRLEN_BOUND (int) + 16];
-      sprintf (status, "(exit %d) && :\n", last_command_exit_value);
-      if (aok_buf_str (&buf, status) < 0)
-	goto fail;
-    }
+  /* And nothing after the traps. `$?` was here, as `(exit N) && :`, because a
+     status can only be set by a command and the traps had to be armed first;
+     it crosses in the environment now. See AOK_STATUS_VAR for what that line
+     cost and why it could not be made cheaper as shell. */
 
   return buf.s;
 
@@ -897,8 +945,24 @@ fail:
 
 /* ------------------------------------------------------------- the re-launch */
 
-/* This shell's state followed by COMMAND, as one script for `bash -c`.
-   Malloc'd, caller frees; 0 on failure.
+/* Everything a re-launch has to hand its child: this shell's state, the command
+   it is being started for, and the `$?` it must start with.
+
+   One struct rather than three arguments because there are two spawn sites and
+   TWO CHILD FORMS -- our own bash, which is given the three separately, and a
+   stock /bin/bash, which needs them concatenated into one script (see
+   aok_fallback_script) -- and which form is used is not known until the spawn
+   has been tried. Collecting them once, in the right order, and letting the
+   spawn decide how to shape them is what keeps that decision from having to be
+   made before it can be. */
+typedef struct
+{
+  char *state;			/* the serialized shell state, or 0 */
+  char *command;		/* the command text the child is to run */
+  int status;			/* this shell's $? at the moment of the spawn */
+} aok_relaunch;
+
+/* Collect them. Returns 0, or -1 with nothing allocated.
 
    COMMAND IS COPIED FIRST, and that ordering is load-bearing rather than
    tidiness. Most callers pass a pointer into the_printed_command -- bash's ONE
@@ -912,44 +976,119 @@ fail:
    anywhere. Command substitution was unaffected, because the string it passes
    comes from the parser rather than the printer -- which is what made this look
    like a subshell-only fault for as long as it did. One helper for both paths,
-   so there is one place for this to be right. */
-static char *
-aok_build_script (command)
+   so there is one place for this to be right.
+
+   $? is read HERE, before the serialiser runs, for a smaller version of the
+   same reason: aok_serialize_state executes nothing, but it is the caller's
+   status at the moment of the spawn that has to cross, and reading it beside
+   the command keeps it out of reach of anything added to this file later. */
+static int
+aok_relaunch_build (r, command)
+     aok_relaunch *r;
      char *command;
 {
-  char *state, *cmd, *script;
-  size_t state_len, cmd_len;
+  size_t len;
 
-  cmd_len = command ? strlen (command) : 0;
-  cmd = (char *) malloc (cmd_len + 1);
-  if (cmd == 0)
-    return (char *) 0;
-  memcpy (cmd, command ? command : "", cmd_len);
-  cmd[cmd_len] = '\0';
+  r->state = 0;
+  r->command = 0;
+  r->status = last_command_exit_value;
 
-  state = aok_serialize_state ();
-  if (state == 0)
-    { free (cmd); return (char *) 0; }
+  len = command ? strlen (command) : 0;
+  r->command = (char *) malloc (len + 1);
+  if (r->command == 0)
+    return -1;
+  memcpy (r->command, command ? command : "", len);
+  r->command[len] = '\0';
 
-  state_len = strlen (state);
-  script = (char *) malloc (state_len + cmd_len + 2);
-  if (script)
+  r->state = aok_serialize_state ();
+  if (r->state == 0)
     {
-      memcpy (script, state, state_len);
-      script[state_len] = '\n';
-      memcpy (script + state_len + 1, cmd, cmd_len);
-      script[state_len + 1 + cmd_len] = '\0';
+      free (r->command);
+      r->command = 0;
+      return -1;
     }
-  free (state);
-  free (cmd);
+
   /* The single most useful thing when a re-launched child misbehaves: what it
      was actually handed. Every bug in this file so far has been visible in one
      look at this -- a command replaced by a function definition, a syntax error
      from an extglob pattern emitted before extglob was on, an option that
-     turned another option off. */
-  if (script && getenv ("AOK_BASH_DUMP_STATE"))
-    fprintf (stderr, "----- AOK STATE -----\n%s\n----- END -----\n", script);
-  return script;
+     turned another option off. The command is printed under its own banner
+     rather than run together with the state, because they are now genuinely
+     two things and a dump that hides the seam hides the class of bug the seam
+     introduces. */
+  if (getenv ("AOK_BASH_DUMP_STATE"))
+    fprintf (stderr,
+	     "----- AOK STATE (rc=%d) -----\n%s\n----- AOK COMMAND -----\n%s\n----- END -----\n",
+	     r->status, r->state, r->command);
+  return 0;
+}
+
+static void
+aok_relaunch_free (r)
+     aok_relaunch *r;
+{
+  FREE (r->state);
+  FREE (r->command);
+  r->state = r->command = 0;
+}
+
+/* The whole re-launch as ONE script, which is the only form a stock bash can be
+   handed. Malloc'd, caller frees; 0 on failure. Reached only from
+   aok_spawn_relaunch's fallback, so it is off the measured path entirely --
+   which is why it can afford to be the slow, self-contained shape.
+
+   Everything our own bash gets told in C has to be said in shell here, and the
+   status restore is the interesting one. `&& :` is not decoration. `(exit N)`
+   on its own is a command that FAILS, and by this point in the script the child
+   has been given both halves of what reacts to a failing command:
+
+     - `set -e` is near the end of the state, so `(exit 1)` exited the child
+       then and there, with the command it was spawned to run never parsed.
+       Measured before this: `set -e; false && true; ( echo hi )` printed
+       nothing at all under native bash and `hi` under a forked one -- the
+       subshell died in its own prologue and took the parent down with it under
+       the same `set -e`. That is silent data loss, not a cosmetic divergence.
+     - an ERR trap is armed on the line above, and fired here once per subshell.
+
+   A command on the left of `&&` is exempt from both -- bash's rule is "part of
+   any command executed in a && or || list except the command following the
+   final && or ||" -- and a failing left operand short-circuits, so `:` never
+   runs and the list's status is still N. Verified against the guest's own bash:
+   `set -E; trap 'echo E' ERR; (exit 5) && :` prints nothing and leaves $? at 5.
+
+   The unset is the FIRST line, and it has to be here rather than in the
+   bootstrap that eval's this: the subshell's own command is appended below, so
+   an unset placed after the `eval` would run only once the user's code had
+   already seen the variable. `eval "$AOK_BASH_STATE"` expands the variable
+   before the unset runs, so the script survives losing the thing it came in. */
+static char *
+aok_fallback_script (r)
+     aok_relaunch *r;
+{
+  aok_buf buf;
+  char status[INT_STRLEN_BOUND (int) + 16];
+
+  buf.s = 0; buf.len = 0; buf.cap = 0;
+
+  if (aok_buf_str (&buf, "unset " AOK_STATE_VAR "\n") < 0)
+    goto fail;
+  if (aok_buf_str (&buf, r->state) < 0)
+    goto fail;
+  if (buf.len && buf.s[buf.len - 1] != '\n' && aok_buf_str (&buf, "\n") < 0)
+    goto fail;
+  if (r->status != 0)
+    {
+      sprintf (status, "(exit %d) && :\n", r->status);
+      if (aok_buf_str (&buf, status) < 0)
+	goto fail;
+    }
+  if (aok_buf_str (&buf, r->command) < 0)
+    goto fail;
+  return buf.s;
+
+fail:
+  FREE (buf.s);
+  return (char *) 0;
 }
 
 /* ------------------------------------------------------- the re-launch environment
@@ -963,21 +1102,48 @@ aok_build_script (command)
    free() and only the one entry this appended is freed with it. Nothing has to
    outlive the posix_spawn call either way: the shim packs argv and envp into
    flat buffers before the child starts. */
+static char *
+aok_env_entry (name, value)
+     const char *name, *value;
+{
+  size_t nlen, vlen;
+  char *entry;
+
+  nlen = strlen (name);
+  vlen = strlen (value);
+  entry = (char *) malloc (nlen + vlen + 2);
+  if (entry == 0)
+    return (char *) 0;
+  memcpy (entry, name, nlen);
+  entry[nlen] = '=';
+  memcpy (entry + nlen + 1, value, vlen + 1);
+  return entry;
+}
+
+/* NOWNED comes back holding how many of the trailing entries this allocated,
+   because aok_relaunch_env_free has no other way to know and the count is no
+   longer constant: the native form appends three carriers and the stock-bash
+   form two. It was constant once and the free freed exactly the last one, which
+   quietly leaked the `$$' entry from the day the state joined it. */
 static char **
-aok_relaunch_env (script)
+aok_relaunch_env (script, status, want_status, nowned)
      const char *script;
+     int status;
+     int want_status;
+     int *nowned;
 {
   char **src, **vec;
-  char *entry, *state_entry;
+  char *entry, *state_entry, *status_entry;
   size_t n, i, j;
-  char buf[sizeof (AOK_DOLLAR_VAR) + 2 * INT_STRLEN_BOUND (long) + 4];
+  char buf[2 * INT_STRLEN_BOUND (long) + 4];
 
+  *nowned = 0;
   src = environ;
   for (n = 0; src && src[n]; n++)
     ;
 
-  /* +3: AOK_DOLLAR_VAR, AOK_BASH_STATE, and the NULL. */
-  vec = (char **) malloc ((n + 3) * sizeof (char *));
+  /* +4: AOK_DOLLAR_VAR, AOK_BASH_STATE, AOK_BASH_STATUS, and the NULL. */
+  vec = (char **) malloc ((n + 4) * sizeof (char *));
   if (vec == 0)
     return (char **) 0;
 
@@ -995,25 +1161,32 @@ aok_relaunch_env (script)
      Moving it here does not make the data secret -- it is the child's own
      environment either way -- it puts it behind the permission Linux puts it
      behind. As a bonus `ps` becomes readable again. */
-  state_entry = (char *) 0;
+  state_entry = status_entry = (char *) 0;
   if (script)
     {
-      size_t len = strlen (script);
-      state_entry = (char *) malloc (sizeof (AOK_STATE_VAR) + 1 + len);
+      state_entry = aok_env_entry (AOK_STATE_VAR, script);
       if (state_entry == 0)
 	{ free (vec); return (char **) 0; }
-      memcpy (state_entry, AOK_STATE_VAR "=", sizeof (AOK_STATE_VAR));
-      memcpy (state_entry + sizeof (AOK_STATE_VAR), script, len + 1);
+    }
+
+  /* The status, and the pid of the task doing the spawning. WANT_STATUS is off
+     for the stock-bash form, whose status arrives as a shell command inside the
+     script -- and whose absence here is what stops a native bash that somehow
+     received that form from applying the state twice. See AOK_STATUS_VAR. */
+  if (want_status)
+    {
+      sprintf (buf, "%d/%ld", status, (long) getpid ());
+      status_entry = aok_env_entry (AOK_STATUS_VAR, buf);
+      if (status_entry == 0)
+	{ FREE (state_entry); free (vec); return (char **) 0; }
     }
 
   /* $$ and the pid of the task doing the spawning, which the child checks
      against its own getppid(). */
-  sprintf (buf, "%s=%ld/%ld", AOK_DOLLAR_VAR, (long) dollar_dollar_pid,
-	   (long) getpid ());
-  entry = (char *) malloc (strlen (buf) + 1);
+  sprintf (buf, "%ld/%ld", (long) dollar_dollar_pid, (long) getpid ());
+  entry = aok_env_entry (AOK_DOLLAR_VAR, buf);
   if (entry == 0)
-    { free (vec); return (char **) 0; }
-  strcpy (entry, buf);
+    { FREE (state_entry); FREE (status_entry); free (vec); return (char **) 0; }
 
   /* Drop any AOK_DOLLAR_VAR already there. A native child unbinds it at
      startup so this normally finds nothing, but an emulated fallback child
@@ -1025,23 +1198,30 @@ aok_relaunch_env (script)
 			     sizeof (AOK_DOLLAR_VAR)) == 0)
 	continue;
       /* A stale state from our own launch must not reach the child: it would
-	 be a snapshot of a shell one generation too old, and the bootstrap
-	 evaluates whatever it finds. */
+	 be a snapshot of a shell one generation too old, and the child runs
+	 whatever it finds. Same for the status that gates it. */
       if (src[i] && strncmp (src[i], AOK_STATE_VAR "=",
 			     sizeof (AOK_STATE_VAR)) == 0)
+	continue;
+      if (src[i] && strncmp (src[i], AOK_STATUS_VAR "=",
+			     sizeof (AOK_STATUS_VAR)) == 0)
 	continue;
       vec[j++] = src[i];
     }
   vec[j++] = entry;
+  (*nowned)++;
   if (state_entry)
-    vec[j++] = state_entry;
+    { vec[j++] = state_entry; (*nowned)++; }
+  if (status_entry)
+    { vec[j++] = status_entry; (*nowned)++; }
   vec[j] = (char *) 0;
   return vec;
 }
 
 static void
-aok_relaunch_env_free (envp)
+aok_relaunch_env_free (envp, nowned)
      char **envp;
+     int nowned;
 {
   size_t n;
 
@@ -1049,8 +1229,8 @@ aok_relaunch_env_free (envp)
     return;
   for (n = 0; envp[n]; n++)
     ;
-  if (n > 0)
-    free (envp[n - 1]);		/* the appended entry, and only that one */
+  while (nowned-- > 0 && n > 0)
+    free (envp[--n]);		/* the appended entries, and only those */
   free (envp);
 }
 
@@ -1118,25 +1298,249 @@ done:
   return result;
 }
 
+/* ------------------------------------------------ the child side of a re-launch
+
+   Two halves, in two places, and the split is the point.
+
+   aok_capture_relaunch_state runs from initialize_shell_variables, the moment
+   the environment has become a variable table: it takes the state and the
+   status out of the environment, validates them, and unbinds both. Reading
+   there is what keeps the carriers from reaching anything -- a startup file
+   named by BASH_ENV, an external command, and above all this shell's own state
+   script when IT re-launches, where a stale snapshot one generation old would
+   be handed down as if it were current.
+
+   aok_apply_relaunch_state runs from main, immediately before the -c command:
+   the state is executed and then $? is set to what the parent had. Late, so
+   that everything a fresh shell does for itself has already happened; before
+   the command, because that is the whole reason the two were separated. */
+
+static __thread char *aok_relaunch_state = 0;
+static __thread int aok_relaunch_status = 0;
+static __thread int aok_relaunch_valid = 0;
+
+/* strdup, but a failure is a returned 0 rather than a fatal error. bash's own
+   savestring goes through xmalloc, which exits; nothing here is worth ending a
+   shell over, and every caller already has a "we were not re-launched" path. */
+static char *
+aok_dup (text)
+     const char *text;
+{
+  char *copy;
+
+  if (text == 0)
+    return (char *) 0;
+  copy = (char *) malloc (strlen (text) + 1);
+  if (copy)
+    strcpy (copy, text);
+  return copy;
+}
+
+void
+aok_capture_relaunch_state ()
+{
+  char *state, *value, *raw, *end;
+  long status, spawner;
+  int ok;
+
+  /* bash is a function in this process rather than a program, so main() runs
+     again on the same thread with every global holding what the last shell left
+     in it. A state captured by a shell that never applied it must not be
+     applied by the next one. See aok_reinit_* and docs/bash_native_reentry.md. */
+  FREE (aok_relaunch_state);
+  aok_relaunch_state = 0;
+  aok_relaunch_status = 0;
+  aok_relaunch_valid = 0;
+
+  /* BOTH ARE COPIED BEFORE EITHER IS UNBOUND. They point into the environment
+     vector, which is bash's export_env, and unbinding a variable rebuilds it --
+     so the first unbind can free the string the second read is still holding. */
+  value = aok_dup (getenv (AOK_STATUS_VAR));
+  state = aok_dup (getenv (AOK_STATE_VAR));
+
+  /* The status carrier goes unconditionally: it has no other consumer, so one
+     this shell rejects is junk and one it accepts is spent. */
+  if (value)
+    { unbind_variable (AOK_STATUS_VAR); array_needs_making = 1; }
+
+  /* `<status>/<spawner pid>', and the spawner has to be our own parent. This
+     is the gate on the state as much as on the status -- see AOK_STATUS_VAR --
+     so every reason to reject leaves this shell with no state at all, which is
+     what a bash that was not re-launched should have. */
+  ok = 0;
+  if (value && state)
+    {
+      errno = 0;
+      status = strtol (value, &end, 10);
+      if (end != value && *end == '/' && errno == 0)
+	{
+	  raw = end + 1;
+	  errno = 0;
+	  spawner = strtol (raw, &end, 10);
+	  /* The status is range-checked only against the type it has to fit in,
+	     NOT against 0..255. It is whatever the parent's last_command_exit_value
+	     held, which is what a fork would have copied, and a value this shell
+	     found surprising is not a reason to throw the STATE away -- the gate
+	     is the spawner pid, and rejecting here would leave a real subshell
+	     with no variables, no functions and no options at all. */
+	  if (end != raw && *end == '\0' && errno == 0 &&
+	      status >= INT_MIN && status <= INT_MAX &&
+	      spawner > 0 && spawner <= INT_MAX &&
+	      (pid_t) spawner == getppid ())
+	    ok = 1;
+	}
+    }
+
+  /* The state carrier goes ONLY if this shell is going to run it. A rejected
+     state is by definition not ours to manage, and there is one shape where it
+     belongs to someone else: the stock-bash form, where the state is eval'd by
+     the bootstrap in argv[2] and unset by the script's own first line. That
+     form deliberately carries no status, so it lands here as a rejection --
+     and unbinding it would leave the bootstrap expanding to nothing and the
+     child running its command with no state at all. Leaving it bound is also
+     exactly what this shell did before there was a C path. */
+  if (ok)
+    {
+      unbind_variable (AOK_STATE_VAR);
+      array_needs_making = 1;
+      aok_relaunch_state = state;
+      aok_relaunch_status = (int) status;
+      aok_relaunch_valid = 1;
+      state = 0;
+    }
+  FREE (state);
+  FREE (value);
+}
+
+void
+aok_apply_relaunch_state ()
+{
+  char * volatile state;
+  volatile int saved_startup, saved_executing;
+  int code;
+
+  if (aok_relaunch_valid == 0)
+    return;
+
+  state = aok_relaunch_state;
+  aok_relaunch_state = 0;
+  aok_relaunch_valid = 0;
+
+  if (state)
+    {
+      /* NOT `bash -c' for the duration. startup_state == 2 plus
+	 parse_and_execute_level == 1 is what turns on should_suppress_fork,
+	 which marks the last command of a -c string CMD_NO_FORK so that bash
+	 execs it in place instead of forking -- and the last command of the
+	 state script is emphatically not the command this shell was started to
+	 run. Every line of the state is a builtin today, so nothing would be
+	 exec'd and nothing would be lost; the shell would simply be replaced by
+	 the first state line that ever stopped being one. The state used to run
+	 inside `eval', at level 2, where the test could not pass, so this
+	 restores a property that was free before the split rather than adding
+	 one. */
+      saved_startup = startup_state;
+      saved_executing = executing;
+      startup_state = 0;
+      executing = 1;
+
+      code = setjmp_nosigs (top_level);
+      if (code != NOT_JUMPED)
+	{
+#if defined (PROCESS_SUBSTITUTION)
+	  unlink_fifo_list ();
+#endif
+	  /* run_one_command's cases, and for the same reason: the state used to
+	     BE the first half of the -c string, so a state that throws has
+	     always ended the shell rather than falling through to the command.
+	     Doing anything else here would run a subshell's command against a
+	     half-restored state. */
+	  switch (code)
+	    {
+	    case FORCE_EOF:
+	      last_command_exit_value = 127;
+	      break;
+	    case ERREXIT:
+	    case EXITPROG:
+	    case EXITBLTIN:
+	      break;
+	    case DISCARD:
+	      last_command_exit_value = 1;
+	      break;
+	    default:
+	      command_error ("aok_apply_relaunch_state", CMDERR_BADJUMP, code, 0);
+	    }
+	  executing = saved_executing;
+	  startup_state = saved_startup;
+	  exit_shell (last_command_exit_value);
+	}
+
+      /* parse_and_execute is what `eval' is built on, and the flags are eval's:
+	 the state is parsed and executed one command at a time, which is what
+	 lets `shopt -s extglob' near the top take effect before the function
+	 definitions below it are PARSED. It takes ownership of the string. */
+      parse_and_execute (state, "AOK state", SEVAL_NOHIST|SEVAL_NOOPTIMIZE);
+
+      executing = saved_executing;
+      startup_state = saved_startup;
+    }
+
+  /* $? last, and unconditionally -- this is the assignment the whole split
+     exists for. Unconditional because every line of the state sets $? as a side
+     effect of being a command, so "the parent's status was 0" is not the same
+     as "leave it alone": a state whose last line the child disliked would
+     otherwise start the command with that line's status. A fork has neither
+     problem, because a fork copies the variable and runs nothing. */
+  last_command_exit_value = aok_relaunch_status;
+  aok_relaunch_status = 0;
+}
+
 /* posix_spawn of a re-launch, with the fallback the comment above
    AOK_SUBSHELL_BASH promises. /AOK/native/bash is synthesized by the kernel
    and exists in every build that compiles this file, so the fallback should be
    unreachable -- but "should be" and a guest that cannot run a subshell at all
    are a bad pair, and the guest's own bash is a working shell that merely gets
-   $$ wrong. Returns a posix_spawn error number. */
+   $$ wrong. Returns a posix_spawn error number.
+
+   THE TWO TARGETS NOW WANT DIFFERENT CHILDREN, which is why the argv and the
+   environment are built here rather than by the caller. Our own bash is handed
+   the command as an ordinary -c string with the state and the status beside it
+   in the environment; a stock bash is handed the fixed bootstrap and one script
+   that contains the lot. The second form is built only if the first spawn
+   actually fails, so the path that runs on every subshell builds one of them.
+
+   ARGV[2] is filled in here. The caller owns the rest of the vector -- argv[0],
+   the -c, and $0 -- because those are the same for both forms. */
 static int
-aok_spawn_relaunch (pid, fa, attr, argv, envp)
+aok_spawn_relaunch (pid, r, fa, attr, argv)
      pid_t *pid;
+     aok_relaunch *r;
      void **fa;
      void **attr;
      char **argv;
-     char **envp;
 {
-  int err;
+  char **envp, *fallback;
+  int err, nowned;
 
+  argv[2] = r->command;
+  envp = aok_relaunch_env (r->state, r->status, 1, &nowned);
+  if (envp == 0)
+    return ENOMEM;
   err = posix_spawn (pid, AOK_SUBSHELL_BASH, fa, attr, argv, envp);
-  if (err == ENOENT || err == ENOSYS)
-    err = posix_spawn (pid, AOK_GUEST_BASH, fa, attr, argv, envp);
+  aok_relaunch_env_free (envp, nowned);
+  if (err != ENOENT && err != ENOSYS)
+    return err;
+
+  fallback = aok_fallback_script (r);
+  if (fallback == 0)
+    return ENOMEM;
+  argv[2] = (char *) AOK_STATE_BOOTSTRAP;
+  envp = aok_relaunch_env (fallback, 0, 0, &nowned);
+  if (envp == 0)
+    { free (fallback); return ENOMEM; }
+  err = posix_spawn (pid, AOK_GUEST_BASH, fa, attr, argv, envp);
+  aok_relaunch_env_free (envp, nowned);
+  free (fallback);
   return err;
 }
 
@@ -1144,24 +1548,16 @@ aok_spawn_relaunch (pid, fa, attr, argv, envp)
    standard output. Returns the output (malloc'd, caller frees) and stores the
    wait status; returns 0 on failure to start, with errno set.
 
-   The state and the command go in ARGV, as one -c script. An earlier version
-   passed it on a pipe and needed a hook in bash's own startup; putting it in
-   argv means nothing has to be taught to look for state on a descriptor, so
-   the subshell can be any bash -- which is what let the child be a stock
-   /bin/bash for as long as it had to be, and is still worth keeping now that
-   it does not: the fallback in aok_spawn_relaunch works only because of it.
-   Linux allows about 2MB of argv and a shell's state is a few KB; a state
-   large enough to exceed that would fail the spawn with E2BIG rather than
-   silently truncating.
-
-   The environment is the one thing argv cannot carry, because $$ is not
-   assignable in a script. That goes through envp; see AOK_DOLLAR_VAR. */
+   The command goes in ARGV as an ordinary -c string and the state and status
+   go in the environment beside it; aok_spawn_relaunch shapes both and reshapes
+   them for a stock /bin/bash if the native spawn fails. */
 char *
 aok_run_in_subshell (command, status_out)
      char *command;
      int *status_out;
 {
-  char *script, *argv[5], *out, **envp;
+  char *argv[5], *out;
+  aok_relaunch r;
   int out_pipe[2];
   void *fa;
   pid_t pid;
@@ -1174,17 +1570,16 @@ aok_run_in_subshell (command, status_out)
   if (status_out)
     *status_out = 0;
 
-  script = aok_build_script (command);
-  if (script == 0)
+  if (aok_relaunch_build (&r, command) < 0)
     return (char *) 0;
 
   if (pipe (out_pipe) < 0)
-    { free (script); return (char *) 0; }
+    { aok_relaunch_free (&r); return (char *) 0; }
 
   /* The child writes where we read, and holds neither end afterwards --
      leaving the write end open in the child would mean this never sees EOF. */
   if (posix_spawn_file_actions_init (&fa) != 0)
-    { close (out_pipe[0]); close (out_pipe[1]); free (script); return (char *) 0; }
+    { close (out_pipe[0]); close (out_pipe[1]); aok_relaunch_free (&r); return (char *) 0; }
   posix_spawn_file_actions_adddup2 (&fa, out_pipe[1], 1);
   posix_spawn_file_actions_addclose (&fa, out_pipe[0]);
   if (out_pipe[1] != 1)
@@ -1192,7 +1587,7 @@ aok_run_in_subshell (command, status_out)
 
   argv[0] = "bash";
   argv[1] = "-c";
-  argv[2] = (char *) AOK_STATE_BOOTSTRAP;
+  argv[2] = (char *) 0;		/* aok_spawn_relaunch, once it knows the target */
   /* $0. `bash -c script name` names the child, and a subshell keeps the
      parent's $0 -- without this every re-launch would report itself as "bash"
      in an error message or a usage string. The positional parameters do NOT
@@ -1232,14 +1627,12 @@ aok_run_in_subshell (command, status_out)
   old_chld = signal (SIGCHLD, SIG_DFL);
   chld_blocked = (old_chld != SIG_ERR);
 
-  envp = aok_relaunch_env (script);
-  err = aok_spawn_relaunch (&pid, &fa, (void **) 0, argv, envp);
-  aok_relaunch_env_free (envp);
+  err = aok_spawn_relaunch (&pid, &r, &fa, (void **) 0, argv);
   posix_spawn_file_actions_destroy (&fa);
   if (err != 0)
     {
       close (out_pipe[0]); close (out_pipe[1]);
-      free (script);
+      aok_relaunch_free (&r);
       if (chld_blocked)
 	signal (SIGCHLD, old_chld);
       errno = err;
@@ -1270,7 +1663,7 @@ aok_run_in_subshell (command, status_out)
       out[out_len] = '\0';
     }
   close (out_pipe[0]);
-  free (script);
+  aok_relaunch_free (&r);
 
   status = 0;
   if (waitpid (pid, &status, 0) < 0)
@@ -1426,7 +1819,8 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
      char *cmdtext;
      int pipe_in, pipe_out;
 {
-  char *script, *argv[5], **envp;
+  char *argv[5];
+  aok_relaunch r;
   void *fa, *attr;
   pid_t pid;
   int err, i;
@@ -1434,12 +1828,11 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
   if (cmdtext == 0)
     { errno = ENOSYS; return (pid_t) -1; }
 
-  script = aok_build_script (cmdtext);
-  if (script == 0)
+  if (aok_relaunch_build (&r, cmdtext) < 0)
     return (pid_t) -1;
 
   if (posix_spawn_file_actions_init (&fa) != 0)
-    { free (script); return (pid_t) -1; }
+    { aok_relaunch_free (&r); return (pid_t) -1; }
   /* do_piping's work, done from here because there is no child to do it in.
      Both ends are closed after the dup2 for the same reason a forked child
      closes them: a pipeline whose writer still holds the read end never ends. */
@@ -1466,7 +1859,7 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
 
   argv[0] = "bash";
   argv[1] = "-c";
-  argv[2] = (char *) AOK_STATE_BOOTSTRAP;
+  argv[2] = (char *) 0;		/* aok_spawn_relaunch, once it knows the target */
   /* $0. `bash -c script name` names the child, and a subshell keeps the
      parent's $0 -- without this every re-launch would report itself as "bash"
      in an error message or a usage string. The positional parameters do NOT
@@ -1475,14 +1868,12 @@ aok_spawn_command (cmdtext, pipe_in, pipe_out)
   argv[3] = dollar_vars[0] ? dollar_vars[0] : "bash";
   argv[4] = (char *) 0;
   aok_spawn_attr (&attr);
-  envp = aok_relaunch_env (script);
-  err = aok_spawn_relaunch (&pid, &fa, attr ? (void **) &attr : (void **) 0,
-			    argv, envp);
-  aok_relaunch_env_free (envp);
+  err = aok_spawn_relaunch (&pid, &r, &fa,
+			    attr ? (void **) &attr : (void **) 0, argv);
   if (attr)
     posix_spawnattr_destroy (&attr);
   posix_spawn_file_actions_destroy (&fa);
-  free (script);
+  aok_relaunch_free (&r);
   if (err != 0)
     { errno = err; return (pid_t) -1; }
   return pid;

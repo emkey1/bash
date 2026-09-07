@@ -55,6 +55,15 @@ extern char *aok_serialize_state PARAMS((void));
    from this shell's environment, accepted or not. See aok_fork.c. */
 extern pid_t aok_inherited_dollar_pid PARAMS((void));
 
+/* Take the re-launch state and `$?' out of the environment, and put them back.
+   Two calls because they happen at two different moments and both matter:
+   captured from initialize_shell_variables, so the carriers reach nothing;
+   applied from main immediately before the -c command, which is the point that
+   had to exist for `$?' to cross without a subshell. Both are no-ops in a bash
+   that was not re-launched. See aok_fork.c. */
+extern void aok_capture_relaunch_state PARAMS((void));
+extern void aok_apply_relaunch_state PARAMS((void));
+
 /* jobs.c: record a spawned child in the job table as make_child would have. */
 extern void aok_register_spawned PARAMS((char *, pid_t, int));
 

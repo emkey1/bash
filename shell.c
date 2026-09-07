@@ -829,6 +829,17 @@ main (argc, argv, env)
 
   if (command_execution_string)
     {
+#if defined (AOK_NATIVE_FORK)
+      /* A re-launched subshell's inherited state, and the `$?' it inherits with
+	 it. HERE is the whole point: after everything a fresh shell does for
+	 itself, and before the command it was started for is parsed. The state
+	 and the command used to be concatenated into this one -c string, which
+	 left no moment between them for C to set `$?' -- so the status had to
+	 cross as a shell command, and the only one that works is `(exit N) && :',
+	 which is a subshell of its own and fires an armed DEBUG trap. See
+	 AOK_STATUS_VAR in aok_fork.c. */
+      aok_apply_relaunch_state ();
+#endif
       startup_state = 2;
 
       if (debugging_mode)
